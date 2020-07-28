@@ -1,0 +1,5 @@
+Stack Overflow posts which either inspired or helped solve issues with seedir:
+
+posts about printing tree structures in Python: https://stackoverflow.com/q/9727673/13386979
+posts about printing tree structures in general: https://stackoverflow.com/q/19699059/13386979
+recursively adding to a string: https://stackoverflow.com/a/44335113/13386979
