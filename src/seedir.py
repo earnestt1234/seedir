@@ -7,9 +7,6 @@ Created on Fri Jul 24 15:34:12 2020
 
 import os
 
-path = 'C:/Users/earne/Desktop/testfolder'
-path2 = r"C:\Users\earne\Desktop\doc"
-
 STYLE_DICT = {'lines':{'split':'├───',
                        'dline':'│   ',
                        'space':'    ',
@@ -59,5 +56,3 @@ def seedir(path, style='lines'):
     if style:
         styleargs = get_style(style)
     return recursive_print(path, **styleargs)
-
-x = seedir(path, style='spaces')
