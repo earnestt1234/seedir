@@ -13,6 +13,10 @@ STYLE_DICT = {'lines':{'split':'├─',
                        'dline':'│ ',
                        'space':'  ',
                        'final':'└─'},
+              'dash':{'split':'|-',
+                      'dline':'| ',
+                      'space':'  ',
+                      'final':'|-'},
               'spaces':{'split':'  ',
                         'dline':'  ',
                         'space':'  ',
@@ -25,12 +29,17 @@ STYLE_DICT = {'lines':{'split':'├─',
 class SeedirError(Exception):
     """Class for representing errors from seedir"""
 
-def recursive_print(path, level=0, incomplete=[], split='├─', dline='│ ',
-                    space='  ', final='└─', filestart='', folderstart=''):
+def recursive_print(path, level=0, incomplete=None, split='├─', dline='│ ',
+                    space='  ', final='└─', filestart='', folderstart='',
+                    levellimit=None):
     output = ''
     last = False
+    if incomplete is None:
+        incomplete = []
     if level == 0:
         output += folderstart + os.path.basename(path) + os.sep +'\n'
+    if level == levellimit:
+        return output
     level += 1
     incomplete.append(level-1)
     for i, f in enumerate(os.listdir(path)):
@@ -41,7 +50,7 @@ def recursive_print(path, level=0, incomplete=[], split='├─', dline='│ ',
         else:
             branch = split
         lines = len([i for i in incomplete if i < level-1])
-        spaces = level - lines -1
+        spaces = level - lines - 1
         spaces = spaces if spaces > 0 else 0
         header = dline*lines + space*spaces + branch
         if last:
@@ -51,7 +60,8 @@ def recursive_print(path, level=0, incomplete=[], split='├─', dline='│ ',
             output += recursive_print(sub, level=level, incomplete=incomplete,
                                       split=split, dline=dline, space=space,
                                       final=final, filestart=filestart,
-                                      folderstart=folderstart)
+                                      folderstart=folderstart,
+                                      levellimit=levellimit)
         else:
             output += header + filestart + f + '\n'
     return output
@@ -63,7 +73,7 @@ def get_style(style):
         style = 'lines'
     if style not in STYLE_DICT:
         error_text = 'style "{}" not recognized, must be '.format(style)
-        error_text += 'lines, spaces, arrow, plus, or emoji'
+        error_text += 'lines, spaces, arrow, plus, dash, or emoji'
         raise SeedirError(error_text)
     else:
         return STYLE_DICT[style]
@@ -93,7 +103,8 @@ def format_style(style_dict, indent=2):
         output = {k : v + v[-1]*indent for k,v in style_dict.items()}
     return output
 
-def seedir(path, style='lines', indent=2, uniform='', **kwargs):
+def seedir(path, style='lines', indent=2, uniform='', levellimit=None,
+           **kwargs):
     styleargs = {}
     startargs = {}
     if style:
@@ -101,10 +112,10 @@ def seedir(path, style='lines', indent=2, uniform='', **kwargs):
         startargs = get_file_folder_start(style)
     styleargs = format_style(styleargs, indent=indent)
     allargs = {**styleargs, **startargs}
-    for k in kwargs:
-        if k in allargs:
-            allargs[k] = kwargs[k]
     if uniform:
         for arg in ['dline', 'split', 'final', 'space']:
             allargs[arg] = uniform
-    return recursive_print(path, **allargs)
+    for k in kwargs:
+        if k in allargs:
+            allargs[k] = kwargs[k]
+    return recursive_print(path, levellimit=levellimit, **allargs)
