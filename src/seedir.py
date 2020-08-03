@@ -49,13 +49,17 @@ def recursive_print(path, level=0, incomplete=None, split='├─', dline='│ '
             last = True
         else:
             branch = split
-        lines = len([i for i in incomplete if i < level-1])
-        spaces = level - lines - 1
-        spaces = spaces if spaces > 0 else 0
-        header = dline*lines + space*spaces + branch
-        print(sub, level, incomplete, lines)
+        header = []
+        max_i = max(incomplete)
+        for p in range(max_i):
+            if p in incomplete:
+                header.append(dline)
+            else:
+                header.append(space)
+        header = ''.join(header) + branch
         if last:
             incomplete.remove(level-1)
+            incomplete = [i for i in incomplete if i < level]
         if os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
             output += recursive_print(sub, level=level, incomplete=incomplete,
