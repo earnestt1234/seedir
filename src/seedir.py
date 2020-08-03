@@ -53,6 +53,7 @@ def recursive_print(path, level=0, incomplete=None, split='├─', dline='│ '
         spaces = level - lines - 1
         spaces = spaces if spaces > 0 else 0
         header = dline*lines + space*spaces + branch
+        print(sub, level, incomplete, lines)
         if last:
             incomplete.remove(level-1)
         if os.path.isdir(sub):
