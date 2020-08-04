@@ -58,7 +58,7 @@ def get_folder_structure(path, level=0, incomplete=None, split='├─', dline='
             branch = split
         header = ''.join(header) + branch
         if level == levellimit:
-            output += header + '. . .\n'
+            output += header + ' ...\n'
             return output
         elif os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
