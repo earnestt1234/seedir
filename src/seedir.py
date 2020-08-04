@@ -29,26 +29,20 @@ STYLE_DICT = {'lines':{'split':'├─',
 class SeedirError(Exception):
     """Class for representing errors from seedir"""
 
-def recursive_print(path, level=0, incomplete=None, split='├─', dline='│ ',
-                    space='  ', final='└─', filestart='', folderstart='',
-                    levellimit=None):
+def get_folder_structure(path, level=0, incomplete=None, split='├─', dline='│ ',
+                         space='  ', final='└─', filestart='', folderstart='',
+                         levellimit=None, levellimitstyle=None):
     output = ''
-    last = False
     if incomplete is None:
         incomplete = []
     if level == 0:
         output += folderstart + os.path.basename(path) + os.sep +'\n'
-    if level == levellimit:
+    if level == levellimit and levellimitstyle == None:
         return output
     level += 1
     incomplete.append(level-1)
     for i, f in enumerate(os.listdir(path)):
         sub = os.path.join(path, f)
-        if i == len(os.listdir(path)) - 1:
-            branch = final
-            last = True
-        else:
-            branch = split
         header = []
         max_i = max(incomplete)
         for p in range(max_i):
@@ -56,17 +50,23 @@ def recursive_print(path, level=0, incomplete=None, split='├─', dline='│ '
                 header.append(dline)
             else:
                 header.append(space)
-        header = ''.join(header) + branch
-        if last:
+        if i == len(os.listdir(path)) - 1:
+            branch = final
             incomplete.remove(level-1)
             incomplete = [i for i in incomplete if i < level]
-        if os.path.isdir(sub):
+        else:
+            branch = split
+        header = ''.join(header) + branch
+        if level == levellimit:
+            output += header + '. . .\n'
+            return output
+        elif os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
-            output += recursive_print(sub, level=level, incomplete=incomplete,
-                                      split=split, dline=dline, space=space,
-                                      final=final, filestart=filestart,
-                                      folderstart=folderstart,
-                                      levellimit=levellimit)
+            output += get_folder_structure(sub, level=level, incomplete=incomplete,
+                                           split=split, dline=dline, space=space,
+                                           final=final, filestart=filestart,
+                                           folderstart=folderstart,
+                                           levellimit=levellimit)
         else:
             output += header + filestart + f + '\n'
     return output
@@ -123,4 +123,4 @@ def seedir(path, style='lines', indent=2, uniform='', levellimit=None,
     for k in kwargs:
         if k in allargs:
             allargs[k] = kwargs[k]
-    return recursive_print(path, levellimit=levellimit, **allargs)
+    return get_folder_structure(path, levellimit=levellimit, **allargs)
