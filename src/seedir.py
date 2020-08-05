@@ -29,18 +29,18 @@ STYLE_DICT = {'lines':{'split':'├─',
 class SeedirError(Exception):
     """Class for representing errors from seedir"""
 
-def get_folder_structure(path, level=0, incomplete=None, split='├─', dline='│ ',
+def get_folder_structure(path, depth=0, incomplete=None, split='├─', dline='│ ',
                          space='  ', final='└─', filestart='', folderstart='',
-                         levellimit=None, levellimitstyle=None):
+                         depthlimit=None, depthlimitstyle=None):
     output = ''
     if incomplete is None:
         incomplete = []
-    if level == 0:
+    if depth == 0:
         output += folderstart + os.path.basename(path) + os.sep +'\n'
-    if level == levellimit and levellimitstyle == None:
+    if depth == depthlimit and depthlimitstyle == None:
         return output
-    level += 1
-    incomplete.append(level-1)
+    depth += 1
+    incomplete.append(depth-1)
     for i, f in enumerate(os.listdir(path)):
         sub = os.path.join(path, f)
         header = []
@@ -52,21 +52,21 @@ def get_folder_structure(path, level=0, incomplete=None, split='├─', dline='
                 header.append(space)
         if i == len(os.listdir(path)) - 1:
             branch = final
-            incomplete.remove(level-1)
-            incomplete = [i for i in incomplete if i < level]
+            incomplete.remove(depth-1)
+            incomplete = [i for i in incomplete if i < depth]
         else:
             branch = split
         header = ''.join(header) + branch
-        if level == levellimit:
+        if depth == depthlimit:
             output += header + ' ...\n'
             return output
         elif os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
-            output += get_folder_structure(sub, level=level, incomplete=incomplete,
+            output += get_folder_structure(sub, depth=depth, incomplete=incomplete,
                                            split=split, dline=dline, space=space,
                                            final=final, filestart=filestart,
                                            folderstart=folderstart,
-                                           levellimit=levellimit)
+                                           depthlimit=depthlimit)
         else:
             output += header + filestart + f + '\n'
     return output
@@ -108,7 +108,7 @@ def format_style(style_dict, indent=2):
         output = {k : v + v[-1]*indent for k,v in style_dict.items()}
     return output
 
-def seedir(path, style='lines', indent=2, uniform='', levellimit=None,
+def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
            **kwargs):
     styleargs = {}
     startargs = {}
@@ -123,4 +123,4 @@ def seedir(path, style='lines', indent=2, uniform='', levellimit=None,
     for k in kwargs:
         if k in allargs:
             allargs[k] = kwargs[k]
-    return get_folder_structure(path, levellimit=levellimit, **allargs)
+    return get_folder_structure(path, depthlimit=depthlimit, **allargs)
