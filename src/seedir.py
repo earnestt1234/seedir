@@ -57,8 +57,11 @@ def get_folder_structure(path, depth=0, incomplete=None, split='├─', dline='
         else:
             branch = split
         header = ''.join(header) + branch
-        if depth == depthlimit:
-            output += header + ' ...\n'
+        print(sub, depth, incomplete)
+        if depth == depthlimit + 1:
+            incomplete.remove(depth-1)
+            incomplete = [i for i in incomplete if i < depth]
+            # output += header + ' ...\n'
             return output
         elif os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
