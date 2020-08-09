@@ -10,66 +10,96 @@ import os
 import emoji
 
 STYLE_DICT = {'lines':{'split':'├─',
-                       'dline':'│ ',
+                       'extend':'│ ',
                        'space':'  ',
                        'final':'└─'},
               'dash':{'split':'|-',
-                      'dline':'| ',
+                      'extend':'| ',
                       'space':'  ',
                       'final':'|-'},
               'spaces':{'split':'  ',
-                        'dline':'  ',
+                        'extend':'  ',
                         'space':'  ',
                         'final':'  '},
               'plus':{'split':'+-',
-                       'dline':'| ',
-                       'space':'  ',
-                       'final':'+-'}}
+                      'extend':'| ',
+                      'space':'  ',
+                      'final':'+-'}}
 
 class SeedirError(Exception):
     """Class for representing errors from seedir"""
 
-def get_folder_structure(path, depth=0, incomplete=None, split='├─', dline='│ ',
-                         space='  ', final='└─', filestart='', folderstart='',
-                         depthlimit=None, depthlimitstyle=None):
+def beyond_depth_str(path, beyond):
+    if beyond == 'ellipsis':
+        return '...'
+    elif beyond in ['contents','content']:
+        folders = 0
+        files = 0
+        for f in os.listdir(path):
+            sub = os.path.join(path, f)
+            if os.path.isdir(sub):
+                folders += 1
+            else:
+                files += 1
+        return '{} folder(s), {} file(s)'.format(folders, files)
+    elif beyond and beyond[0] == '_':
+        return beyond[1:]
+    else:
+        s1 = '"beyond" must be "ellipsis", "content", or '
+        s2 = 'a string starting with "_"'
+        raise SeedirError(s1 + s2)
+
+def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
+                               extend='│ ', space='  ', final='└─',
+                               filestart='', folderstart='', depthlimit=None,
+                               beyond=None):
     output = ''
     if incomplete is None:
         incomplete = []
     if depth == 0:
         output += folderstart + os.path.basename(path) + os.sep +'\n'
-    if depth == depthlimit and depthlimitstyle == None:
+    if depth == depthlimit and beyond is None:
         return output
+    listdir = os.listdir(path)
+    if listdir:
+        incomplete.append(depth)
     depth += 1
-    incomplete.append(depth-1)
-    for i, f in enumerate(os.listdir(path)):
+    for i, f in enumerate(listdir):
         sub = os.path.join(path, f)
-        header = []
+        base_header = []
         max_i = max(incomplete)
         for p in range(max_i):
             if p in incomplete:
-                header.append(dline)
+                base_header.append(extend)
             else:
-                header.append(space)
+                base_header.append(space)
         if i == len(os.listdir(path)) - 1:
             branch = final
             incomplete.remove(depth-1)
             incomplete = [i for i in incomplete if i < depth]
         else:
             branch = split
-        header = ''.join(header) + branch
-        print(sub, depth, incomplete)
-        if depth == depthlimit + 1:
-            incomplete.remove(depth-1)
+        base_header = ''.join(base_header)
+        header = base_header + branch
+        if depthlimit and depth == depthlimit + 1:
+            if depth - 1 in incomplete:
+                incomplete.remove(depth-1)
             incomplete = [i for i in incomplete if i < depth]
-            # output += header + ' ...\n'
+            extra = beyond_depth_str(path, beyond)
+            if beyond is not None and extra:
+                output += base_header + final + extra + '\n'
             return output
         elif os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
-            output += get_folder_structure(sub, depth=depth, incomplete=incomplete,
-                                           split=split, dline=dline, space=space,
-                                           final=final, filestart=filestart,
-                                           folderstart=folderstart,
-                                           depthlimit=depthlimit)
+            output += recursive_folder_structure(sub, depth=depth,
+                                                 incomplete=incomplete,
+                                                 split=split, extend=extend,
+                                                 space=space,
+                                                 final=final,
+                                                 filestart=filestart,
+                                                 folderstart=folderstart,
+                                                 depthlimit=depthlimit,
+                                                 beyond=beyond)
         else:
             output += header + filestart + f + '\n'
     return output
@@ -112,7 +142,7 @@ def format_style(style_dict, indent=2):
     return output
 
 def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
-           **kwargs):
+           beyond=None, **kwargs):
     styleargs = {}
     startargs = {}
     if style:
@@ -121,9 +151,10 @@ def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
     styleargs = format_style(styleargs, indent=indent)
     allargs = {**styleargs, **startargs}
     if uniform:
-        for arg in ['dline', 'split', 'final', 'space']:
+        for arg in ['extend', 'split', 'final', 'space']:
             allargs[arg] = uniform
     for k in kwargs:
         if k in allargs:
             allargs[k] = kwargs[k]
-    return get_folder_structure(path, depthlimit=depthlimit, **allargs)
+    return recursive_folder_structure(path, depthlimit=depthlimit,
+                                      beyond=beyond, **allargs)
