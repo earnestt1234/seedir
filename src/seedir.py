@@ -8,6 +8,7 @@ Created on Fri Jul 24 15:34:12 2020
 import os
 
 import emoji
+import natsort
 
 STYLE_DICT = {'lines':{'split':'├─',
                        'extend':'│ ',
@@ -49,10 +50,23 @@ def beyond_depth_str(path, beyond):
         s2 = 'a string starting with "_"'
         raise SeedirError(s1 + s2)
 
+def sort_dir(root, paths, first=None, sort_reverse=False, sort_key=None):
+    if first in ['folders', 'files']:
+        folders = [p for p in paths if
+                   os.path.isdir(os.path.join(root, p))]
+        files = [p for p in paths if not
+                 os.path.isdir(os.path.join(root, p))]
+        folders = natsort.natsorted(folders, reverse=sort_reverse, key=sort_key)
+        files = natsort.natsorted(files, reverse=sort_reverse, key=sort_key)
+        return folders + files if first == 'folders' else files + folders
+    else:
+        return natsort.natsorted(paths, reverse=sort_reverse, key=sort_key)
+
 def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                extend='│ ', space='  ', final='└─',
                                filestart='', folderstart='', depthlimit=None,
-                               beyond=None):
+                               beyond=None, first=None, sort=True,
+                               sort_reverse=False, sort_key=None):
     output = ''
     if incomplete is None:
         incomplete = []
@@ -60,7 +74,10 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
         output += folderstart + os.path.basename(path) + os.sep +'\n'
     if depth == depthlimit and beyond is None:
         return output
-    listdir = os.listdir(path)
+    listdir =  os.listdir(path)
+    if sort or first is not None:
+        listdir = sort_dir(path, listdir, first=first,
+                           sort_reverse=sort_reverse, sort_key=sort_key)
     if listdir:
         incomplete.append(depth)
     depth += 1
@@ -99,7 +116,10 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                                  filestart=filestart,
                                                  folderstart=folderstart,
                                                  depthlimit=depthlimit,
-                                                 beyond=beyond)
+                                                 beyond=beyond,
+                                                 first=first,
+                                                 sort_reverse=sort_reverse,
+                                                 sort_key=sort_key)
         else:
             output += header + filestart + f + '\n'
     return output
@@ -142,7 +162,8 @@ def format_style(style_dict, indent=2):
     return output
 
 def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
-           beyond=None, **kwargs):
+           beyond=None, first=None, sort=True, sort_reverse=False,
+           sort_key=None, **kwargs):
     styleargs = {}
     startargs = {}
     if style:
@@ -156,5 +177,9 @@ def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
     for k in kwargs:
         if k in allargs:
             allargs[k] = kwargs[k]
+    if sort_key is not None or sort_reverse == True:
+        sort = True
     return recursive_folder_structure(path, depthlimit=depthlimit,
-                                      beyond=beyond, **allargs)
+                                      beyond=beyond, first=first,
+                                      sort=sort, sort_reverse=sort_reverse,
+                                      sort_key=sort_key, **allargs)
