@@ -10,22 +10,47 @@ import os
 import emoji
 import natsort
 
-STYLE_DICT = {'lines':{'split':'├─',
-                       'extend':'│ ',
-                       'space':'  ',
-                       'final':'└─'},
-              'dash':{'split':'|-',
-                      'extend':'| ',
-                      'space':'  ',
-                      'final':'|-'},
-              'spaces':{'split':'  ',
-                        'extend':'  ',
-                        'space':'  ',
-                        'final':'  '},
-              'plus':{'split':'+-',
-                      'extend':'| ',
-                      'space':'  ',
-                      'final':'+-'}}
+FILE = emoji.emojize(':page_facing_up:')
+FOLDER = emoji.emojize(':file_folder:')
+
+STYLE_DICT = {
+    'lines': {'split':'├─',
+              'extend':'│ ',
+              'space':'  ',
+              'final':'└─',
+              'folderstart':'',
+              'filestart':''},
+    'dash':  {'split':'|-',
+              'extend':'| ',
+              'space':'  ',
+              'final':'|-',
+              'folderstart':'',
+              'filestart':''},
+    'spaces':{'split':'  ',
+              'extend':'  ',
+              'space':'  ',
+              'final':'  ',
+              'folderstart':'',
+              'filestart':''},
+    'plus':  {'split':'+-',
+              'extend':'| ',
+              'space':'  ',
+              'final':'+-',
+              'folderstart':'',
+              'filestart':''},
+    'arrow': {'split':'  ',
+              'extend':'  ',
+              'space':'  ',
+              'final':'  ',
+              'folderstart':'>',
+              'filestart':'>'},
+    'emoji': {'split':'├─',
+              'extend':'│ ',
+              'space':'  ',
+              'final':'└─',
+              'folderstart':FOLDER,
+              'filestart':FILE}
+    }
 
 class SeedirError(Exception):
     """Class for representing errors from seedir"""
@@ -124,28 +149,13 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
             output += header + filestart + f + '\n'
     return output
 
-def get_style(style):
-    if style == 'arrow':
-        style = 'spaces'
-    if style == 'emoji':
-        style = 'lines'
+def get_styleargs(style):
     if style not in STYLE_DICT:
         error_text = 'style "{}" not recognized, must be '.format(style)
         error_text += 'lines, spaces, arrow, plus, dash, or emoji'
         raise SeedirError(error_text)
     else:
         return STYLE_DICT[style]
-
-def get_file_folder_start(style):
-    d = {'filestart' : '',
-         'folderstart' : ''}
-    if style == 'arrow':
-        d['filestart'] = '>'
-        d['folderstart'] = '>'
-    if style == 'emoji':
-        d['filestart'] = emoji.emojize(':page_facing_up:')
-        d['folderstart'] = emoji.emojize(':file_folder:')
-    return d
 
 def format_style(style_dict, indent=2):
     if indent < 0 or not isinstance(indent, int):
@@ -164,22 +174,18 @@ def format_style(style_dict, indent=2):
 def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
            beyond=None, first=None, sort=True, sort_reverse=False,
            sort_key=None, **kwargs):
-    styleargs = {}
-    startargs = {}
     if style:
-        styleargs = get_style(style)
-        startargs = get_file_folder_start(style)
+        styleargs = get_styleargs(style)
     styleargs = format_style(styleargs, indent=indent)
-    allargs = {**styleargs, **startargs}
     if uniform:
         for arg in ['extend', 'split', 'final', 'space']:
-            allargs[arg] = uniform
+            styleargs[arg] = uniform
     for k in kwargs:
-        if k in allargs:
-            allargs[k] = kwargs[k]
+        if k in styleargs:
+            styleargs[k] = styleargs[k]
     if sort_key is not None or sort_reverse == True:
         sort = True
     return recursive_folder_structure(path, depthlimit=depthlimit,
                                       beyond=beyond, first=first,
                                       sort=sort, sort_reverse=sort_reverse,
-                                      sort_key=sort_key, **allargs)
+                                      sort_key=sort_key, **styleargs)
