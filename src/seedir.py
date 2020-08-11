@@ -6,6 +6,7 @@ Created on Fri Jul 24 15:34:12 2020
 """
 
 import os
+import re
 
 import emoji
 import natsort
@@ -55,18 +56,20 @@ STYLE_DICT = {
 class SeedirError(Exception):
     """Class for representing errors from seedir"""
 
-def beyond_depth_str(path, beyond):
+def count_files(paths):
+    files = sum([os.path.isfile(p) for p in paths])
+    return files
+
+def count_folders(paths):
+    folders = sum([os.path.isdir(p) for p in paths])
+    return folders
+
+def beyond_depth_str(beyond, paths=None):
     if beyond == 'ellipsis':
         return '...'
     elif beyond in ['contents','content']:
-        folders = 0
-        files = 0
-        for f in os.listdir(path):
-            sub = os.path.join(path, f)
-            if os.path.isdir(sub):
-                folders += 1
-            else:
-                files += 1
+        folders = count_folders(paths)
+        files = count_files(paths)
         return '{} folder(s), {} file(s)'.format(folders, files)
     elif beyond and beyond[0] == '_':
         return beyond[1:]
@@ -87,11 +90,18 @@ def sort_dir(root, paths, first=None, sort_reverse=False, sort_key=None):
     else:
         return natsort.natsorted(paths, reverse=sort_reverse, key=sort_key)
 
+def is_match(pattern, string, regex=True):
+    if regex:
+        return bool(re.search(pattern, string))
+    else:
+        return pattern == string
+
 def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                extend='│ ', space='  ', final='└─',
                                filestart='', folderstart='', depthlimit=None,
-                               beyond=None, first=None, sort=True,
-                               sort_reverse=False, sort_key=None):
+                               itemlimit=None, beyond=None, first=None,
+                               sort=True, sort_reverse=False, sort_key=None,
+                               include=None, exclude=None, regex=True):
     output = ''
     if incomplete is None:
         incomplete = []
@@ -106,6 +116,16 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
     if listdir:
         incomplete.append(depth)
     depth += 1
+    if depthlimit and depth == depthlimit + 1:
+        if depth - 1 in incomplete:
+            incomplete.remove(depth-1)
+        incomplete = [n for n in incomplete if n < depth]
+        paths = [os.path.join(path, item) for item in os.listdir(path)]
+        extra = beyond_depth_str(beyond, paths)
+        if beyond is not None and extra:
+            output += base_header + final + extra + '\n'
+        return output
+    items = 0
     for i, f in enumerate(listdir):
         sub = os.path.join(path, f)
         base_header = []
@@ -118,18 +138,15 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
         if i == len(os.listdir(path)) - 1:
             branch = final
             incomplete.remove(depth-1)
-            incomplete = [i for i in incomplete if i < depth]
+            incomplete = [n for n in incomplete if n < depth]
         else:
             branch = split
         base_header = ''.join(base_header)
         header = base_header + branch
-        if depthlimit and depth == depthlimit + 1:
-            if depth - 1 in incomplete:
-                incomplete.remove(depth-1)
-            incomplete = [i for i in incomplete if i < depth]
-            extra = beyond_depth_str(path, beyond)
-            if beyond is not None and extra:
-                output += base_header + final + extra + '\n'
+        if i == itemlimit:
+            paths = [os.path.join(path, rem) for rem in listdir[i:]]
+            extra = beyond_depth_str(beyond, paths)
+            output += base_header + final + extra + '\n'
             return output
         elif os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
@@ -141,12 +158,15 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                                  filestart=filestart,
                                                  folderstart=folderstart,
                                                  depthlimit=depthlimit,
+                                                 itemlimit=itemlimit,
                                                  beyond=beyond,
                                                  first=first,
                                                  sort_reverse=sort_reverse,
-                                                 sort_key=sort_key)
+                                                 sort_key=sort_key,
+                                                 regex=regex)
         else:
             output += header + filestart + f + '\n'
+        items += 1
     return output
 
 def get_styleargs(style):
@@ -172,8 +192,8 @@ def format_style(style_dict, indent=2):
     return output
 
 def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
-           beyond=None, first=None, sort=True, sort_reverse=False,
-           sort_key=None, **kwargs):
+           itemlimit=None, beyond=None, first=None, sort=True,
+           sort_reverse=False, sort_key=None, regex=True, **kwargs):
     if style:
         styleargs = get_styleargs(style)
     styleargs = format_style(styleargs, indent=indent)
@@ -186,6 +206,8 @@ def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
     if sort_key is not None or sort_reverse == True:
         sort = True
     return recursive_folder_structure(path, depthlimit=depthlimit,
+                                      itemlimit=itemlimit,
                                       beyond=beyond, first=first,
                                       sort=sort, sort_reverse=sort_reverse,
-                                      sort_key=sort_key, **styleargs)
+                                      sort_key=sort_key, regex=regex,
+                                      **styleargs)
