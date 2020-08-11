@@ -96,12 +96,24 @@ def is_match(pattern, string, regex=True):
     else:
         return pattern == string
 
+def get_base_header(incomplete, extend, space):
+    base_header = []
+    max_i = max(incomplete)
+    for p in range(max_i):
+        if p in incomplete:
+            base_header.append(extend)
+        else:
+            base_header.append(space)
+    return "".join(base_header)
+
 def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                extend='│ ', space='  ', final='└─',
                                filestart='', folderstart='', depthlimit=None,
                                itemlimit=None, beyond=None, first=None,
                                sort=True, sort_reverse=False, sort_key=None,
-                               include=None, exclude=None, regex=True):
+                               included_folders=None, excluded_folders=None,
+                               included_files=None, excluded_files=None,
+                               regex=True):
     output = ''
     if incomplete is None:
         incomplete = []
@@ -109,10 +121,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
         output += folderstart + os.path.basename(path) + os.sep +'\n'
     if depth == depthlimit and beyond is None:
         return output
-    listdir =  os.listdir(path)
-    if sort or first is not None:
-        listdir = sort_dir(path, listdir, first=first,
-                           sort_reverse=sort_reverse, sort_key=sort_key)
+    listdir = os.listdir(path)
     if listdir:
         incomplete.append(depth)
     depth += 1
@@ -120,28 +129,51 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
         incomplete = [n for n in incomplete if n < depth]
-        paths = [os.path.join(path, item) for item in os.listdir(path)]
+        paths = [os.path.join(path, item) for item in listdir]
         extra = beyond_depth_str(beyond, paths)
         if beyond is not None and extra:
+            base_header = get_base_header(incomplete, extend, space)
             output += base_header + final + extra + '\n'
         return output
-    items = 0
+    if sort or first is not None:
+        listdir = sort_dir(path, listdir, first=first,
+                           sort_reverse=sort_reverse, sort_key=sort_key)
+    if any(isinstance(i, str) for i in [
+            included_folders,
+            excluded_folders,
+            included_files,
+            excluded_files]):
+        for f in listdir:
+            sub = os.path.join(path, f)
+            if os.path.isdir(sub):
+                print(sub)
+                if isinstance(included_folders, str):
+                    if not is_match(included_folders, f, regex):
+                        listdir.remove(f)
+                        continue
+                if isinstance(excluded_folders, str):
+                    if is_match(excluded_folders, f, regex):
+                        listdir.remove(f)
+                        continue
+            else:
+                if isinstance(included_files, str):
+                    if not is_match(included_files, f, regex):
+                        listdir.remove(f)
+                        continue
+                if isinstance(excluded_files, str):
+                    if is_match(excluded_files, f, regex):
+                        listdir.remove(f)
+                        continue
+    print(listdir)
     for i, f in enumerate(listdir):
         sub = os.path.join(path, f)
-        base_header = []
-        max_i = max(incomplete)
-        for p in range(max_i):
-            if p in incomplete:
-                base_header.append(extend)
-            else:
-                base_header.append(space)
-        if i == len(os.listdir(path)) - 1:
+        base_header = get_base_header(incomplete, extend, space)
+        if i == len(listdir) - 1:
             branch = final
             incomplete.remove(depth-1)
             incomplete = [n for n in incomplete if n < depth]
         else:
             branch = split
-        base_header = ''.join(base_header)
         header = base_header + branch
         if i == itemlimit:
             paths = [os.path.join(path, rem) for rem in listdir[i:]]
@@ -163,10 +195,13 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                                  first=first,
                                                  sort_reverse=sort_reverse,
                                                  sort_key=sort_key,
+                                                 included_folders=included_folders,
+                                                 excluded_folders=excluded_folders,
+                                                 included_files=included_files,
+                                                 excluded_files=excluded_files,
                                                  regex=regex)
         else:
             output += header + filestart + f + '\n'
-        items += 1
     return output
 
 def get_styleargs(style):
@@ -193,7 +228,9 @@ def format_style(style_dict, indent=2):
 
 def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
            itemlimit=None, beyond=None, first=None, sort=True,
-           sort_reverse=False, sort_key=None, regex=True, **kwargs):
+           sort_reverse=False, sort_key=None, included_folders=None,
+           excluded_folders=None, included_files=None,
+           excluded_files=None, regex=True, **kwargs):
     if style:
         styleargs = get_styleargs(style)
     styleargs = format_style(styleargs, indent=indent)
@@ -205,9 +242,17 @@ def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
             styleargs[k] = styleargs[k]
     if sort_key is not None or sort_reverse == True:
         sort = True
-    return recursive_folder_structure(path, depthlimit=depthlimit,
+    return recursive_folder_structure(path,
+                                      depthlimit=depthlimit,
                                       itemlimit=itemlimit,
-                                      beyond=beyond, first=first,
-                                      sort=sort, sort_reverse=sort_reverse,
-                                      sort_key=sort_key, regex=regex,
+                                      beyond=beyond,
+                                      first=first,
+                                      sort=sort,
+                                      sort_reverse=sort_reverse,
+                                      sort_key=sort_key,
+                                      included_folders=included_folders,
+                                      excluded_folders=excluded_folders,
+                                      included_files=included_files,
+                                      excluded_files=excluded_files,
+                                      regex=regex,
                                       **styleargs)
