@@ -11,8 +11,8 @@ import re
 import emoji
 import natsort
 
-FILE = emoji.emojize(':page_facing_up:')
-FOLDER = emoji.emojize(':file_folder:')
+FILE = emoji.emojize(':page_facing_up:' + ' ')
+FOLDER = emoji.emojize(':file_folder:' + ' ')
 
 STYLE_DICT = {
     'lines': {'split':'├─',
@@ -171,15 +171,18 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
             branch = final
             incomplete.remove(depth-1)
             incomplete = [n for n in incomplete if n < depth]
+        elif itemlimit and i == itemlimit - 1 and beyond is None:
+            branch = final
         else:
             branch = split
         header = base_header + branch
         if i == itemlimit:
             paths = [os.path.join(path, rem) for rem in listdir[i:]]
-            extra = beyond_depth_str(beyond, paths)
-            output += base_header + final + extra + '\n'
+            if beyond is not None:
+                extra = beyond_depth_str(beyond, paths)
+                output += base_header + final + extra + '\n'
             return output
-        elif os.path.isdir(sub):
+        if os.path.isdir(sub):
             output += header + folderstart + f + os.sep +'\n'
             output += recursive_folder_structure(sub, depth=depth,
                                                  incomplete=incomplete,
