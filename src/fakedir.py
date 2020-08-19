@@ -188,6 +188,18 @@ class FakeDir:
     def __repr__(self):
         return 'FakeDir("{}")'.format(self.path)
 
+    def __getitem__(self, path):
+        paths = path.split('/')
+        current = self
+        for p in paths:
+            for f in current.children:
+                if p == f.name:
+                    current = f
+                    break
+            else:
+                raise(FakedirError('Path "{}" not found through {}'.format(path, self)))
+        return current
+
     def seedir(self, style='lines', indent=2, uniform='', depthlimit=None,
                itemlimit=None, beyond=None, first=None, sort=True,
                sort_reverse=False, sort_key=None, include_folders=None,
@@ -222,7 +234,7 @@ class FakeDir:
     def create_folder(self, name):
         self.children.append(FakeDir(name, self.path, depth=self.depth + 1))
 
-    def create_file(self, name, ext='.txt'):
+    def create_file(self, name):
         self.children.append(FakeFile(name, self.path, depth=self.depth + 1))
 
 def populate(fakedir, depth=3, folders=2, files=2):
