@@ -186,4 +186,4 @@ def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
                                       include_files=include_files,
                                       exclude_files=exclude_files,
                                       regex=regex,
-                                      **styleargs)
+                                      **styleargs).strip()
