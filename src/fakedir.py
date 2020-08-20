@@ -154,18 +154,11 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
             output += header + filestart + f.name + '\n'
     return output
 
-class FakeFile:
+class FakeItem:
     def __init__(self, name, parent=None, depth=0):
         self.name = name
         self.parent = parent
         self.depth = depth
-        self.filename, self.extension = os.path.splitext(self.name)
-
-    def __str__(self):
-        return 'FakeFile({})'.format(self.get_path())
-
-    def __repr__(self):
-        return 'FakeFile({})'.format(self.get_path())
 
     def get_path(self):
         parents = [self.name]
@@ -175,18 +168,35 @@ class FakeFile:
             parents.append(on.name)
         return '/'.join(parents[::-1])
 
-class FakeDir:
+    def move_to(self, other):
+        if not isinstance(other, FakeDir):
+            raise FakedirError('other parameter must be instance of FakeDir')
+        if self.parent is not None:
+            self.parent.children.remove(self)
+        self.parent = other
+        other.children.append(self)
+
+class FakeFile(FakeItem):
     def __init__(self, name, parent=None, depth=0):
-        self.name = name
-        self.parent = parent
-        self.depth = depth
+        super().__init__(name, parent, depth)
+        self.filename, self.extension = os.path.splitext(self.name)
+
+    def __str__(self):
+        return 'FakeFile({})'.format(self.get_path())
+
+    def __repr__(self):
+        return 'FakeFile({})'.format(self.get_path())
+
+class FakeDir(FakeItem):
+    def __init__(self, name, parent=None, depth=0):
+        super().__init__(name, parent, depth)
         self.children = []
 
     def __str__(self):
-        return 'FakeDir("{}")'.format(self.get_path())
+        return 'FakeFolder({})'.format(self.get_path())
 
     def __repr__(self):
-        return 'FakeDir("{}")'.format(self.get_path())
+        return 'FakeFolder({})'.format(self.get_path())
 
     def __getitem__(self, path):
         if type(path) not in [int, str]:
@@ -202,14 +212,6 @@ class FakeDir:
             else:
                 raise(FakedirError('Path "{}" not found through {}'.format(path, self)))
         return current
-
-    def get_path(self):
-        parents = [self.name]
-        on = self
-        while on.parent is not None:
-            on = on.parent
-            parents.append(on.name)
-        return '/'.join(parents[::-1])
 
     def seedir(self, style='lines', indent=2, uniform='', depthlimit=None,
                itemlimit=None, beyond=None, first=None, sort=True,
@@ -292,5 +294,5 @@ def fakedir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed=N
     populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
     return top
 
-x = fakedir(seed=1)
+x = fakedir(seed=3)
 print(x.seedir())
