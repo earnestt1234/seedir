@@ -70,7 +70,7 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
         output += folderstart + fakedir.name + os.sep +'\n'
     if depth == depthlimit and beyond is None:
         return output
-    listdir = fakedir.children.copy()
+    listdir = fakedir._children.copy()
     incomplete.append(depth)
     depth += 1
     if depthlimit and depth == depthlimit + 1:
@@ -155,10 +155,28 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
     return output
 
 class FakeItem:
-    def __init__(self, name, parent=None, depth=0):
+    def __init__(self, name, parent=None):
         self.name = name
+        self._parent = None
         self.parent = parent
-        self.depth = depth
+        if self.parent is None:
+            self.depth = 0
+        else:
+            self.depth = self.parent.depth + 1
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, other):
+        if other:
+            if not isinstance(other, FakeDir):
+                raise FakedirError('other parameter must be instance of FakeDir')
+            other._children.append(self)
+        if self.parent is not None:
+            self.parent._children.remove(self)
+        self._parent = other
 
     def get_path(self):
         parents = [self.name]
@@ -168,17 +186,9 @@ class FakeItem:
             parents.append(on.name)
         return '/'.join(parents[::-1])
 
-    def move_to(self, other):
-        if not isinstance(other, FakeDir):
-            raise FakedirError('other parameter must be instance of FakeDir')
-        if self.parent is not None:
-            self.parent.children.remove(self)
-        self.parent = other
-        other.children.append(self)
-
 class FakeFile(FakeItem):
-    def __init__(self, name, parent=None, depth=0):
-        super().__init__(name, parent, depth)
+    def __init__(self, name, parent=None):
+        super().__init__(name, parent)
         self.filename, self.extension = os.path.splitext(self.name)
 
     def __str__(self):
@@ -188,15 +198,16 @@ class FakeFile(FakeItem):
         return 'FakeFile({})'.format(self.get_path())
 
 class FakeDir(FakeItem):
-    def __init__(self, name, parent=None, depth=0):
-        super().__init__(name, parent, depth)
-        self.children = []
+    def __init__(self, name, parent=None):
+        super().__init__(name, parent)
+        # alter children through FakeDir methods!
+        self._children = []
 
     def __str__(self):
         return 'FakeFolder({})'.format(self.get_path())
 
     def __repr__(self):
-        return 'FakeFolder({})'.format(self.get_path())
+        return self.seedir(printout=False)
 
     def __getitem__(self, path):
         if type(path) not in [int, str]:
@@ -205,7 +216,7 @@ class FakeDir(FakeItem):
         paths = path.split('/')
         current = self
         for p in paths:
-            for f in current.children:
+            for f in current._children:
                 if p == f.name:
                     current = f
                     break
@@ -213,10 +224,19 @@ class FakeDir(FakeItem):
                 raise(FakedirError('Path "{}" not found through {}'.format(path, self)))
         return current
 
-    def seedir(self, style='lines', indent=2, uniform='', depthlimit=None,
-               itemlimit=None, beyond=None, first=None, sort=True,
-               sort_reverse=False, sort_key=None, include_folders=None,
-               exclude_folders=None, include_files=None,
+    def show_children(self):
+        print([i.name for i in self._children])
+
+    def create_folder(self, name):
+        FakeDir(name, parent=self)
+
+    def create_file(self, name):
+        FakeFile(name, parent=self)
+
+    def seedir(self, style='lines', printout=False, indent=2, uniform='',
+               depthlimit=None, itemlimit=None, beyond=None, first=None,
+               sort=True, sort_reverse=False, sort_key=None,
+               include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=True, **kwargs):
         if style:
             styleargs = printing.get_styleargs(style)
@@ -229,7 +249,7 @@ class FakeDir(FakeItem):
                 styleargs[k] = kwargs[k]
         if sort_key is not None or sort_reverse == True:
             sort = True
-        return recursive_fakedir_structure(self,
+        rfs =  recursive_fakedir_structure(self,
                                            depthlimit=depthlimit,
                                            itemlimit=itemlimit,
                                            beyond=beyond,
@@ -243,12 +263,10 @@ class FakeDir(FakeItem):
                                            exclude_files=exclude_files,
                                            regex=regex,
                                            **styleargs).strip()
-
-    def create_folder(self, name):
-        self.children.append(FakeDir(name, parent=self, depth=self.depth + 1))
-
-    def create_file(self, name):
-        self.children.append(FakeFile(name, parent=self, depth=self.depth + 1))
+        if printout:
+            print(rfs)
+        else:
+            return rfs
 
 def get_random_int(collection, seed=None):
     try:
@@ -272,16 +290,16 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
         except:
             raise FakedirError('files must be an int or collection of int')
     for i in range(file_num):
-        name = random.choice(words)
-        while name in [f.name for f in fakedir.children]:
-            name = random.choice(words)
+        name = random.choice(words) + '.txt'
+        while name in [f.name for f in fakedir._children]:
+            name = random.choice(words) + '.txt'
         fakedir.create_file(name)
     for i in range(fold_num):
         name = random.choice(words)
-        while name in [f.name for f in fakedir.children]:
+        while name in [f.name for f in fakedir._children]:
             name = random.choice(words)
         fakedir.create_folder(name)
-    for f in fakedir.children:
+    for f in fakedir._children:
         if isinstance(f, FakeDir):
             if f.depth <= depth and random.uniform(0, 1) > stopchance:
                 if seed:
@@ -289,10 +307,12 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
                 populate(f, depth=depth, folders=folders, files=files, seed=seed,
                          stopchance=stopchance)
 
-def fakedir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed=None):
+def randomfakedir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed=None):
     top = FakeDir('MyFakeDir')
     populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
     return top
 
-x = fakedir(seed=3)
-print(x.seedir())
+x = randomfakedir()
+x.seedir()
+
+y = FakeDir('Salmon')

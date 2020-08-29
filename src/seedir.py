@@ -6,7 +6,6 @@ Created on Fri Jul 24 15:34:12 2020
 """
 
 import os
-import re
 
 import natsort
 
