@@ -145,6 +145,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                                  itemlimit=itemlimit,
                                                  beyond=beyond,
                                                  first=first,
+                                                 sort=sort,
                                                  sort_reverse=sort_reverse,
                                                  sort_key=sort_key,
                                                  include_folders=include_folders,
@@ -156,8 +157,8 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
             output += header + filestart + f + '\n'
     return output
 
-def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
-           itemlimit=None, beyond=None, first=None, sort=True,
+def seedir(path, style='lines', printout=True, indent=2, uniform='',
+           depthlimit=None, itemlimit=None, beyond=None, first=None, sort=True,
            sort_reverse=False, sort_key=None, include_folders=None,
            exclude_folders=None, include_files=None,
            exclude_files=None, regex=True, **kwargs):
@@ -172,7 +173,7 @@ def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
             styleargs[k] = kwargs[k]
     if sort_key is not None or sort_reverse == True:
         sort = True
-    return recursive_folder_structure(path,
+    rfs =  recursive_folder_structure(path,
                                       depthlimit=depthlimit,
                                       itemlimit=itemlimit,
                                       beyond=beyond,
@@ -186,3 +187,7 @@ def seedir(path, style='lines', indent=2, uniform='', depthlimit=None,
                                       exclude_files=exclude_files,
                                       regex=regex,
                                       **styleargs).strip()
+    if printout:
+        print(rfs)
+    else:
+        return rfs

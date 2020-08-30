@@ -5,6 +5,8 @@ Created on Fri Aug 14 13:13:02 2020
 @author: earne
 """
 import os
+import string
+import re
 
 import natsort
 import random
@@ -36,6 +38,11 @@ def beyond_fakedepth_str(beyond, objs=None):
         raise FakedirError(s1 + s2)
 
 def sort_fakedir(objs, first=None, sort_reverse=False, sort_key=None):
+    if sort_key is None:
+            sort_key = lambda f : f.name
+    else:
+        y = sort_key
+        sort_key = lambda f : y(f.name)
     if first in ['folders', 'files']:
         folders = [o for o in objs if isinstance(o, FakeDir)]
         files = [o for o in objs if isinstance(o, FakeFile)]
@@ -84,8 +91,8 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
         return output
     if sort or first is not None:
         pass
-        # listdir = sort_fakedir(listdir, first=first,
-        #                        sort_reverse=sort_reverse, sort_key=sort_key)
+        listdir = sort_fakedir(listdir, first=first,
+                                sort_reverse=sort_reverse, sort_key=sort_key)
     if any(isinstance(i, str) for i in [
             include_folders,
             exclude_folders,
@@ -143,6 +150,7 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
                                                  itemlimit=itemlimit,
                                                  beyond=beyond,
                                                  first=first,
+                                                 sort=sort,
                                                  sort_reverse=sort_reverse,
                                                  sort_key=sort_key,
                                                  include_folders=include_folders,
@@ -233,7 +241,20 @@ class FakeDir(FakeItem):
     def create_file(self, name):
         FakeFile(name, parent=self)
 
-    def seedir(self, style='lines', printout=False, indent=2, uniform='',
+    def delete(self, child):
+        if type(child) in [FakeDir, FakeFile]:
+            if child not in self._children:
+                raise FakedirError('{} has no child {}'.format(self, child))
+            else:
+                child.parent = None
+        elif isinstance(child, str):
+            try:
+                to_del = next(f for f in self._children if f.name == child)
+                to_del.parent = None
+            except StopIteration:
+                raise FakedirError('{} has no child with name "{}"'.format(self, child))
+
+    def seedir(self, style='lines', printout=True, indent=2, uniform='',
                depthlimit=None, itemlimit=None, beyond=None, first=None,
                sort=True, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
@@ -275,7 +296,7 @@ def get_random_int(collection, seed=None):
             raise TypeError('non int found')
         return r
     except Exception as e:
-        raise(e)
+        raise e
 
 def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
     random.seed(seed)
@@ -307,12 +328,33 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
                 populate(f, depth=depth, folders=folders, files=files, seed=seed,
                          stopchance=stopchance)
 
-def randomfakedir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed=None):
+def randomdir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed=None):
     top = FakeDir('MyFakeDir')
     populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
     return top
 
-x = randomfakedir()
-x.seedir()
+def recursive_add_fakes(path, parent):
+    for f in os.listdir(path):
+        sub = os.path.join(path, f)
+        if os.path.isdir(sub):
+            new = FakeDir(f, parent=parent)
+            recursive_add_fakes(sub, new)
+        else:
+            new = FakeFile(f, parent=parent)
 
-y = FakeDir('Salmon')
+def fakedir(path):
+    if not os.path.isdir(path):
+        raise FakedirError('path must be a directory')
+    output = FakeDir(os.path.basename(path))
+    recursive_add_fakes(path, output)
+    return output
+
+def fakedir_fromstring(s):
+    byline = s.split('\n')
+    keyboard_chars = (string.ascii_letters + string.digits
+                      + string.punctuation)
+    start_chars = keyboard_chars
+    headers = [len(re.match('.*?(?=[{}])'.format(start_chars), i).group())
+               for i in byline]
+
+
