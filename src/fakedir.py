@@ -354,7 +354,34 @@ def fakedir_fromstring(s):
     keyboard_chars = (string.ascii_letters + string.digits
                       + string.punctuation)
     start_chars = keyboard_chars
-    headers = [len(re.match('.*?(?=[{}])'.format(start_chars), i).group())
-               for i in byline]
+    body_chars = keyboard_chars + '\s'
+    headers = []
+    depths = []
+    names = []
+    is_folders = []
+    fakeitems = []
+    for line in byline:
+        header = re.match('.*?(?=[{}])'.format(start_chars), line).group()
+        depth = len(header)
+        name = re.match('[{}]*'.format(body_chars), line[depth:]).group()
+        headers.append(header)
+        names.append(name)
+        depths.append(depth)
+        is_folder = line.strip()[-1] == os.sep
+        is_folders.append(is_folder)
+        if len(headers) == 1 and is_folders[0] == True:
+            fakeitems.append(FakeDir(name))
+        else:
+            try:
+                max_shallower = max([i for i in depths if i < depth ])
+                parent_index = ''.join([str(i) for i in depths]).rindex(str(max_shallower))
+                parent = fakeitems[parent_index]
+                if is_folder:
+                    fakeitems.append(FakeDir(name, parent=parent))
+                else:
+                    fakeitems.append(FakeFile(name, parent=parent))
+            except Exception as e:
+                raise e
+    return fakeitems[0]
 
 
