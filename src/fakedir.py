@@ -412,6 +412,7 @@ def fakedir_fromstring(s, name_chars=None, start_chars=None,
         if i < len(names) - 1:
             if depths[i + 1] > depths[i]:
                 is_folder = True
+
         if depths[i] == min_depth:
             if is_folder:
                 fakeitems.append(FakeDir(name, parent=superparent))
@@ -430,6 +431,7 @@ def fakedir_fromstring(s, name_chars=None, start_chars=None,
                 fakeitems.append(FakeDir(name, parent=parent))
             else:
                 fakeitems.append(FakeFile(name, parent=parent))
+
     if superparent is not None:
         return superparent
     else:
