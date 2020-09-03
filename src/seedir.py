@@ -158,7 +158,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
     return output
 
 def seedir(path, style='lines', printout=True, indent=2, uniform='',
-           depthlimit=None, itemlimit=None, beyond=None, first=None, sort=True,
+           depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False,
            sort_reverse=False, sort_key=None, include_folders=None,
            exclude_folders=None, include_files=None,
            exclude_files=None, regex=True, **kwargs):

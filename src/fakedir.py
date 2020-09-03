@@ -167,10 +167,8 @@ class FakeItem:
         self.name = name
         self._parent = None
         self.parent = parent
-        if self.parent is None:
-            self.depth = 0
-        else:
-            self.depth = self.parent.depth + 1
+        self.depth = 0
+        self.set_depth()
 
     @property
     def parent(self):
@@ -185,6 +183,9 @@ class FakeItem:
         if self.parent is not None:
             self.parent._children.remove(self)
         self._parent = other
+        self.set_depth()
+        if isinstance(self, FakeDir):
+            self.set_child_depths()
 
     def get_path(self):
         parents = [self.name]
@@ -193,6 +194,12 @@ class FakeItem:
             on = on.parent
             parents.append(on.name)
         return '/'.join(parents[::-1])
+
+    def set_depth(self):
+        if self.parent is None:
+            self.depth = 0
+        else:
+            self.depth = self.parent.depth + 1
 
 class FakeFile(FakeItem):
     def __init__(self, name, parent=None):
@@ -207,12 +214,12 @@ class FakeFile(FakeItem):
 
 class FakeDir(FakeItem):
     def __init__(self, name, parent=None):
-        super().__init__(name, parent)
         # alter children through FakeDir methods!
         self._children = []
+        super().__init__(name, parent)
 
     def __str__(self):
-        return 'FakeFolder({})'.format(self.get_path())
+        return 'FakeDir({})'.format(self.get_path())
 
     def __repr__(self):
         return self.seedir(printout=False)
@@ -231,9 +238,6 @@ class FakeDir(FakeItem):
             else:
                 raise(FakedirError('Path "{}" not found through {}'.format(path, self)))
         return current
-
-    def show_children(self):
-        print([i.name for i in self._children])
 
     def create_folder(self, name):
         FakeDir(name, parent=self)
@@ -254,9 +258,26 @@ class FakeDir(FakeItem):
             except StopIteration:
                 raise FakedirError('{} has no child with name "{}"'.format(self, child))
 
+    def child_names(self):
+        return [c.name for c in self._children]
+
+    def listdir(self):
+        return self._children
+
+    def walk_apply(self, foo):
+        for f in self._children:
+            foo(f)
+            if isinstance(f, FakeDir):
+                f.walk_apply(foo)
+
+    def set_child_depths(self):
+        def foo(FD):
+            FD.set_depth()
+        self.walk_apply(foo)
+
     def seedir(self, style='lines', printout=True, indent=2, uniform='',
                depthlimit=None, itemlimit=None, beyond=None, first=None,
-               sort=True, sort_reverse=False, sort_key=None,
+               sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=True, **kwargs):
         if style:
@@ -349,39 +370,71 @@ def fakedir(path):
     recursive_add_fakes(path, output)
     return output
 
-def fakedir_fromstring(s):
+def fakedir_fromstring(s, name_chars=None, start_chars=None,
+                       header_regex=None, name_regex=None,
+                       supername='FakeDir'):
     byline = s.split('\n')
     keyboard_chars = (string.ascii_letters + string.digits
                       + string.punctuation)
-    start_chars = keyboard_chars
-    body_chars = keyboard_chars + '\s'
+    filtered = "".join([c for c in keyboard_chars if c not in '/:?"*<>|'])
+    start_chars = "".join([c for c in filtered if c not in '+=-'])
+    name_chars = filtered + '\s' + '-'
+
+    names = []
     headers = []
     depths = []
-    names = []
-    is_folders = []
-    fakeitems = []
+
     for line in byline:
+        if not line:
+            continue
         header = re.match('.*?(?=[{}])'.format(start_chars), line).group()
         depth = len(header)
-        name = re.match('[{}]*'.format(body_chars), line[depth:]).group()
+        name = re.match('[{}]*'.format(name_chars), line[depth:]).group()
+        if not name:
+            continue
         headers.append(header)
         names.append(name)
         depths.append(depth)
-        is_folder = line.strip()[-1] == os.sep
-        is_folders.append(is_folder)
-        if len(headers) == 1 and is_folders[0] == True:
-            fakeitems.append(FakeDir(name))
+
+    fakeitems = []
+    superparent = None
+    min_depth = min(depths)
+    if len([d for d in depths if d == min_depth]) > 1:
+        superparent = FakeDir(supername)
+    min_depth_index1 = depths.index(min_depth)
+    if any(i > min_depth for i in depths[:min_depth_index1]):
+        superparent = FakeDir(supername)
+
+    for i, name in enumerate(names):
+        is_folder = False
+        if name.strip()[-1] == os.sep:
+            is_folder = True
+        if i < len(names) - 1:
+            if depths[i + 1] > depths[i]:
+                is_folder = True
+        if depths[i] == min_depth:
+            if is_folder:
+                fakeitems.append(FakeDir(name, parent=superparent))
+            else:
+                fakeitems.append(FakeFile(name, parent=superparent))
         else:
-            try:
-                max_shallower = max([i for i in depths if i < depth ])
-                parent_index = ''.join([str(i) for i in depths]).rindex(str(max_shallower))
+            shallower = [d for d in depths[:i] if d < depths[i]]
+            if shallower:
+                max_shallower = max([d for d in depths[:i] if d < depths[i]])
+                parent_index = max(idx for idx, val in enumerate(depths[:i])
+                                   if val == max_shallower)
                 parent = fakeitems[parent_index]
-                if is_folder:
-                    fakeitems.append(FakeDir(name, parent=parent))
-                else:
-                    fakeitems.append(FakeFile(name, parent=parent))
-            except Exception as e:
-                raise e
-    return fakeitems[0]
+            else:
+                parent = superparent
+            if is_folder:
+                fakeitems.append(FakeDir(name, parent=parent))
+            else:
+                fakeitems.append(FakeFile(name, parent=parent))
+    if superparent is not None:
+        return superparent
+    else:
+        idx = depths.index(min_depth)
+        return fakeitems[idx]
 
-
+def fakedir_fromseedir(s):
+    pass
