@@ -370,15 +370,17 @@ def fakedir(path):
     recursive_add_fakes(path, output)
     return output
 
-def fakedir_fromstring(s, name_chars=None, start_chars=None,
+def fakedir_fromstring(s, start_chars=None, name_chars=None,
                        header_regex=None, name_regex=None,
-                       supername='FakeDir'):
+                       supername='FakeDir', parse_comments=True):
     byline = s.split('\n')
     keyboard_chars = (string.ascii_letters + string.digits
                       + string.punctuation)
     filtered = "".join([c for c in keyboard_chars if c not in '/:?"*<>|'])
-    start_chars = "".join([c for c in filtered if c not in '+=-'])
-    name_chars = filtered + '\s' + '-'
+    if start_chars is None:
+        start_chars = "".join([c for c in filtered if c not in '+=-'])
+    if name_chars is None:
+        name_chars = filtered + '\s' + '-'
 
     names = []
     headers = []
@@ -387,11 +389,20 @@ def fakedir_fromstring(s, name_chars=None, start_chars=None,
     for line in byline:
         if not line:
             continue
-        header = re.match('.*?(?=[{}])'.format(start_chars), line).group()
+        if header_regex is None:
+            header = re.match('.*?(?=[{}])'.format(start_chars), line).group()
+        else:
+            header = re.match(header_regex, line).group()
         depth = len(header)
-        name = re.match('[{}]*'.format(name_chars), line[depth:]).group()
+        if name_regex is None:
+            name = re.match('[{}]*'.format(name_chars), line[depth:]).group()
+        else:
+            name = re.match(name_regex, line).group()
+        if '#' in name and parse_comments:
+            name = re.match('.*?(?=#)', name).group().strip()
         if not name:
             continue
+
         headers.append(header)
         names.append(name)
         depths.append(depth)
@@ -407,7 +418,7 @@ def fakedir_fromstring(s, name_chars=None, start_chars=None,
 
     for i, name in enumerate(names):
         is_folder = False
-        if name.strip()[-1] == os.sep:
+        if name.strip()[-1] in ['/', '\\', os.sep]:
             is_folder = True
         if i < len(names) - 1:
             if depths[i + 1] > depths[i]:
@@ -437,6 +448,3 @@ def fakedir_fromstring(s, name_chars=None, start_chars=None,
     else:
         idx = depths.index(min_depth)
         return fakeitems[idx]
-
-def fakedir_fromseedir(s):
-    pass
