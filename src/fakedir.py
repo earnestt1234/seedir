@@ -69,7 +69,7 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
                                 sort=True, sort_reverse=False, sort_key=None,
                                 include_folders=None, exclude_folders=None,
                                 include_files=None, exclude_files=None,
-                                regex=True):
+                                regex=False):
     output = ''
     if incomplete is None:
         incomplete = []
@@ -80,7 +80,7 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
     listdir = fakedir._children.copy()
     incomplete.append(depth)
     depth += 1
-    if depthlimit and depth == depthlimit + 1:
+    if depthlimit and depth > depthlimit:
         extra = beyond_fakedepth_str(beyond, listdir)
         if beyond is not None and extra:
             base_header = get_fakebase_header(incomplete, extend, space)
@@ -92,31 +92,18 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
     if sort or first is not None:
         pass
         listdir = sort_fakedir(listdir, first=first,
-                                sort_reverse=sort_reverse, sort_key=sort_key)
-    if any(isinstance(i, str) for i in [
+                               sort_reverse=sort_reverse, sort_key=sort_key)
+    if any(arg is not None for arg in [
             include_folders,
             exclude_folders,
             include_files,
             exclude_files]):
-        keep = []
-        for l in listdir:
-            name = l.name
-            if isinstance(l, FakeDir):
-                if isinstance(include_folders, str):
-                    if not printing.is_match(include_folders, name, regex):
-                        continue
-                if isinstance(exclude_folders, str):
-                    if printing.is_match(exclude_folders, name, regex):
-                        continue
-            else:
-                if isinstance(include_files, str):
-                    if not printing.is_match(include_files, name, regex):
-                        continue
-                if isinstance(exclude_files, str):
-                    if printing.is_match(exclude_files, name, regex):
-                        continue
-            keep.append(l)
-        listdir = keep
+        listdir = printing.filter_item_names(path, listdir,
+                                             include_folders=include_folders,
+                                             exclude_folders=exclude_folders,
+                                             include_files=include_files,
+                                             exclude_files=exclude_files,
+                                             regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
@@ -257,6 +244,19 @@ class FakeDir(FakeItem):
                 to_del.parent = None
             except StopIteration:
                 raise FakedirError('{} has no child with name "{}"'.format(self, child))
+        else:
+            for c in child:
+                if type(c) in [FakeDir, FakeFile]:
+                    if c not in self._children:
+                        raise FakedirError('{} has no child {}'.format(self, c))
+                    else:
+                        c.parent = None
+                elif isinstance(c, str):
+                    try:
+                        to_del = next(f for f in self._children if f.name == c)
+                        to_del.parent = None
+                    except StopIteration:
+                        raise FakedirError('{} has no child with name "{}"'.format(self, c))
 
     def child_names(self):
         return [c.name for c in self._children]
@@ -264,22 +264,22 @@ class FakeDir(FakeItem):
     def listdir(self):
         return self._children
 
-    def walk_apply(self, foo):
+    def walk_apply(self, foo, *args, **kwargs):
         for f in self._children:
-            foo(f)
+            foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):
-                f.walk_apply(foo)
+                f.walk_apply(foo, *args, **kwargs)
 
     def set_child_depths(self):
-        def foo(FD):
+        def apply_setdepth(FD):
             FD.set_depth()
-        self.walk_apply(foo)
+        self.walk_apply(apply_setdepth)
 
     def seedir(self, style='lines', printout=True, indent=2, uniform='',
                depthlimit=None, itemlimit=None, beyond=None, first=None,
                sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
-               exclude_files=None, regex=True, **kwargs):
+               exclude_files=None, regex=False, **kwargs):
         if style:
             styleargs = printing.get_styleargs(style)
         styleargs = printing.format_indent(styleargs, indent=indent)
@@ -354,20 +354,49 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed
     populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
     return top
 
-def recursive_add_fakes(path, parent):
-    for f in os.listdir(path):
+def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
+                        include_folders=None, exclude_folders=None,
+                        include_files=None, exclude_files=None,
+                        regex=False):
+    if depthlimit is not None and depth >= depthlimit:
+        return
+    depth +=1
+    listdir = os.listdir(path)
+    if any(arg is not None for arg in [
+            include_folders,
+            exclude_folders,
+            include_files,
+            exclude_files]):
+        listdir = printing.filter_item_names(path, listdir,
+                                             include_folders=include_folders,
+                                             exclude_folders=exclude_folders,
+                                             include_files=include_files,
+                                             exclude_files=exclude_files,
+                                             regex=regex)
+    for f in listdir:
         sub = os.path.join(path, f)
         if os.path.isdir(sub):
             new = FakeDir(f, parent=parent)
-            recursive_add_fakes(sub, new)
+            recursive_add_fakes(path=sub, parent=new, depth=depth,
+                                depthlimit=depthlimit,
+                                include_folders=include_folders,
+                                exclude_folders=exclude_folders,
+                                include_files=include_files,
+                                exclude_files=exclude_files, regex=regex)
         else:
             new = FakeFile(f, parent=parent)
 
-def fakedir(path):
+def fakedir(path, depthlimit=None, itemlimit=None, include_folders=None,
+            exclude_folders=None, include_files=None, exclude_files=None,
+            regex=True):
     if not os.path.isdir(path):
         raise FakedirError('path must be a directory')
     output = FakeDir(os.path.basename(path))
-    recursive_add_fakes(path, output)
+    recursive_add_fakes(path, parent=output, depthlimit=depthlimit,
+                        include_folders=include_folders,
+                        exclude_folders=exclude_folders,
+                        include_files=include_files,
+                        exclude_files=exclude_files, regex=regex)
     return output
 
 def fakedir_fromstring(s, start_chars=None, name_chars=None,

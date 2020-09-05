@@ -63,7 +63,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                 sort=True, sort_reverse=False, sort_key=None,
                                 include_folders=None, exclude_folders=None,
                                 include_files=None, exclude_files=None,
-                                regex=True):
+                                regex=False):
     output = ''
     if incomplete is None:
         incomplete = []
@@ -74,7 +74,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
     listdir = os.listdir(path)
     incomplete.append(depth)
     depth += 1
-    if depthlimit and depth == depthlimit + 1:
+    if depthlimit and depth > depthlimit:
         paths = [os.path.join(path, item) for item in listdir]
         extra = beyond_depth_str(beyond, paths)
         if beyond is not None and extra:
@@ -86,31 +86,18 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
         return output
     if sort or first is not None:
         listdir = sort_dir(path, listdir, first=first,
-                            sort_reverse=sort_reverse, sort_key=sort_key)
-    if any(isinstance(i, str) for i in [
+                           sort_reverse=sort_reverse, sort_key=sort_key)
+    if any(arg is not None for arg in [
             include_folders,
             exclude_folders,
             include_files,
             exclude_files]):
-        keep = []
-        for l in listdir:
-            sub = os.path.join(path, l)
-            if os.path.isdir(sub):
-                if isinstance(include_folders, str):
-                    if not printing.is_match(include_folders, l, regex):
-                        continue
-                if isinstance(exclude_folders, str):
-                    if printing.is_match(exclude_folders, l, regex):
-                        continue
-            else:
-                if isinstance(include_files, str):
-                    if not printing.is_match(include_files, l, regex):
-                        continue
-                if isinstance(exclude_files, str):
-                    if printing.is_match(exclude_files, l, regex):
-                        continue
-            keep.append(l)
-        listdir = keep
+        listdir = printing.filter_item_names(path, listdir,
+                                             include_folders=include_folders,
+                                             exclude_folders=exclude_folders,
+                                             include_files=include_files,
+                                             exclude_files=exclude_files,
+                                             regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
@@ -161,7 +148,7 @@ def seedir(path, style='lines', printout=True, indent=2, uniform='',
            depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False,
            sort_reverse=False, sort_key=None, include_folders=None,
            exclude_folders=None, include_files=None,
-           exclude_files=None, regex=True, **kwargs):
+           exclude_files=None, regex=False, **kwargs):
     if style:
         styleargs = printing.get_styleargs(style)
     styleargs = printing.format_indent(styleargs, indent=indent)
