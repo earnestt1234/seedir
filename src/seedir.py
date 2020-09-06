@@ -56,6 +56,64 @@ def get_base_header(incomplete, extend, space):
             base_header.append(space)
     return "".join(base_header)
 
+def filter_item_names(root, listdir, include_folders=None,
+                      exclude_folders=None, include_files=None,
+                      exclude_files=None, regex=False):
+    keep = []
+    for l in listdir:
+        sub = os.path.join(root, l)
+        if os.path.isdir(sub):
+            if isinstance(include_folders, str):
+                if not printing.is_match(include_folders, l, regex):
+                    continue
+            elif include_folders is not None:
+                try:
+                    if not any(printing.is_match(n, l, regex) for n in include_folders):
+                        continue
+                except:
+                    raise SeedirError('Failure when trying to iterate '
+                                      'over "include_folders" and '
+                                      'match strings')
+            if isinstance(exclude_folders, str):
+                if printing.is_match(exclude_folders, l, regex):
+                    continue
+            elif exclude_folders is not None:
+                try:
+                    if any(printing.is_match(x, l, regex)
+                           for x in exclude_folders):
+                        continue
+                except:
+                    raise SeedirError('Failure when trying to iterate '
+                                      'over "exclude_folders" and '
+                                      'match strings')
+        else:
+            if isinstance(include_files, str):
+                if not printing.is_match(include_files, l, regex):
+                    continue
+            elif include_files is not None:
+                try:
+                    if not any(printing.is_match(n, l, regex)
+                               for n in include_files):
+                        continue
+                except:
+                    raise SeedirError('Failure when trying to iterate '
+                                      'over "include_files" and '
+                                      'match strings')
+            if isinstance(exclude_files, str):
+                if printing.is_match(exclude_files, l, regex):
+                    continue
+            elif exclude_files is not None:
+                try:
+                    if any(printing.is_match(x, l, regex)
+                           for x in exclude_files):
+                        continue
+                except:
+                    raise SeedirError('Failure when trying to iterate '
+                                      'over "exclude_files" and '
+                                      'match strings')
+        keep.append(l)
+    return keep
+
 def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
                                 extend='│ ', space='  ', final='└─',
                                 filestart='', folderstart='', depthlimit=None,
@@ -92,12 +150,12 @@ def recursive_folder_structure(path, depth=0, incomplete=None, split='├─',
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = printing.filter_item_names(path, listdir,
-                                             include_folders=include_folders,
-                                             exclude_folders=exclude_folders,
-                                             include_files=include_files,
-                                             exclude_files=exclude_files,
-                                             regex=regex)
+        listdir = filter_item_names(path, listdir,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
@@ -149,6 +207,10 @@ def seedir(path, style='lines', printout=True, indent=2, uniform='',
            sort_reverse=False, sort_key=None, include_folders=None,
            exclude_folders=None, include_files=None,
            exclude_files=None, regex=False, **kwargs):
+    accept_kwargs = ['extend', 'split', 'space', 'final',
+                     'folderstart', 'filestart']
+    if any(i not in accept_kwargs for i in kwargs.keys()):
+        raise SeedirError('kwargs must be any of {}'.format(accept_kwargs))
     if style:
         styleargs = printing.get_styleargs(style)
     styleargs = printing.format_indent(styleargs, indent=indent)

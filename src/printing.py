@@ -4,6 +4,7 @@ Created on Fri Aug 14 15:01:15 2020
 
 @author: earne
 """
+import copy
 import os
 import re
 
@@ -68,7 +69,7 @@ def get_styleargs(style):
         error_text += 'lines, spaces, arrow, plus, dash, or emoji'
         raise SeedirError(error_text)
     else:
-        return STYLE_DICT[style]
+        return copy.deepcopy(STYLE_DICT[style])
 
 def format_indent(style_dict, indent=2):
     folder = style_dict['folderstart']
@@ -90,61 +91,3 @@ def format_indent(style_dict, indent=2):
     output['folderstart'] = folder
     output['filestart'] = file
     return output
-
-def filter_item_names(root, listdir, include_folders=None,
-                      exclude_folders=None, include_files=None,
-                      exclude_files=None, regex=False):
-    keep = []
-    for l in listdir:
-        sub = os.path.join(root, l)
-        if os.path.isdir(sub):
-            if isinstance(include_folders, str):
-                if not is_match(include_folders, l, regex):
-                    continue
-            elif include_folders is not None:
-                try:
-                    if not any(is_match(n, l, regex) for n in include_folders):
-                        continue
-                except:
-                    raise SeedirError('Failure when trying to iterate '
-                                      'over "include_folders" and '
-                                      'match strings')
-            if isinstance(exclude_folders, str):
-                if is_match(exclude_folders, l, regex):
-                    continue
-            elif exclude_folders is not None:
-                try:
-                    if any(is_match(x, l, regex)
-                           for x in exclude_folders):
-                        continue
-                except:
-                    raise SeedirError('Failure when trying to iterate '
-                                      'over "exclude_folders" and '
-                                      'match strings')
-        else:
-            if isinstance(include_files, str):
-                if not is_match(include_files, l, regex):
-                    continue
-            elif include_files is not None:
-                try:
-                    if not any(is_match(n, l, regex)
-                               for n in include_files):
-                        continue
-                except:
-                    raise SeedirError('Failure when trying to iterate '
-                                      'over "include_files" and '
-                                      'match strings')
-            if isinstance(exclude_files, str):
-                if is_match(exclude_files, l, regex):
-                    continue
-            elif exclude_files is not None:
-                try:
-                    if any(is_match(x, l, regex)
-                           for x in exclude_files):
-                        continue
-                except:
-                    raise SeedirError('Failure when trying to iterate '
-                                      'over "exclude_files" and '
-                                      'match strings')
-        keep.append(l)
-    return keep

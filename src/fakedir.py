@@ -62,6 +62,63 @@ def get_fakebase_header(incomplete, extend, space):
             base_header.append(space)
     return "".join(base_header)
 
+def filter_item_names(listdir, include_folders=None,
+                      exclude_folders=None, include_files=None,
+                      exclude_files=None, regex=False):
+    keep = []
+    for l in listdir:
+        if isinstance(l, FakeDir):
+            if isinstance(include_folders, str):
+                if not printing.is_match(include_folders, l.name, regex):
+                    continue
+            elif include_folders is not None:
+                try:
+                    if not any(printing.is_match(n, l.name, regex) for n in include_folders):
+                        continue
+                except:
+                    raise FakedirError('Failure when trying to iterate '
+                                       'over "include_folders" and '
+                                       'match strings')
+            if isinstance(exclude_folders, str):
+                if printing.is_match(exclude_folders, l.name, regex):
+                    continue
+            elif exclude_folders is not None:
+                try:
+                    if any(printing.is_match(x, l.name, regex)
+                           for x in exclude_folders):
+                        continue
+                except:
+                    raise FakedirError('Failure when trying to iterate '
+                                      'over "exclude_folders" and '
+                                      'match strings')
+        else:
+            if isinstance(include_files, str):
+                if not printing.is_match(include_files, l.name, regex):
+                    continue
+            elif include_files is not None:
+                try:
+                    if not any(printing.is_match(n, l.name, regex)
+                               for n in include_files):
+                        continue
+                except:
+                    raise FakedirError('Failure when trying to iterate '
+                                      'over "include_files" and '
+                                      'match strings')
+            if isinstance(exclude_files, str):
+                if printing.is_match(exclude_files, l.name, regex):
+                    continue
+            elif exclude_files is not None:
+                try:
+                    if any(printing.is_match(x, l.name, regex)
+                           for x in exclude_files):
+                        continue
+                except:
+                    raise FakedirError('Failure when trying to iterate '
+                                      'over "exclude_files" and '
+                                      'match strings')
+        keep.append(l)
+    return keep
+
 def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─',
                                 extend='│ ', space='  ', final='└─',
                                 filestart='', folderstart='', depthlimit=None,
@@ -98,12 +155,12 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = printing.filter_item_names(path, listdir,
-                                             include_folders=include_folders,
-                                             exclude_folders=exclude_folders,
-                                             include_files=include_files,
-                                             exclude_files=exclude_files,
-                                             regex=regex)
+        listdir = filter_item_names(listdir,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
@@ -233,30 +290,31 @@ class FakeDir(FakeItem):
         FakeFile(name, parent=self)
 
     def delete(self, child):
+        target = None
         if type(child) in [FakeDir, FakeFile]:
-            if child not in self._children:
-                raise FakedirError('{} has no child {}'.format(self, child))
-            else:
-                child.parent = None
+            target = child.name
         elif isinstance(child, str):
+            target = child
+        if target is not None:
             try:
-                to_del = next(f for f in self._children if f.name == child)
+                to_del = next(f for f in self._children if f.name == target)
                 to_del.parent = None
             except StopIteration:
-                raise FakedirError('{} has no child with name "{}"'.format(self, child))
+                raise FakedirError('{} has no child with name "{}"'.format(self, target))
         else:
-            for c in child:
+            child_copy = child.copy()
+            for c in child_copy:
+                target = None
                 if type(c) in [FakeDir, FakeFile]:
-                    if c not in self._children:
-                        raise FakedirError('{} has no child {}'.format(self, c))
-                    else:
-                        c.parent = None
+                    target = c.name
                 elif isinstance(c, str):
+                    target = c
+                if target is not None:
                     try:
-                        to_del = next(f for f in self._children if f.name == c)
+                        to_del = next(f for f in self._children if f.name == target)
                         to_del.parent = None
                     except StopIteration:
-                        raise FakedirError('{} has no child with name "{}"'.format(self, c))
+                        raise FakedirError('{} has no child with name "{}"'.format(self, target))
 
     def child_names(self):
         return [c.name for c in self._children]
@@ -280,6 +338,10 @@ class FakeDir(FakeItem):
                sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, **kwargs):
+        accept_kwargs = ['extend', 'split', 'space', 'final',
+                     'folderstart', 'filestart']
+        if any(i not in accept_kwargs for i in kwargs.keys()):
+            raise FakedirError('kwargs must be any of {}'.format(accept_kwargs))
         if style:
             styleargs = printing.get_styleargs(style)
         styleargs = printing.format_indent(styleargs, indent=indent)
@@ -309,6 +371,20 @@ class FakeDir(FakeItem):
             print(rfs)
         else:
             return rfs
+
+    def trim(self, depthlimit):
+        depthlimit = int(depthlimit)
+        if depthlimit < 0:
+            raise FakedirError('depthlimit must be non-negative int')
+        depthlimit += self.depth
+        def trim_apply(f, depthlimit):
+            if depthlimit is not None and f.depth == depthlimit:
+                if isinstance(f, FakeDir):
+                    f.delete(f.listdir())
+        if depthlimit == self.depth:
+            self.delete(self.listdir())
+        else:
+            self.walk_apply(trim_apply, depthlimit=depthlimit)
 
 def get_random_int(collection, seed=None):
     try:
