@@ -1,0 +1,14 @@
+#testing script
+seedir/seedir_testing.py
+seedirpackagetesting.py
+
+# Compiled python modules.
+*.pyc
+seedir/__pycache__
+
+# Setuptools distribution folder.
+/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+

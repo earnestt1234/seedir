@@ -11,9 +11,9 @@ import re
 import natsort
 import random
 
-from errors import FakedirError
-import printing
-from printing import words
+from seedir.errors import FakedirError
+import seedir.printing as printing
+from seedir.printing import words
 
 def count_fakefiles(objs):
     files = sum([isinstance(p, FakeFile) for p in objs])
@@ -223,6 +223,8 @@ class FakeItem:
         if other:
             if not isinstance(other, FakeDir):
                 raise FakedirError('other parameter must be instance of FakeDir')
+            if self.name in other.get_child_names():
+                raise FakedirError('FakeDirs must have unique file/folder names')
             other._children.append(self)
         if self.parent is not None:
             self.parent._children.remove(self)
@@ -316,22 +318,25 @@ class FakeDir(FakeItem):
                     except StopIteration:
                         raise FakedirError('{} has no child with name "{}"'.format(self, target))
 
-    def child_names(self):
+    def get_child_names(self):
         return [c.name for c in self._children]
 
     def listdir(self):
         return self._children
 
-    def walk_apply(self, foo, *args, **kwargs):
-        for f in self._children:
-            foo(f, *args, **kwargs)
+    def realize(self, path=None):
+        def create(f, root):
+            fpath = f.get_path()
+            joined = os.path.join(root, fpath)
             if isinstance(f, FakeDir):
-                f.walk_apply(foo, *args, **kwargs)
-
-    def set_child_depths(self):
-        def apply_setdepth(FD):
-            FD.set_depth()
-        self.walk_apply(apply_setdepth)
+                os.mkdir(joined)
+            elif isinstance(f, FakeFile):
+                with open(joined, 'w') as file:
+                    pass
+        if path is None:
+            path = os.getcwd()
+        os.mkdir(os.path.join(path, self.name))
+        self.walk_apply(create, root=path)
 
     def seedir(self, style='lines', printout=True, indent=2, uniform='',
                depthlimit=None, itemlimit=None, beyond=None, first=None,
@@ -372,6 +377,11 @@ class FakeDir(FakeItem):
         else:
             return rfs
 
+    def set_child_depths(self):
+            def apply_setdepth(FD):
+                FD.set_depth()
+            self.walk_apply(apply_setdepth)
+
     def trim(self, depthlimit):
         depthlimit = int(depthlimit)
         if depthlimit < 0:
@@ -385,6 +395,13 @@ class FakeDir(FakeItem):
             self.delete(self.listdir())
         else:
             self.walk_apply(trim_apply, depthlimit=depthlimit)
+
+    def walk_apply(self, foo, *args, **kwargs):
+        for f in self._children:
+            foo(f, *args, **kwargs)
+            if isinstance(f, FakeDir):
+                f.walk_apply(foo, *args, **kwargs)
+
 
 def get_random_int(collection, seed=None):
     try:

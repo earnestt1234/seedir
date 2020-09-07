@@ -10,7 +10,7 @@ import re
 
 import emoji
 
-from errors import SeedirError
+from seedir.errors import SeedirError
 
 FILE = emoji.emojize(':page_facing_up:' + ' ')
 FOLDER = emoji.emojize(':file_folder:' + ' ')
@@ -54,7 +54,9 @@ STYLE_DICT = {
               'filestart':FILE}
     }
 
-wordfile = open('words.txt', 'r')
+filepath = os.path.dirname(os.path.abspath(__file__))
+wordpath = os.path.join(filepath, 'words.txt')
+wordfile = open(wordpath, 'r')
 words = [line.strip() for line in wordfile.readlines()]
 
 def is_match(pattern, string, regex=True):
