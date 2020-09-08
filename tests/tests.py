@@ -63,8 +63,8 @@ class PrintSomeDirs(unittest.TestCase):
           '--------------------'
           '\n'.format(testdir))
     def test_a_print_userprofile(self):
-        print('Basic seedir (depthlimit=2):\n')
-        sd.seedir(testdir, depthlimit=2)
+        print('Basic seedir (depthlimit=2, itemlimit=10):\n')
+        sd.seedir(testdir, depthlimit=2, itemlimit=10)
 
     def test_b_styles(self):
         print('\nDifferent Styles (depthlimit=1, itemlimit=5):')
@@ -72,13 +72,27 @@ class PrintSomeDirs(unittest.TestCase):
             print('\n{}:\n'.format(style))
             sd.seedir(testdir, style=style, depthlimit=1, itemlimit=5)
 
-    def test_c_indent(self):
+    def test_c_custom_styles(self):
+        print('\nCustom Styles (depthlimit=1, itemlimit=5):')
+        sd.seedir(testdir, depthlimit=1, itemlimit=5, space='>>',
+                  split='>>', extend='II', final='->',
+                  folderstart='Folder: ', filestart='File: ')
+
+    def test_d_indent(self):
         print('\nDifferent Indents (depthlimit=1, itemlimit=5):')
         for i in list(range(3)) + [8]:
             print('\nindent={}:\n'.format(str(i)))
             sd.seedir(testdir, depthlimit=1, itemlimit=5, indent=i)
 
-class TestFakeDirFromString(unittest.TestCase):
+    def test_e_beyond(self):
+        print('\nItems Beyond Limit (depthlimit=1, itemlimit=1, beyond="content")')
+        sd.seedir(testdir, itemlimit=1, beyond='content')
+
+    def test_improper_kwargs(self):
+        with self.assertRaises(sd.SeedirError):
+            sd.seedir(testdir, spacing=False)
+
+class TestFakeDirReading(unittest.TestCase):
     def test_read_string(self):
         x = sd.fakedir_fromstring(example)
         self.assertTrue(isinstance(x, sd.FakeDir))

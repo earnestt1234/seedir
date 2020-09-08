@@ -14,6 +14,7 @@ import random
 from seedir.errors import FakedirError
 import seedir.printing as printing
 from seedir.printing import words
+from seedir.seedir import sort_dir
 
 def count_fakefiles(objs):
     files = sum([isinstance(p, FakeFile) for p in objs])
@@ -165,22 +166,25 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
     for i, f in enumerate(listdir):
-        base_header = get_fakebase_header(incomplete, extend, space)
-        if i == len(listdir) - 1:
-            branch = final
-            incomplete.remove(depth-1)
-            incomplete = [n for n in incomplete if n < depth]
-        elif itemlimit and i == itemlimit - 1 and beyond is None:
-            branch = final
-        else:
-            branch = split
-        header = base_header + branch
         if i == itemlimit:
             remaining = [rem for rem in listdir[i:]]
             if beyond is not None:
                 extra = beyond_fakedepth_str(beyond, remaining)
                 output += base_header + final + extra + '\n'
             return output
+        base_header = get_fakebase_header(incomplete, extend, space)
+        if i == len(listdir) - 1 or (itemlimit is not None and
+                                     i == itemlimit - 1 and
+                                     beyond is None):
+            incomplete.remove(depth-1)
+            incomplete = [n for n in incomplete if n < depth]
+        if itemlimit and i == itemlimit - 1 and beyond is None:
+            branch = final
+        elif i == len(listdir) - 1:
+            branch = final
+        else:
+            branch = split
+        header = base_header + branch
         if isinstance(f, FakeDir):
             output += header + folderstart + f.name + os.sep +'\n'
             output += recursive_fakedir_structure(f, depth=depth,
@@ -448,6 +452,8 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed
     return top
 
 def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
+                        itemlimit=None, first=None, sort=False,
+                        sort_reverse=False, sort_key=None,
                         include_folders=None, exclude_folders=None,
                         include_files=None, exclude_files=None,
                         regex=False):
@@ -455,6 +461,9 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
         return
     depth +=1
     listdir = os.listdir(path)
+    if sort or first is not None:
+        listdir = sort_dir(path, listdir, first=first,
+                           sort_reverse=sort_reverse, sort_key=sort_key)
     if any(arg is not None for arg in [
             include_folders,
             exclude_folders,
@@ -466,12 +475,15 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
                                              include_files=include_files,
                                              exclude_files=exclude_files,
                                              regex=regex)
-    for f in listdir:
+    for i, f in enumerate(listdir):
+        if i == itemlimit:
+            break
         sub = os.path.join(path, f)
         if os.path.isdir(sub):
             new = FakeDir(f, parent=parent)
             recursive_add_fakes(path=sub, parent=new, depth=depth,
                                 depthlimit=depthlimit,
+                                itemlimit=itemlimit,
                                 include_folders=include_folders,
                                 exclude_folders=exclude_folders,
                                 include_files=include_files,
@@ -479,13 +491,19 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
         else:
             new = FakeFile(f, parent=parent)
 
-def fakedir(path, depthlimit=None, itemlimit=None, include_folders=None,
-            exclude_folders=None, include_files=None, exclude_files=None,
-            regex=True):
+def fakedir(path, depthlimit=None, itemlimit=None, first=None,
+            sort=False, sort_reverse=False, sort_key=None,
+            include_folders=None, exclude_folders=None, include_files=None,
+            exclude_files=None, regex=True):
     if not os.path.isdir(path):
         raise FakedirError('path must be a directory')
     output = FakeDir(os.path.basename(path))
     recursive_add_fakes(path, parent=output, depthlimit=depthlimit,
+                        itemlimit=itemlimit,
+                        first=first,
+                        sort=sort,
+                        sort_reverse=sort_reverse,
+                        sort_key=sort_key,
                         include_folders=include_folders,
                         exclude_folders=exclude_folders,
                         include_files=include_files,
