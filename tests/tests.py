@@ -23,6 +23,7 @@ import os
 import unittest
 
 import seedir as sd
+from seedir.seedir import get_base_header
 
 example = """mypkg/
     __init__.py
@@ -91,6 +92,46 @@ class PrintSomeDirs(unittest.TestCase):
     def test_improper_kwargs(self):
         with self.assertRaises(sd.SeedirError):
             sd.seedir(testdir, spacing=False)
+
+class TestSeedirStringFormatting(unittest.TestCase):
+    def test_get_base_header(self):
+        a = '| '
+        b = '  '
+        self.assertEqual('', get_base_header([0], a, b))
+        self.assertEqual('| |   ', get_base_header([0, 1, 3], a, b))
+        with self.assertRaises(ValueError):
+            get_base_header([], a, b)
+
+    def test_STYLE_DICT_members(self):
+        keys = set(sd.STYLE_DICT.keys())
+        self.assertEqual(keys, set(['lines', 'dash', 'spaces',
+                                    'arrow', 'plus', 'emoji']))
+
+    def test_get_style_args_all_accessible(self):
+        styles = ['lines', 'dash', 'spaces',
+                  'arrow', 'plus', 'emoji']
+        for s in styles:
+            d = sd.get_styleargs(s)
+            self.assertTrue(isinstance(d, dict))
+        with self.assertRaises(sd.SeedirError):
+            d = sd.get_styleargs('missing_style')
+
+    def test_get_style_args_deepcopy(self):
+        x = sd.STYLE_DICT['lines']
+        y = sd.get_styleargs('lines')
+        self.assertTrue(x is not y)
+
+    def test_format_indent(self):
+        d = sd.get_styleargs('lines')
+        f1 = sd.format_indent(d, indent=4)
+        f2 = sd.format_indent(d, indent=1)
+        chars = ['extend', 'space', 'split', 'final']
+        self.assertTrue(all(len(f1[c])==4 for c in chars))
+        self.assertTrue(all(len(f2[c])==1 for c in chars))
+
+    def test_words_list(self):
+        self.assertTrue(sd.words[0] == 'a')
+        self.assertTrue(len(sd.words) == 25487)
 
 class TestFakeDirReading(unittest.TestCase):
     def test_read_string(self):
