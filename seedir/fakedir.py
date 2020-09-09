@@ -408,13 +408,10 @@ class FakeDir(FakeItem):
 
 
 def get_random_int(collection, seed=None):
-    try:
-        r = random.Random(seed).choice(collection)
-        if not isinstance(r, int):
-            raise TypeError('non int found')
-        return r
-    except Exception as e:
-        raise e
+    r = random.Random(seed).choice(collection)
+    if not isinstance(r, int):
+        raise TypeError('non int found')
+    return r
 
 def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
     random.seed(seed)
