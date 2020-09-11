@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Sep  7 11:53:42 2020
+seedir: Python package for creating and reading folder tree diagrams
 
-@author: earne
+@author: Tom Earnest
+GitHub: https://github.com/earnestt1234/seedir
 """
 
+#imports for package namespace
 from .seedir import (recursive_folder_structure,
-                     seedir,
-                     sort_dir)
+                     seedir)
+
 from .fakedir import (FakeDir,
                       FakeFile,
                       FakeItem,
@@ -18,7 +20,9 @@ from .fakedir import (FakeDir,
                       recursive_add_fakes,
                       recursive_fakedir_structure,
                       sort_fakedir)
+
 from .errors import SeedirError, FakedirError
+
 from .printing import (format_indent,
                        get_styleargs,
                        is_match,

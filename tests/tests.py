@@ -23,7 +23,10 @@ import os
 import unittest
 
 import seedir as sd
-from seedir.seedir import get_base_header
+from seedir.seedir import get_header
+from seedir.fakedir import (count_fakedirs,
+                            count_fakefiles,
+                            sort_fakedir)
 
 example = """mypkg/
     __init__.py
@@ -94,13 +97,14 @@ class PrintSomeDirs(unittest.TestCase):
             sd.seedir(testdir, spacing=False)
 
 class TestSeedirStringFormatting(unittest.TestCase):
-    def test_get_base_header(self):
+    def test_get_header(self):
         a = '| '
         b = '  '
-        self.assertEqual('', get_base_header([0], a, b))
-        self.assertEqual('| |   ', get_base_header([0, 1, 3], a, b))
+        c = '|-'
+        self.assertEqual('|-', get_header([0], a, b, c))
+        self.assertEqual('| |   |-', get_header([0, 1, 3], a, b, c))
         with self.assertRaises(ValueError):
-            get_base_header([], a, b)
+            get_header([], a, b, c)
 
     def test_STYLE_DICT_members(self):
         keys = set(sd.STYLE_DICT.keys())
@@ -144,6 +148,76 @@ class TestFakeDirReading(unittest.TestCase):
         z = sd.fakedir_fromstring(example_with_comments, parse_comments=False)
         self.assertEqual(x.get_child_names(), y.get_child_names())
         self.assertNotEqual(x.get_child_names(), z.get_child_names())
+
+class TestFakeDir(unittest.TestCase):
+    def test_count_fake_items(self):
+        x = sd.fakedir_fromstring(example)
+        self.assertEqual(count_fakedirs(x.listdir()), 1)
+        self.assertEqual(count_fakefiles(x.listdir()), 3)
+
+    def test_sort_fakedir(self):
+        x = sd.fakedir_fromstring(example).listdir()
+        sort = sort_fakedir(x, sort_reverse=True, sort_key=lambda x : x[1])
+        sort = [f.name for f in sort]
+        correct = ['app.py', 'view.py', 'test', '__init__.py']
+        self.assertEqual(sort, correct)
+
+    def test_exclude_files_and_reread(self):
+        x = sd.fakedir_fromstring(example)
+        y = x.seedir(printout=False, exclude_files='.*\..*', regex=True)
+        z = sd.fakedir_fromstring(y)
+        self.assertEqual(set(z.get_child_names()), set(['test']))
+
+    def test_include_files_and_reread(self):
+        x = sd.fakedir_fromstring(example)
+        y = x.seedir(printout=False, include_files=['app.py', 'view.py'],
+                     regex=False)
+        z = sd.fakedir_fromstring(y)
+        self.assertEqual(set(z.get_child_names()),
+                         set(['app.py', 'view.py', 'test', ]))
+
+    def test_delete_string_names(self):
+        x = sd.randomdir()
+        x.delete(x.get_child_names())
+        self.assertTrue(len(x.listdir()) == 0)
+
+    def test_delete_objects(self):
+        x = sd.randomdir()
+        x.delete(x.listdir())
+        self.assertTrue(len(x.listdir()) == 0)
+
+    def test_set_parent(self):
+        x = sd.fakedir_fromstring(example)
+        x['test/test_app.py'].parent = x
+        self.assertTrue('test_app.py' in x.get_child_names())
+
+    def test_walk_apply(self):
+        def add_0(f):
+            f.name += ' 0'
+        x = sd.fakedir_fromstring(example)
+        x.walk_apply(add_0)
+        for f in x.get_child_names():
+            self.assertEqual(f[-1], '0')
+
+    def test_depth_setting(self):
+        x = sd.fakedir_fromstring(example)
+        x['test'].create_folder('A')
+        x['test/A'].create_folder('B')
+        x['test/A/B'].create_file('boris.txt')
+        self.assertEqual(x['test/A/B/boris.txt'].depth, 4)
+        x['test/A/B/boris.txt'].parent = x
+        self.assertEqual(x['boris.txt'].depth, 1)
+
+    def test_randomdir_seed(self):
+        x = sd.randomdir(seed=4.21)
+        y = sd.randomdir(seed=4.21)
+        self.assertEqual(x.get_child_names(), y.get_child_names())
+
+    def test_populate_fakedir(self):
+        x = sd.FakeDir('BORIS')
+        self.assertFalse(x.get_child_names())
+        sd.populate(x)
+        self.assertTrue(x.get_child_names())
 
 if __name__ == '__main__':
     unittest.main()
