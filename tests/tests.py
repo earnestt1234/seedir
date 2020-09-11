@@ -23,7 +23,7 @@ import os
 import unittest
 
 import seedir as sd
-from seedir.seedir import get_header
+from seedir.seedir import get_base_header
 from seedir.fakedir import (count_fakedirs,
                             count_fakefiles,
                             sort_fakedir)
@@ -97,14 +97,13 @@ class PrintSomeDirs(unittest.TestCase):
             sd.seedir(testdir, spacing=False)
 
 class TestSeedirStringFormatting(unittest.TestCase):
-    def test_get_header(self):
+    def test_get_base_header(self):
         a = '| '
         b = '  '
-        c = '|-'
-        self.assertEqual('|-', get_header([0], a, b, c))
-        self.assertEqual('| |   |-', get_header([0, 1, 3], a, b, c))
+        self.assertEqual('', get_base_header([0], a, b))
+        self.assertEqual('| |   ', get_base_header([0, 1, 3], a, b))
         with self.assertRaises(ValueError):
-            get_header([], a, b, c)
+            get_base_header([], a, b)
 
     def test_STYLE_DICT_members(self):
         keys = set(sd.STYLE_DICT.keys())
