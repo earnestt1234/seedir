@@ -469,17 +469,17 @@ def seedir(path, style='lines', printout=True, indent=2, uniform=None,
         >>> sd.seedir(c)
 
         doc/
-        ├── _static/
-        │   ├── embedded/
-        │   │   ├── deep_file
-        │   │   └── very/
-        │   │       └── deep/
-        │   │           └── folder/
-        │   │               └── very_deep_file
-        │   └── less_deep_file
-        ├── about.rst
-        ├── conf.py
-        └── index.rst
+        ├─_static/
+        │ ├─embedded/
+        │ │ ├─deep_file
+        │ │ └─very/
+        │ │   └─deep/
+        │ │     └─folder/
+        │ │       └─very_deep_file
+        │ └─less_deep_file
+        ├─about.rst
+        ├─conf.py
+        └─index.rst
 
     Select different styles for the tree:
 
@@ -537,11 +537,16 @@ def seedir(path, style='lines', printout=True, indent=2, uniform=None,
     Parameters
     ----------
     path : str
-        System path of a folder.
-    style : str, optional
-        . The default is 'lines'.
-    printout : TYPE, optional
-        DESCRIPTION. The default is True.
+        System path of a directory.
+    style : 'lines', 'dash', 'arrow', 'spaces', 'plus', or 'emoji', optional
+        Style to use. The default is 'lines'.  A style determines the set
+        of characters ("tokens") used to represent the base structure of
+        the directory (e.g. which items belong to which folders, when items
+        are the last member of a folder, etc.).  The actual tokens being used
+        by each style can be viewed with seedir.get_styleargs().
+    printout : bool, optional
+        Print the folder structure in the console. The default is True.  When
+        false, the folder diagram is returned as a string.
     indent : TYPE, optional
         DESCRIPTION. The default is 2.
     uniform : TYPE, optional
