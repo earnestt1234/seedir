@@ -390,12 +390,12 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = printing.filter_item_names(path, listdir,
-                                             include_folders=include_folders,
-                                             exclude_folders=exclude_folders,
-                                             include_files=include_files,
-                                             exclude_files=exclude_files,
-                                             regex=regex)
+        listdir = filter_item_names(path, listdir,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
