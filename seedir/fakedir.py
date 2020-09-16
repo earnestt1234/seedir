@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Aug 14 13:13:02 2020
+Code for creating and editing "fake directories" within the seedir package;
+i.e. coded representations of file trees.  The fakedir module can be used
+to make example folder tree diagrams, read folder tree strings, or convert
+abstract folder trees into real directories on a computer.  Many functions
+and methods here repesent parallels to counterparts (for real directories)
+in the seedir.seedir module.
 
 @author: earne
 """
@@ -17,14 +22,70 @@ from seedir.printing import words
 from seedir.seedir import sort_dir
 
 def count_fakefiles(objs):
+    '''
+    Count the number of FakeFile objections in a collection.
+
+    Parameters
+    ----------
+    objs : list-like
+        Collection of objects (typically FakeDir and FakeFile).
+
+    Returns
+    -------
+    files : int
+        Count of FakeFile objects.
+
+    '''
     files = sum([isinstance(p, FakeFile) for p in objs])
     return files
 
 def count_fakedirs(objs):
+    '''
+    Count the number of FakeDir objections in a collection.
+
+    Parameters
+    ----------
+    objs : list-like
+        Collection of objects (typically FakeDir and FakeFile).
+
+    Returns
+    -------
+    folders : int
+        Count of FakeDir objects.
+
+    '''
     folders = sum([isinstance(p, FakeDir) for p in objs])
     return folders
 
 def beyond_fakedepth_str(beyond, objs=None):
+    '''
+    Generates the text for seedir.FakeDir.seedir() when using the 'beyond'
+    parameter and ther are more items than the itemlimit or contents
+    beyond the depthlimit.
+
+    Parameters
+    ----------
+    beyond : str
+        Style of beyond string to generate.  Options are:
+            - 'ellipsis' ('...')
+            - 'content' or 'contents' (the number of files and folders beyond)
+            - a string starting with '_' (everything after the leading
+              underscore will be returned)
+    objs : collection of FakeDir and FakeFile objects, optional
+        Objects beyond the limit, used when the 'beyond'
+        argeument is 'content' or 'contents'. The default is None.
+
+    Raises
+    ------
+    FakedirError
+        Raised when the 'beyond' argument is not recognized.
+
+    Returns
+    -------
+    str
+        String indicating what lies beyond
+
+    '''
     if beyond == 'ellipsis':
         return '...'
     elif beyond in ['contents','content']:
@@ -39,6 +100,35 @@ def beyond_fakedepth_str(beyond, objs=None):
         raise FakedirError(s1 + s2)
 
 def sort_fakedir(objs, first=None, sort_reverse=False, sort_key=None):
+    '''
+    Sorting function used by seedir.FakeDir.seedir() to sort contents when
+    producing folder diagrams.
+
+    Parameters
+    ----------
+    objs : list-like
+        Collection of FakeDir or FakeFile objects to sort.
+    first : 'files' or 'folders', optional
+        Sort either (fake) files or folders first. The default is None.
+    sort_reverse : bool, optional
+        Reverse the sort applied. The default is False.
+    sort_key : function, optional
+        Function to apply to sort the objs by their name attribute (i.e. the
+        folder or file name).  The function should take a string as a
+        parameter.
+
+    Raises
+    ------
+    SeedirError
+        Fails when the 'first' parameter is used and no root directory
+        is provided.
+
+    Returns
+    -------
+    list
+        Sorted input as a list.
+
+    '''
     if sort_key is None:
             sort_key = lambda f : f.name
     else:

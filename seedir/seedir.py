@@ -547,46 +547,86 @@ def seedir(path, style='lines', printout=True, indent=2, uniform=None,
     printout : bool, optional
         Print the folder structure in the console. The default is True.  When
         false, the folder diagram is returned as a string.
-    indent : TYPE, optional
-        DESCRIPTION. The default is 2.
-    uniform : TYPE, optional
-        DESCRIPTION. The default is ''.
-    depthlimit : TYPE, optional
-        DESCRIPTION. The default is None.
-    itemlimit : TYPE, optional
-        DESCRIPTION. The default is None.
-    beyond : TYPE, optional
-        DESCRIPTION. The default is None.
-    first : TYPE, optional
-        DESCRIPTION. The default is None.
-    sort : TYPE, optional
-        DESCRIPTION. The default is False.
-    sort_reverse : TYPE, optional
-        DESCRIPTION. The default is False.
-    sort_key : TYPE, optional
-        DESCRIPTION. The default is None.
-    include_folders : TYPE, optional
-        DESCRIPTION. The default is None.
-    exclude_folders : TYPE, optional
-        DESCRIPTION. The default is None.
-    include_files : TYPE, optional
-        DESCRIPTION. The default is None.
-    exclude_files : TYPE, optional
-        DESCRIPTION. The default is None.
-    regex : TYPE, optional
-        DESCRIPTION. The default is False.
-    **kwargs : TYPE
-        DESCRIPTION.
+    indent : int (>= 0), optional
+        Number of spaces separating items from their parent folder.
+        The default is 2.
+    uniform : str or None, optional
+        Characters to use for all tokens when creating the tree diagram.
+        The default is None.  When not None, the extend, space, split, and
+        final tokens are replaced with uniform (the 'spaces' style is
+        essentially uniform = '  ').
+    anystart : str or None, optional
+        Characters to append before any item (i.e. folder or file).  The
+        default is None.  Specific starts for folders and files can be
+        specified (see **kwargs).
+    depthlimit : int or None, optional
+        Limit the depth of folders to traverse.  Folders at the depthlimit are
+        included, but their contents are not shown (with the exception of the
+        beyond parameter being specified).  The default is None, which can
+        cause exceptionally long runtimes for deep or extensive directories.
+    itemlimit : int or None, optional
+        Limit the number of items in a directory to show.  Items beyond the
+        itemlimit can be expressed using the beyond parameter.  The files and
+        folders left out are determined by the sorting parameters of seedir()
+        (sort, sort_reverse, sort_key).  The default is None.
+    beyond : str ('ellipsis', 'cotent' or a string starting with an
+             underscore) or None, optional
+        String to indicate directory contents beyond the itemlimit or the
+        depthlimit.  The default is None.  Options are:
+            - 'ellipsis' ('...')
+            - 'content' or 'contents' (the number of files and folders beyond)
+            - a string starting with '_' (everything after the leading
+              underscore will be returned)
+    first : 'files', 'folders', or None, optional
+        Sort the directory so that either files or folders appear first.
+        The default is None.
+    sort : bool, optional
+        Sort the directory. With no other specifications, the sort will be a
+        simple alphabetical sort of the item names, but this can be altered
+        with the first, sort_reverse, and sort_key parameters.
+        The default is False.
+    sort_reverse : bool, optional
+        Reverse the sorting determined by sort or sort_key.
+        The default is False.
+    sort_key : function, optional
+        Key to use for sorting file or folder names, akin to the key parameter
+        of the builtin sorted() or list.sort(). The function should take a
+        string as an argument. The default is None.
+    include_folders, exclude_folders,
+    include_files, exclude_files : str, list-like, or None, optional
+        Folder / file names to include or exclude. The default is None.
+    regex : bool, optional
+        Interpret the strings of include/exclude file/folder arguments as
+        regular expressions. The default is False.
+    **kwargs : str
+        Specific tokens to use for creating the file tree diagram.  The tokens
+        use by each builtin style can be seen with sd.get_styleargs().  Valid
+        options are (with the example token for the 'lines' style):
+            - extend ('│ '): characters to show the extension of a directory
+            while its children are traversed
+            - space ('  '): character to provide the correct indentation
+            of an item when some of its parent / grandparent directories
+            are completely traversed
+            - split ('├─'): characters to show a folder or file within
+            a directory (with more items following)
+            - final ('└─'): characters to show a folder or file within
+            a directory (with no more items following)
+            - folderstart (''): characters to append before any folder
+            - filestart (''): characters to append beffore any file
+        All default style tokens are 2 character strings.  Style tokens
+        from **kwargs are not affected by the indent parameter.  The uniform
+        and anystart parameters can be used to affect multiple style tokens.
 
     Raises
     ------
     SeedirError
-        DESCRIPTION.
+        Improperly formatted arguments.
 
     Returns
     -------
-    rfs : TYPE
-        DESCRIPTION.
+    rfs (str) or None
+        The tree diagram (as a string) or None if prinout = True, in which
+        case the tree diagram is printed in the console.
 
     '''
     accept_kwargs = ['extend', 'split', 'space', 'final',
