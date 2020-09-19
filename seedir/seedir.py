@@ -145,7 +145,7 @@ def beyond_depth_str(beyond, paths=None):
 
 def get_base_header(incomplete, extend, space):
     '''
-    For seedir.seedir(), generate the combination of extend, space, and
+    For seedir.seedir(), generate the combination of extend and space
     tokens to prepend to file names when generating folder diagrams.
     See the documentation for seedir.seedir() for an
     explanation of these tokens.
