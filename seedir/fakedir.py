@@ -564,13 +564,15 @@ class FakeDir(FakeItem):
         super().__init__(name, parent)
 
     def __str__(self):
+        '''String conversion of FakeDir'''
         return 'FakeDir({})'.format(self.get_path())
 
     def __repr__(self):
+        '''Representation of FakeDir (shown as a folder diagram).'''
         return self.seedir(printout=False)
 
     def __getitem__(self, path):
-        if type(path) not in [int, str]:
+        if not isinstance(path, str):
             raise FakedirError("Can only index FakeDir with int or str, "
                                "not {}".format(type(path)))
         paths = path.split('/')
@@ -585,12 +587,33 @@ class FakeDir(FakeItem):
         return current
 
     def create_folder(self, name):
+        '''Insert a new folder with name "name".'''
         FakeDir(name, parent=self)
 
     def create_file(self, name):
+        '''Insert a new file with name "name".'''
         FakeFile(name, parent=self)
 
     def delete(self, child):
+        '''
+        Delete items from a FakeDir
+
+        Parameters
+        ----------
+        child : str, FakeDir, FakeFile or list-like
+            Child or children to remove.  Can be a string name, actual
+            FakeDir / FakeFile object, or a collection of names or items.
+
+        Raises
+        ------
+        FakedirError
+            No item found to delete.
+
+        Returns
+        -------
+        None.
+
+        '''
         target = None
         if type(child) in [FakeDir, FakeFile]:
             target = child.name
@@ -612,18 +635,39 @@ class FakeDir(FakeItem):
                     target = c
                 if target is not None:
                     try:
-                        to_del = next(f for f in self._children if f.name == target)
+                        to_del = next(f for f in self._children if
+                                      f.name == target)
                         to_del.parent = None
                     except StopIteration:
                         raise FakedirError('{} has no child with name "{}"'.format(self, target))
 
     def get_child_names(self):
+        '''Return a list of child names.'''
         return [c.name for c in self._children]
 
     def listdir(self):
+        '''Return the list of FakeFile and FakeDir objects that
+        are children of self (like os.listdir).'''
         return self._children
 
     def realize(self, path=None):
+        '''
+        Convert a fake file tree into a real one by creating a folder at a
+        given path, and populating it with files and sub-directories.
+
+        All files will be empty.
+
+        Parameters
+        ----------
+        path : str, optional
+            System path where to create the folder. The default is None,
+            in which the current working directory is used.
+
+        Returns
+        -------
+        None.
+
+        '''
         def create(f, root):
             fpath = f.get_path()
             joined = os.path.join(root, fpath)
@@ -642,8 +686,106 @@ class FakeDir(FakeItem):
                first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash='/', **kwargs):
+        '''
+
+        Create a folder tree diagram for self.  FakeDir version of
+        seedir.seedir() (see its documentation for examples).
+
+        Parameters
+        ----------
+        style : 'lines', 'dash', 'arrow', 'spaces', 'plus', or 'emoji', optional
+            Style to use. The default is 'lines'.  A style determines the set
+            of characters ("tokens") used to represent the base structure of
+            the directory (e.g. which items belong to which folders, when items
+            are the last member of a folder, etc.).  The actual tokens being used
+            by each style can be viewed with seedir.get_styleargs().
+        printout : bool, optional
+            Print the folder structure in the console. The default is True.  When
+            false, the folder diagram is returned as a string.
+        indent : int (>= 0), optional
+            Number of spaces separating items from their parent folder.
+            The default is 2.
+        uniform : str or None, optional
+            Characters to use for all tokens when creating the tree diagram.
+            The default is None.  When not None, the extend, space, split, and
+            final tokens are replaced with uniform (the 'spaces' style is
+            essentially uniform = '  ').
+        anystart : str or None, optional
+            Characters to append before any item (i.e. folder or file).  The
+            default is None.  Specific starts for folders and files can be
+            specified (see **kwargs).
+        depthlimit : int or None, optional
+            Limit the depth of folders to traverse.  Folders at the depthlimit are
+            included, but their contents are not shown (with the exception of the
+            beyond parameter being specified).  The default is None, which can
+            cause exceptionally long runtimes for deep or extensive directories.
+        itemlimit : int or None, optional
+            Limit the number of items in a directory to show.  Items beyond the
+            itemlimit can be expressed using the beyond parameter.  The files and
+            folders left out are determined by the sorting parameters of seedir()
+            (sort, sort_reverse, sort_key).  The default is None.
+        beyond : str ('ellipsis', 'cotent' or a string starting with an
+                 underscore) or None, optional
+            String to indicate directory contents beyond the itemlimit or the
+            depthlimit.  The default is None.  Options are:
+                - 'ellipsis' ('...')
+                - 'content' or 'contents' (the number of files and folders beyond)
+                - a string starting with '_' (everything after the leading
+                  underscore will be returned)
+        first : 'files', 'folders', or None, optional
+            Sort the directory so that either files or folders appear first.
+            The default is None.
+        sort : bool, optional
+            Sort the directory. With no other specifications, the sort will be a
+            simple alphabetical sort of the item names, but this can be altered
+            with the first, sort_reverse, and sort_key parameters.
+            The default is False.
+        sort_reverse : bool, optional
+            Reverse the sorting determined by sort or sort_key.
+            The default is False.
+        sort_key : function, optional
+            Key to use for sorting file or folder names, akin to the key parameter
+            of the builtin sorted() or list.sort(). The function should take a
+            string as an argument. The default is None.
+        include_folders, exclude_folders,
+        include_files, exclude_files : str, list-like, or None, optional
+            Folder / file names to include or exclude. The default is None.
+        regex : bool, optional
+            Interpret the strings of include/exclude file/folder arguments as
+            regular expressions. The default is False.
+        **kwargs : str
+            Specific tokens to use for creating the file tree diagram.  The tokens
+            use by each builtin style can be seen with sd.get_styleargs().  Valid
+            options are (with the example token for the 'lines' style):
+                - extend ('│ '): characters to show the extension of a directory
+                while its children are traversed
+                - space ('  '): character to provide the correct indentation
+                of an item when some of its parent / grandparent directories
+                are completely traversed
+                - split ('├─'): characters to show a folder or file within
+                a directory (with more items following)
+                - final ('└─'): characters to show a folder or file within
+                a directory (with no more items following)
+                - folderstart (''): characters to append before any folder
+                - filestart (''): characters to append beffore any file
+            All default style tokens are 2 character strings.  Style tokens
+            from **kwargs are not affected by the indent parameter.  The uniform
+            and anystart parameters can be used to affect multiple style tokens.
+
+        Raises
+        ------
+        SeedirError
+            Improperly formatted arguments.
+
+        Returns
+        -------
+        rfs (str) or None
+            The tree diagram (as a string) or None if prinout = True, in which
+            case the tree diagram is printed in the console.
+
+        '''
         accept_kwargs = ['extend', 'split', 'space', 'final',
-                     'folderstart', 'filestart']
+                         'folderstart', 'filestart']
         if any(i not in accept_kwargs for i in kwargs.keys()):
             raise FakedirError('kwargs must be any of {}'.format(accept_kwargs))
         if style:
@@ -683,11 +825,13 @@ class FakeDir(FakeItem):
             return rfs
 
     def set_child_depths(self):
-            def apply_setdepth(FD):
-                FD.set_depth()
-            self.walk_apply(apply_setdepth)
+        '''Recursively set depths of self and its children.'''
+        def apply_setdepth(FD):
+            FD.set_depth()
+        self.walk_apply(apply_setdepth)
 
     def trim(self, depthlimit):
+        '''Remove folders and files beyond the depthlimit.'''
         depthlimit = int(depthlimit)
         if depthlimit < 0:
             raise FakedirError('depthlimit must be non-negative int')
@@ -702,19 +846,73 @@ class FakeDir(FakeItem):
             self.walk_apply(trim_apply, depthlimit=depthlimit)
 
     def walk_apply(self, foo, *args, **kwargs):
+        '''Recursively apply a function the children of self (and so on).'''
         for f in self._children:
             foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):
                 f.walk_apply(foo, *args, **kwargs)
 
-
 def get_random_int(collection, seed=None):
+    '''
+    Helper function for selecting a random integer, used by seedir.populate().
+
+    Parameters
+    ----------
+    collection : list-like
+        Collection of integers to select from.
+    seed : int or float, optional
+        Random seed. The default is None.
+
+    Raises
+    ------
+    TypeError
+        Non-integer found.
+
+    Returns
+    -------
+    r : int
+        Randomly chosen int from collection.
+
+    '''
     r = random.Random(seed).choice(collection)
     if not isinstance(r, int):
         raise TypeError('non int found')
     return r
 
 def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
+    '''
+    Function for populating FakeDir objects with random files and folders.
+    Used by seedir.randomdir().  Random names are chosen from seedir.words
+    to make file and folder names.
+
+    Parameters
+    ----------
+    fakedir : seedir.FakeDir
+        Fake directory to populate.
+    depth : int, optional
+        Maximum depth to create folders and files. The default is 3.
+    folders : int or collection of integers, optional
+        Parameter for setting the number of folders per directory.
+        The default is 2.  If int, represents the number of folders
+        per directory.  If collection of integers, a random value will be
+        chosen from the collection each time a directory is popualted.
+    files : int or collection of integers, optional, optional
+        Same as the folders parameter, but for files.
+    stopchance : float between 0 and 1, optional
+        Chance that an added folder will not be populated. The default is .5.
+    seed : int or float, optional
+        Random seed. The default is None.
+
+    Raises
+    ------
+    FakedirError
+        Issue selecting int from folders or files.
+
+    Returns
+    -------
+    None.  fakedir is modified in place.
+
+    '''
     random.seed(seed)
     if not isinstance(folders, int):
         try:
@@ -745,10 +943,37 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
             if f.depth <= depth and random.uniform(0, 1) > stopchance:
                 if seed:
                     seed += random.randint(1,100)
-                populate(f, depth=depth, folders=folders, files=files, seed=seed,
-                         stopchance=stopchance)
+                populate(f, depth=depth, folders=folders, files=files,
+                         seed=seed, stopchance=stopchance)
 
-def randomdir(depth=2, files=range(1,4), folders=range(0,4), stopchance=.5, seed=None):
+def randomdir(depth=2, files=range(1,4), folders=range(0,4),
+              stopchance=.5, seed=None):
+    '''
+    Create a randomized FakeDir.
+
+    Parameters
+    ----------
+    depth : int, optional
+        Maximum depth to create folders and files. The default is 3.
+    folders : int or collection of integers, optional
+        Parameter for setting the number of folders per directory.
+        The default is range(1,4).  If int, represents the number of folders
+        per directory.  If collection of integers, a random value will be
+        chosen from the collection each time a directory is popualted.
+    files : int or collection of integers, optional, optional
+        Same as the folders parameter, but for files.  The default
+        is range(0,4).
+    stopchance : float between 0 and 1, optional
+        Chance that an added folder will not be populated. The default is .5.
+    seed : int or float, optional
+        Random seed. The default is None.
+
+    Returns
+    -------
+    top : seedir.FakeDir
+        Fake directory.
+
+    '''
     top = FakeDir('MyFakeDir')
     populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
     return top
