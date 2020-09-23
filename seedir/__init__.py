@@ -6,9 +6,9 @@ diagrams.
 The general logic of seedir is based on representing directories in 3
 different forms:
 
-    - real directories on a computer
-    - text diagrams of directories
-    - coded, editable representations of folder trees (or "fake directories")
+    1. Real directories on a computer
+    2. Text diagrams of directories
+    3. Coded, editable representations of folder trees (or "fake directories")
 
 seedir provides tools for going in between these formats.
 
