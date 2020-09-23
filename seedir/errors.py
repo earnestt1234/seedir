@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Aug 14 15:03:55 2020
+Custom exceptions for seedir.
 
-@author: earne
+@author: Tom Earnest
+GitHub: https://github.com/earnestt1234/seedir
 """
 
 class SeedirError(Exception):
-    """Class for representing errors from seedir"""
+    """Class for representing errors from module seedir.seedir"""
 
 class FakedirError(Exception):
-    """Class for handling errors from fakedir"""
+    """Class for handling errors from module seedir.fakedir"""

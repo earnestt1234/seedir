@@ -7,7 +7,8 @@ abstract folder trees into real directories on a computer.  Many functions
 and methods here repesent parallels to counterparts (for real directories)
 in the seedir.seedir module.
 
-@author: earne
+@author: Tom Earnest
+GitHub: https://github.com/earnestt1234/seedir
 """
 import os
 import string
@@ -984,6 +985,43 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
                         include_folders=None, exclude_folders=None,
                         include_files=None, exclude_files=None,
                         regex=False):
+    '''
+    Recursive helper function for seedir.fakedir(), for creating a
+    fake folder tree from a real one.
+
+    Parameters
+    ----------
+    path : str
+        System path of a folder.
+    parent : seedir.FakeDir
+        Fake directory to add items to.
+    depth : int, optional
+        Tracker for depth of folders traversed. The default is 0.
+    depthlimit : int, optional
+        Limit on the depth of folders to traverse. The default is None.
+    itemlimit : int, optional
+        Limit on the number of items to include per directory.
+        The default is None.
+    first : 'folders' or 'files', optional
+        Sort to have folders or files appear first. The default is None.
+    sort : bool, optional
+        Apply a sort to items in each directory. The default is False.
+    sort_reverse : bool, optional
+        Reverse the sort. The default is False.
+    sort_key : function, optional
+        Key function for sorting item names. The default is None.
+    include_folders, exclude_folders,
+        include_files, exclude_files : str, list-like, or None, optional
+            Folder / file names to include or exclude. The default is None.
+    regex : bool, optional
+        Interpret include/exclude folder/file arguments as regular
+        expressions. The default is False.
+
+    Returns
+    -------
+    None.
+
+    '''
     if depthlimit is not None and depth >= depthlimit:
         return
     depth +=1
@@ -1022,6 +1060,52 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
             sort=False, sort_reverse=False, sort_key=None,
             include_folders=None, exclude_folders=None, include_files=None,
             exclude_files=None, regex=True):
+    '''
+    Function for creating a seedir.FakeDir (representation of a directory)
+    from a real system directory.  Rather than immediately representing
+    a directory as a string (seedir.seedir()), this function can be used
+    to create an editable representation of the directory, or to join one or
+    more directories.
+
+    Parameters
+    ----------
+    path : str
+        System path of a directory.
+    depthlimit : int, optional
+        Limit on the depth of directories to traverse. Folders at the depth
+        limit will be included, but their contents will not be.
+        The default is None.
+    itemlimit : int, optional
+        Limit on the number of items to include per directory.
+        The default is None, meaning all items will be added.  The priority
+        of items is determined by os.listdir(), unless sorting arguments
+        are passed.
+    first : 'folders' or 'files', optional
+        Sort to show folders or files first. The default is None.
+    sort : bool, optional
+        Apply a (name) sort on each directory. The default is False.
+    sort_reverse : bool, optional
+        Reverse the sort. The default is False.
+    sort_key : function, optional
+        Key function for sorting the file names. The default is None.
+    include_folders, exclude_folders,
+        include_files, exclude_files : str, list-like, or None, optional
+            Folder / file names to include or exclude. The default is None.
+    regex : bool, optional
+        Interpret include/exclude folder/file arguments as regular
+        expressions. The default is False.
+
+    Raises
+    ------
+    FakedirError
+        path does not point to a directory.
+
+    Returns
+    -------
+    output : seedir.FakeDir
+        Fake directory matching the path.
+
+    '''
     if not os.path.isdir(path):
         raise FakedirError('path must be a directory')
     output = FakeDir(os.path.basename(path))
@@ -1040,6 +1124,54 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
 def fakedir_fromstring(s, start_chars=None, name_chars=None,
                        header_regex=None, name_regex=None,
                        supername='FakeDir', parse_comments=True):
+    '''
+    Convert a string folder tree diagram into a seedir.FakeDir.  This can
+    be used to read in external representations of folder structures,
+    edit them, and recreate them in a new location.
+
+    This function has mostly been tested with examples from Stack Overflow
+    and other Python learning sites (as well as output from seedir.seedir()).
+    There are surely cases which will causes errors or unexpected results.
+
+
+    Parameters
+    ----------
+    s : str
+        String representation a folder tree.
+    start_chars : str, optional
+        A string of characters which will be searched for as the start
+        of a folder or file name. The default is None, in which case the
+        characters are all letters, numbers, and punctuation marks except
+        for /:?"*<>| or +=-.
+    name_chars : str, optional
+        A string of characters which will be searched for as being part
+        of a file or folder name. The default is None, in which case the
+        characters are all letters, numbers, punctuation marks except
+        for /:?"*<>|, and spaces.
+    header_regex : str, optional
+        Regular expression to match the "header" of each line, i.e. the
+        structural characters of the folder diagram.  The default is None.
+        If passed, the start_chars argument will be ignored.  This and
+        name_regex are intended to provide functionality for parsing
+        specific or unusual cases.
+    name_regex : str, optional
+        Regular expression to match all the folder or file names.
+        The default is None.
+        If passed, the start_chars argument will be ignored.
+    supername : str, optional
+        Name to give the head directory if one cannot be found.
+        The default is 'FakeDir'.  This can happen when there is no clear
+        head directory in the string.
+    parse_comments : bool, optional
+        Try to parse and remove Python comments (following #).
+        The default is True.
+
+    Returns
+    -------
+    seedir.FakeDir
+        Fake directory corresponding to the input string.
+
+    '''
     byline = s.split('\n')
     keyboard_chars = (string.ascii_letters + string.digits
                       + string.punctuation)
@@ -1115,3 +1247,4 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     else:
         idx = depths.index(min_depth)
         return fakeitems[idx]
+
