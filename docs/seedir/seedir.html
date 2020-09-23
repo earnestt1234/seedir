@@ -498,7 +498,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend=&#39;│ &
             output += header + filestart + f + &#39;\n&#39;
     return output
 
-def seedir(path, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
+def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
@@ -586,8 +586,9 @@ def seedir(path, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
 
     Parameters
     ----------
-    path : str
-        System path of a directory.
+    path : str or None, optional
+        System path of a directory.  If None, current working directory is
+        used.
     style : &#39;lines&#39;, &#39;dash&#39;, &#39;arrow&#39;, &#39;spaces&#39;, &#39;plus&#39;, or &#39;emoji&#39;, optional
         Style to use. The default is &#39;lines&#39;.  A style determines the set
         of characters (&#34;tokens&#34;) used to represent the base structure of
@@ -698,6 +699,8 @@ def seedir(path, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
         sort = True
     if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
         slash = os.sep
+    if path is None:
+        path = os.getcwd()
     rfs =  recursive_folder_structure(path,
                                       depthlimit=depthlimit,
                                       itemlimit=itemlimit,
@@ -953,7 +956,7 @@ default is '/'.</dd>
 </details>
 </dd>
 <dt id="seedir.seedir.seedir"><code class="name flex">
-<span>def <span class="ident">seedir</span></span>(<span>path, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, slash='/', **kwargs)</span>
+<span>def <span class="ident">seedir</span></span>(<span>path=None, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, slash='/', **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Primary function of the seedir package: generate folder trees for
@@ -1031,8 +1034,10 @@ doc/
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
-<dd>System path of a directory.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code> or <code>None</code>, optional</dt>
+<dd>System path of a directory.
+If None, current working directory is
+used.</dd>
 <dt><strong><code>style</code></strong> :&ensp;<code>'lines', 'dash', 'arrow', 'spaces', 'plus',</code> or <code>'emoji'</code>, optional</dt>
 <dd>Style to use. The default is 'lines'.
 A style determines the set
@@ -1145,7 +1150,7 @@ case the tree diagram is printed in the console.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def seedir(path, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
+<pre><code class="python">def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
@@ -1233,8 +1238,9 @@ case the tree diagram is printed in the console.</dd>
 
     Parameters
     ----------
-    path : str
-        System path of a directory.
+    path : str or None, optional
+        System path of a directory.  If None, current working directory is
+        used.
     style : &#39;lines&#39;, &#39;dash&#39;, &#39;arrow&#39;, &#39;spaces&#39;, &#39;plus&#39;, or &#39;emoji&#39;, optional
         Style to use. The default is &#39;lines&#39;.  A style determines the set
         of characters (&#34;tokens&#34;) used to represent the base structure of
@@ -1345,6 +1351,8 @@ case the tree diagram is printed in the console.</dd>
         sort = True
     if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
         slash = os.sep
+    if path is None:
+        path = os.getcwd()
     rfs =  recursive_folder_structure(path,
                                       depthlimit=depthlimit,
                                       itemlimit=itemlimit,

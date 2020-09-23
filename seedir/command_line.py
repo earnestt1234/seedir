@@ -46,7 +46,9 @@ Options:
     Reverse the sort.
 '''
 
-def main(argv):
+def main(argv=None):
+    if argv is  None:
+        argv = sys.argv[1:]
     path = os.getcwd()
     style = 'lines'
     depthlimit = 3
@@ -90,4 +92,4 @@ def main(argv):
     print('\n', s, '\n', sep='')
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

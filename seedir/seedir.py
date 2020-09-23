@@ -460,7 +460,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
             output += header + filestart + f + '\n'
     return output
 
-def seedir(path, style='lines', printout=True, indent=2, uniform=None,
+def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
@@ -548,8 +548,9 @@ def seedir(path, style='lines', printout=True, indent=2, uniform=None,
 
     Parameters
     ----------
-    path : str
-        System path of a directory.
+    path : str or None, optional
+        System path of a directory.  If None, current working directory is
+        used.
     style : 'lines', 'dash', 'arrow', 'spaces', 'plus', or 'emoji', optional
         Style to use. The default is 'lines'.  A style determines the set
         of characters ("tokens") used to represent the base structure of
@@ -660,6 +661,8 @@ def seedir(path, style='lines', printout=True, indent=2, uniform=None,
         sort = True
     if slash.lower() in ['sep', 'os.sep']:
         slash = os.sep
+    if path is None:
+        path = os.getcwd()
     rfs =  recursive_folder_structure(path,
                                       depthlimit=depthlimit,
                                       itemlimit=itemlimit,

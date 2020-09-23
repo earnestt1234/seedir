@@ -17,6 +17,8 @@ seedir provides tools for going in between these formats.
 GitHub: https://github.com/earnestt1234/seedir
 """
 
+__pdoc__ = {'command_line' : False}
+
 #imports for package namespace
 from .seedir import (recursive_folder_structure,
                      seedir)
