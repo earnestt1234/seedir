@@ -8,8 +8,19 @@ and methods here repesent parallels to counterparts (for real directories)
 in the seedir.seedir module.
 
 @author: Tom Earnest
+
 GitHub: https://github.com/earnestt1234/seedir
 """
+__pdoc__ = {}
+
+for key in ['count_fakefiles',
+            'count_fakedirs',
+            'sort_fakedir',
+            'beyond_fakedepth_str',
+            'get_fakebase_header',
+            'filter_item_names']:
+    __pdoc__[key] = False
+
 import os
 import string
 import re
@@ -342,8 +353,7 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
         Reverse the sort. The default is False.
     sort_key : function, optional
         Key function used for sorting item names. The default is None.
-    (include_folders, exclude_folders,
-    include_files, exclude_files) : str or list-like, optional
+    include_folders, exclude_folders, include_files, exclude_files : str or list-like, optional
         Folder / file names to include or exclude. The default is None.
     regex : bool, optional
         Interpret include/exclude file/folder arguments as
@@ -748,8 +758,7 @@ class FakeDir(FakeItem):
             Key to use for sorting file or folder names, akin to the key parameter
             of the builtin sorted() or list.sort(). The function should take a
             string as an argument. The default is None.
-        include_folders, exclude_folders,
-        include_files, exclude_files : str, list-like, or None, optional
+        include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
             Folder / file names to include or exclude. The default is None.
         regex : bool, optional
             Interpret the strings of include/exclude file/folder arguments as
@@ -1010,8 +1019,7 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
         Reverse the sort. The default is False.
     sort_key : function, optional
         Key function for sorting item names. The default is None.
-    include_folders, exclude_folders,
-        include_files, exclude_files : str, list-like, or None, optional
+    include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
             Folder / file names to include or exclude. The default is None.
     regex : bool, optional
         Interpret include/exclude folder/file arguments as regular
@@ -1088,8 +1096,7 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
         Reverse the sort. The default is False.
     sort_key : function, optional
         Key function for sorting the file names. The default is None.
-    include_folders, exclude_folders,
-        include_files, exclude_files : str, list-like, or None, optional
+    include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
             Folder / file names to include or exclude. The default is None.
     regex : bool, optional
         Interpret include/exclude folder/file arguments as regular

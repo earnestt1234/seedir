@@ -1,8 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-seedir: Python package for creating and reading folder tree diagrams
+seedir is a Python package for creating, editing, and reading folder tree
+diagrams.
+
+The general logic of seedir is based on representing directories in 3
+different forms:
+
+    - real directories on a computer
+    - text diagrams of directories
+    - coded, editable representations of folder trees (or "fake directories")
+
+seedir provides tools for going in between these formats.
 
 @author: Tom Earnest
+
 GitHub: https://github.com/earnestt1234/seedir
 """
 

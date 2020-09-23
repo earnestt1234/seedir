@@ -4,6 +4,7 @@ General module of resources and helpers for printing and making folder trees
 in seedir.
 
 @author: Tom Earnest
+
 GitHub: https://github.com/earnestt1234/seedir
 """
 import copy
@@ -14,11 +15,9 @@ import emoji
 
 from seedir.errors import SeedirError
 
-# file and folder emojis
 FILE = emoji.emojize(':page_facing_up:' + ' ')
 FOLDER = emoji.emojize(':file_folder:' + ' ')
 
-# 'tokens' used to create folder trees in different styles
 STYLE_DICT = {
     'lines': {'split':'├─',
               'extend':'│ ',
@@ -57,12 +56,13 @@ STYLE_DICT = {
               'folderstart':FOLDER,
               'filestart':FILE}
     }
+'''"Tokens" used to create folder trees in different styles'''
 
-# list of dictionary words for seedir.randomdir()
 filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, 'words.txt')
 wordfile = open(wordpath, 'r')
 words = [line.strip() for line in wordfile.readlines()]
+"""List of dictionary words for seedir.randomdir()"""
 
 # functions
 

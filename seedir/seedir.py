@@ -6,8 +6,18 @@ which takes a file path and produces a folder diagram.   The other functions
 are mostly helpers for seedir().
 
 @author: Tom Earnest
+
 GitHub: https://github.com/earnestt1234/seedir
 """
+__pdoc__ = {}
+
+for key in ['count_files',
+            'count_folders',
+            'sort_dir',
+            'beyond_depth_str',
+            'get_base_header',
+            'filter_item_names']:
+    __pdoc__[key] = False
 
 import os
 
@@ -160,13 +170,16 @@ def get_base_header(incomplete, extend, space):
     is symbolized with the `incomplete` argument.  The following illustrates
     the incomplete arguments passed to this function for an example folder
     tree:
-        doc\
-        ├─_static\                  [0]
-        │ ├─embedded\               [0, 1]
+
+        >>> #
+
+        doc/
+        ├─_static/                  [0]
+        │ ├─embedded/               [0, 1]
         │ │ ├─deep_file             [0, 1, 2]
-        │ │ └─very\                 [0, 1, 2]
-        │ │   └─deep\               [0, 1, 3]
-        │ │     └─folder\           [0, 1, 4]
+        │ │ └─very/                 [0, 1, 2]
+        │ │   └─deep/               [0, 1, 3]
+        │ │     └─folder/           [0, 1, 4]
         │ │       └─very_deep_file  [0, 1, 5]
         │ └─less_deep_file          [0, 1]
         └─index.rst                 [0]
@@ -346,8 +359,7 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
         Reverse the sort. The default is False.
     sort_key : function, optional
         Key function used for sorting item names. The default is None.
-    (include_folders, exclude_folders,
-    include_files, exclude_files) : str or list-like, optional
+    include_folders, exclude_folders, include_files, exclude_files : str or list-like, optional
         Folder / file names to include or exclude. The default is None.
     regex : bool, optional
         Interpret include/exclude file/folder arguments as
@@ -592,8 +604,7 @@ def seedir(path, style='lines', printout=True, indent=2, uniform=None,
         Key to use for sorting file or folder names, akin to the key parameter
         of the builtin sorted() or list.sort(). The function should take a
         string as an argument. The default is None.
-    include_folders, exclude_folders,
-    include_files, exclude_files : str, list-like, or None, optional
+    include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
         Folder / file names to include or exclude. The default is None.
     regex : bool, optional
         Interpret the strings of include/exclude file/folder arguments as
