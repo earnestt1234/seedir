@@ -31,7 +31,7 @@ import random
 from seedir.errors import FakedirError
 import seedir.printing as printing
 from seedir.printing import words
-from seedir.seedir import sort_dir
+from seedir.seedir import sort_dir, filter_item_names
 
 def count_fakefiles(objs):
     '''
@@ -211,9 +211,9 @@ def get_fakebase_header(incomplete, extend, space):
             base_header.append(space)
     return "".join(base_header)
 
-def filter_item_names(listdir, include_folders=None,
-                      exclude_folders=None, include_files=None,
-                      exclude_files=None, regex=False):
+def filter_fakeitem_names(listdir, include_folders=None,
+                          exclude_folders=None, include_files=None,
+                          exclude_files=None, regex=False):
     '''
     Filter for folder and file names in seedir.FakeDir.seedir().  Removes or
     includes items matching filtering strings.
@@ -396,12 +396,12 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = filter_item_names(listdir,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex)
+        listdir = filter_fakeitem_names(listdir,
+                                        include_folders=include_folders,
+                                        exclude_folders=exclude_folders,
+                                        include_files=include_files,
+                                        exclude_files=exclude_files,
+                                        regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
             incomplete.remove(depth-1)
@@ -599,11 +599,19 @@ class FakeDir(FakeItem):
 
     def create_folder(self, name):
         '''Insert a new folder with name "name".'''
-        FakeDir(name, parent=self)
+        if isinstance(name, str):
+            FakeDir(name, parent=self)
+        else:
+            for s in name:
+                FakeDir(s, parent=self)
 
     def create_file(self, name):
         '''Insert a new file with name "name".'''
-        FakeFile(name, parent=self)
+        if isinstance(name, str):
+            FakeFile(name, parent=self)
+        else:
+            for s in name:
+                FakeFile(s, parent=self)
 
     def delete(self, child):
         '''
@@ -1042,12 +1050,12 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = printing.filter_item_names(path, listdir,
-                                             include_folders=include_folders,
-                                             exclude_folders=exclude_folders,
-                                             include_files=include_files,
-                                             exclude_files=exclude_files,
-                                             regex=regex)
+        listdir = filter_item_names(path, listdir,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex)
     for i, f in enumerate(listdir):
         if i == itemlimit:
             break
