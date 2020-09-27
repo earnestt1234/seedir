@@ -29,7 +29,7 @@ seedir/
 
 ## Installation
 
-Available with `pip`:
+Available with [`pip`](https://pypi.org/project/seedir/):
 
 ```
 pip install seedir
