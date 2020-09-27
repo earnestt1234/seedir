@@ -1238,14 +1238,22 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
         if not line:
             continue
         if header_regex is None:
-            header = re.match('.*?(?=[{}])'.format(start_chars), line).group()
+            header = re.match('.*?(?=[{}])'.format(start_chars), line)
         else:
-            header = re.match(header_regex, line).group()
+            header = re.match(header_regex, line)
+        if header is None:
+            continue
+        else:
+            header = header.group()
         depth = len(header)
         if name_regex is None:
-            name = re.match('[{}]*'.format(name_chars), line[depth:]).group()
+            name = re.match('[{}]*'.format(name_chars), line[depth:])
         else:
-            name = re.match(name_regex, line).group()
+            name = re.match(name_regex, line)
+        if name is None:
+            continue
+        else:
+            name = name.group()
         if '#' in name and parse_comments:
             name = re.match('.*?(?=#)', name).group().strip()
         if not name:
