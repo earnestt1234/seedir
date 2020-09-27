@@ -63,16 +63,17 @@ __pdoc__ = {&#39;command_line&#39; : False}
 from .seedir import (recursive_folder_structure,
                      seedir)
 
-from .fakedir import (FakeDir,
-                      FakeFile,
-                      FakeItem,
-                      fakedir,
+from .fakedir import (fakedir,
                       fakedir_fromstring,
                       populate,
                       randomdir,
                       recursive_add_fakes,
                       recursive_fakedir_structure,
                       sort_fakedir)
+
+from .fakedir import FakeDir as FakeDir
+from .fakedir import FakeFile as FakeFile
+from .fakedir import FakeItem as FakeItem
 
 from .errors import SeedirError, FakedirError
 

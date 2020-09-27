@@ -72,7 +72,7 @@ import random
 from seedir.errors import FakedirError
 import seedir.printing as printing
 from seedir.printing import words
-from seedir.seedir import sort_dir
+from seedir.seedir import sort_dir, filter_item_names
 
 def count_fakefiles(objs):
     &#39;&#39;&#39;
@@ -252,9 +252,9 @@ def get_fakebase_header(incomplete, extend, space):
             base_header.append(space)
     return &#34;&#34;.join(base_header)
 
-def filter_item_names(listdir, include_folders=None,
-                      exclude_folders=None, include_files=None,
-                      exclude_files=None, regex=False):
+def filter_fakeitem_names(listdir, include_folders=None,
+                          exclude_folders=None, include_files=None,
+                          exclude_files=None, regex=False):
     &#39;&#39;&#39;
     Filter for folder and file names in seedir.FakeDir.seedir().  Removes or
     includes items matching filtering strings.
@@ -409,16 +409,23 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split=&#39;â”
         Folder tree diagram.
 
     &#39;&#39;&#39;
+    # initialize
     output = &#39;&#39;
     if incomplete is None:
         incomplete = []
     if depth == 0:
         output += folderstart + fakedir.name + slash +&#39;\n&#39;
+
+    # stop when too deep
     if depth == depthlimit and beyond is None:
         return output
+
+    # enter folder, increase depth
     listdir = fakedir._children.copy()
     incomplete.append(depth)
     depth += 1
+
+    # if depth passed limit, return with &#34;beyond&#34; added
     if depthlimit and depth &gt; depthlimit:
         extra = beyond_fakedepth_str(beyond, listdir)
         if beyond is not None and extra:
@@ -428,6 +435,8 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split=&#39;â”
             incomplete.remove(depth-1)
         incomplete = [n for n in incomplete if n &lt; depth]
         return output
+
+    # sort and trim the contents of listdir
     if sort or first is not None:
         pass
         listdir = sort_fakedir(listdir, first=first,
@@ -437,22 +446,28 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split=&#39;â”
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = filter_item_names(listdir,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex)
+        listdir = filter_fakeitem_names(listdir,
+                                        include_folders=include_folders,
+                                        exclude_folders=exclude_folders,
+                                        include_files=include_files,
+                                        exclude_files=exclude_files,
+                                        regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
-            incomplete.remove(depth-1)
+            incomplete.remove(depth-1) # remove from incomplete if empty
+
+    # get output for each item in folder
     for i, f in enumerate(listdir):
+
+        # if passed itemlimit, return with &#34;beyond&#34; added
         if i == itemlimit:
             remaining = [rem for rem in listdir[i:]]
             if beyond is not None:
                 extra = beyond_fakedepth_str(beyond, remaining)
                 output += base_header + final + extra + &#39;\n&#39;
             return output
+
+        # create header for the item
         base_header = get_fakebase_header(incomplete, extend, space)
         if i == len(listdir) - 1 or (itemlimit is not None and
                                      i == itemlimit - 1 and
@@ -466,6 +481,8 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split=&#39;â”
         else:
             branch = split
         header = base_header + branch
+
+        # concat to output and recurse if item is folder
         if isinstance(f, FakeDir):
             output += header + folderstart + f.name + slash +&#39;\n&#39;
             output += recursive_fakedir_structure(f, depth=depth,
@@ -489,6 +506,8 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split=&#39;â”
                                                  exclude_files=exclude_files,
                                                  regex=regex,
                                                  slash=slash)
+
+        # only concat to output if file
         else:
             output += header + filestart + f.name + &#39;\n&#39;
     return output
@@ -640,11 +659,19 @@ class FakeDir(FakeItem):
 
     def create_folder(self, name):
         &#39;&#39;&#39;Insert a new folder with name &#34;name&#34;.&#39;&#39;&#39;
-        FakeDir(name, parent=self)
+        if isinstance(name, str):
+            FakeDir(name, parent=self)
+        else:
+            for s in name:
+                FakeDir(s, parent=self)
 
     def create_file(self, name):
         &#39;&#39;&#39;Insert a new file with name &#34;name&#34;.&#39;&#39;&#39;
-        FakeFile(name, parent=self)
+        if isinstance(name, str):
+            FakeFile(name, parent=self)
+        else:
+            for s in name:
+                FakeFile(s, parent=self)
 
     def delete(self, child):
         &#39;&#39;&#39;
@@ -930,7 +957,8 @@ def get_random_int(collection, seed=None):
         raise TypeError(&#39;non int found&#39;)
     return r
 
-def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
+def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
+             extensions=[&#39;txt&#39;]):
     &#39;&#39;&#39;
     Function for populating FakeDir objects with random files and folders.
     Used by seedir.randomdir().  Random names are chosen from seedir.words
@@ -953,6 +981,9 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
         Chance that an added folder will not be populated. The default is .5.
     seed : int or float, optional
         Random seed. The default is None.
+    extensions : list-likie, optional
+        Collection of extensions to randomly select from for files.  The
+        default is [&#39;txt&#39;].  Leading period can be included or omitted.
 
     Raises
     ------
@@ -980,9 +1011,9 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
     else:
         file_num = files
     for i in range(file_num):
-        name = random.choice(words) + &#39;.txt&#39;
+        name = random.choice(words) + random.choice(extensions)
         while name in [f.name for f in fakedir._children]:
-            name = random.choice(words) + &#39;.txt&#39;
+            name = random.choice(words) + random.choice(extensions)
         fakedir.create_file(name)
     for i in range(fold_num):
         name = random.choice(words)
@@ -995,10 +1026,11 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
                 if seed:
                     seed += random.randint(1,100)
                 populate(f, depth=depth, folders=folders, files=files,
-                         seed=seed, stopchance=stopchance)
+                         seed=seed, stopchance=stopchance,
+                         extensions=extensions)
 
 def randomdir(depth=2, files=range(1,4), folders=range(0,4),
-              stopchance=.5, seed=None):
+              stopchance=.5, seed=None, extensions=[&#39;txt&#39;]):
     &#39;&#39;&#39;
     Create a randomized FakeDir.
 
@@ -1018,6 +1050,9 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
         Chance that an added folder will not be populated. The default is .5.
     seed : int or float, optional
         Random seed. The default is None.
+    extensions : list-likie, optional
+        Collection of extensions to randomly select from for files.  The
+        default is [&#39;txt&#39;].  Leading period can be included or omitted.
 
     Returns
     -------
@@ -1026,7 +1061,14 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
 
     &#39;&#39;&#39;
     top = FakeDir(&#39;MyFakeDir&#39;)
-    populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
+    new_ex = []
+    for x in extensions:
+        if x[0] != &#39;.&#39;:
+            new_ex.append(&#39;.&#39; + x)
+        else:
+            new_ex.append(x)
+    populate(top, depth, folders, files, seed=seed, stopchance=stopchance,
+             extensions=new_ex)
     return top
 
 def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
@@ -1083,12 +1125,12 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = printing.filter_item_names(path, listdir,
-                                             include_folders=include_folders,
-                                             exclude_folders=exclude_folders,
-                                             include_files=include_files,
-                                             exclude_files=exclude_files,
-                                             regex=regex)
+        listdir = filter_item_names(path, listdir,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex)
     for i, f in enumerate(listdir):
         if i == itemlimit:
             break
@@ -1604,6 +1646,133 @@ The default is True.</dd>
         return fakeitems[idx]</code></pre>
 </details>
 </dd>
+<dt id="seedir.fakedir.filter_fakeitem_names"><code class="name flex">
+<span>def <span class="ident">filter_fakeitem_names</span></span>(<span>listdir, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Filter for folder and file names in seedir.FakeDir.seedir().
+Removes or
+includes items matching filtering strings.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>listdir</code></strong> :&ensp;<code>list-like</code></dt>
+<dd>Collection of FakeDir and FakeFile objects</dd>
+<dt><strong><code>include_folders</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
+<dd>Folder names to include. The default is None.</dd>
+<dt><strong><code>exclude_folders</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
+<dd>Folder names to exclude. The default is None.</dd>
+<dt><strong><code>include_files</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
+<dd>File names to include. The default is None.</dd>
+<dt><strong><code>exclude_files</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
+<dd>File names to exclude. The default is None.</dd>
+<dt><strong><code>regex</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Interpret strings as regular expressions. The default is False.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>SeedirError</code></dt>
+<dd>When the exlcusion or inclusion arguments are not strings or
+iterables.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>keep</code></strong> :&ensp;<code>list</code></dt>
+<dd>Filtered input.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def filter_fakeitem_names(listdir, include_folders=None,
+                          exclude_folders=None, include_files=None,
+                          exclude_files=None, regex=False):
+    &#39;&#39;&#39;
+    Filter for folder and file names in seedir.FakeDir.seedir().  Removes or
+    includes items matching filtering strings.
+
+    Parameters
+    ----------
+    listdir : list-like
+        Collection of FakeDir and FakeFile objects
+    include_folders : str or list-like, optional
+        Folder names to include. The default is None.
+    exclude_folders : str or list-like, optional
+        Folder names to exclude. The default is None.
+    include_files : str or list-like, optional
+        File names to include. The default is None.
+    exclude_files : str or list-like, optional
+        File names to exclude. The default is None.
+    regex : bool, optional
+        Interpret strings as regular expressions. The default is False.
+
+    Raises
+    ------
+    SeedirError
+        When the exlcusion or inclusion arguments are not strings or
+        iterables.
+
+    Returns
+    -------
+    keep : list
+        Filtered input.
+
+    &#39;&#39;&#39;
+    keep = []
+    for l in listdir:
+        if isinstance(l, FakeDir):
+            if isinstance(include_folders, str):
+                if not printing.is_match(include_folders, l.name, regex):
+                    continue
+            elif include_folders is not None:
+                try:
+                    if not any(printing.is_match(n, l.name, regex)
+                               for n in include_folders):
+                        continue
+                except:
+                    raise FakedirError(&#39;Failure when trying to iterate &#39;
+                                       &#39;over &#34;include_folders&#34; and &#39;
+                                       &#39;match strings&#39;)
+            if isinstance(exclude_folders, str):
+                if printing.is_match(exclude_folders, l.name, regex):
+                    continue
+            elif exclude_folders is not None:
+                try:
+                    if any(printing.is_match(x, l.name, regex)
+                           for x in exclude_folders):
+                        continue
+                except:
+                    raise FakedirError(&#39;Failure when trying to iterate &#39;
+                                      &#39;over &#34;exclude_folders&#34; and &#39;
+                                      &#39;match strings&#39;)
+        else:
+            if isinstance(include_files, str):
+                if not printing.is_match(include_files, l.name, regex):
+                    continue
+            elif include_files is not None:
+                try:
+                    if not any(printing.is_match(n, l.name, regex)
+                               for n in include_files):
+                        continue
+                except:
+                    raise FakedirError(&#39;Failure when trying to iterate &#39;
+                                      &#39;over &#34;include_files&#34; and &#39;
+                                      &#39;match strings&#39;)
+            if isinstance(exclude_files, str):
+                if printing.is_match(exclude_files, l.name, regex):
+                    continue
+            elif exclude_files is not None:
+                try:
+                    if any(printing.is_match(x, l.name, regex)
+                           for x in exclude_files):
+                        continue
+                except:
+                    raise FakedirError(&#39;Failure when trying to iterate &#39;
+                                      &#39;over &#34;exclude_files&#34; and &#39;
+                                      &#39;match strings&#39;)
+        keep.append(l)
+    return keep</code></pre>
+</details>
+</dd>
 <dt id="seedir.fakedir.get_random_int"><code class="name flex">
 <span>def <span class="ident">get_random_int</span></span>(<span>collection, seed=None)</span>
 </code></dt>
@@ -1659,7 +1828,7 @@ The default is True.</dd>
 </details>
 </dd>
 <dt id="seedir.fakedir.populate"><code class="name flex">
-<span>def <span class="ident">populate</span></span>(<span>fakedir, depth=3, folders=2, files=2, stopchance=0.5, seed=None)</span>
+<span>def <span class="ident">populate</span></span>(<span>fakedir, depth=3, folders=2, files=2, stopchance=0.5, seed=None, extensions=['txt'])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Function for populating FakeDir objects with random files and folders.
@@ -1685,6 +1854,11 @@ chosen from the collection each time a directory is popualted.</dd>
 <dd>Chance that an added folder will not be populated. The default is .5.</dd>
 <dt><strong><code>seed</code></strong> :&ensp;<code>int</code> or <code>float</code>, optional</dt>
 <dd>Random seed. The default is None.</dd>
+<dt><strong><code>extensions</code></strong> :&ensp;<code>list-likie</code>, optional</dt>
+<dd>Collection of extensions to randomly select from for files.
+The
+default is ['txt'].
+Leading period can be included or omitted.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -1698,7 +1872,8 @@ fakedir is modified in place.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
+<pre><code class="python">def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
+             extensions=[&#39;txt&#39;]):
     &#39;&#39;&#39;
     Function for populating FakeDir objects with random files and folders.
     Used by seedir.randomdir().  Random names are chosen from seedir.words
@@ -1721,6 +1896,9 @@ fakedir is modified in place.</p></div>
         Chance that an added folder will not be populated. The default is .5.
     seed : int or float, optional
         Random seed. The default is None.
+    extensions : list-likie, optional
+        Collection of extensions to randomly select from for files.  The
+        default is [&#39;txt&#39;].  Leading period can be included or omitted.
 
     Raises
     ------
@@ -1748,9 +1926,9 @@ fakedir is modified in place.</p></div>
     else:
         file_num = files
     for i in range(file_num):
-        name = random.choice(words) + &#39;.txt&#39;
+        name = random.choice(words) + random.choice(extensions)
         while name in [f.name for f in fakedir._children]:
-            name = random.choice(words) + &#39;.txt&#39;
+            name = random.choice(words) + random.choice(extensions)
         fakedir.create_file(name)
     for i in range(fold_num):
         name = random.choice(words)
@@ -1763,11 +1941,12 @@ fakedir is modified in place.</p></div>
                 if seed:
                     seed += random.randint(1,100)
                 populate(f, depth=depth, folders=folders, files=files,
-                         seed=seed, stopchance=stopchance)</code></pre>
+                         seed=seed, stopchance=stopchance,
+                         extensions=extensions)</code></pre>
 </details>
 </dd>
 <dt id="seedir.fakedir.randomdir"><code class="name flex">
-<span>def <span class="ident">randomdir</span></span>(<span>depth=2, files=range(1, 4), folders=range(0, 4), stopchance=0.5, seed=None)</span>
+<span>def <span class="ident">randomdir</span></span>(<span>depth=2, files=range(1, 4), folders=range(0, 4), stopchance=0.5, seed=None, extensions=['txt'])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a randomized FakeDir.</p>
@@ -1790,6 +1969,11 @@ is range(0,4).</dd>
 <dd>Chance that an added folder will not be populated. The default is .5.</dd>
 <dt><strong><code>seed</code></strong> :&ensp;<code>int</code> or <code>float</code>, optional</dt>
 <dd>Random seed. The default is None.</dd>
+<dt><strong><code>extensions</code></strong> :&ensp;<code>list-likie</code>, optional</dt>
+<dd>Collection of extensions to randomly select from for files.
+The
+default is ['txt'].
+Leading period can be included or omitted.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1801,7 +1985,7 @@ is range(0,4).</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def randomdir(depth=2, files=range(1,4), folders=range(0,4),
-              stopchance=.5, seed=None):
+              stopchance=.5, seed=None, extensions=[&#39;txt&#39;]):
     &#39;&#39;&#39;
     Create a randomized FakeDir.
 
@@ -1821,6 +2005,9 @@ is range(0,4).</dd>
         Chance that an added folder will not be populated. The default is .5.
     seed : int or float, optional
         Random seed. The default is None.
+    extensions : list-likie, optional
+        Collection of extensions to randomly select from for files.  The
+        default is [&#39;txt&#39;].  Leading period can be included or omitted.
 
     Returns
     -------
@@ -1829,7 +2016,14 @@ is range(0,4).</dd>
 
     &#39;&#39;&#39;
     top = FakeDir(&#39;MyFakeDir&#39;)
-    populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
+    new_ex = []
+    for x in extensions:
+        if x[0] != &#39;.&#39;:
+            new_ex.append(&#39;.&#39; + x)
+        else:
+            new_ex.append(x)
+    populate(top, depth, folders, files, seed=seed, stopchance=stopchance,
+             extensions=new_ex)
     return top</code></pre>
 </details>
 </dd>
@@ -1926,12 +2120,12 @@ expressions. The default is False.</dd>
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = printing.filter_item_names(path, listdir,
-                                             include_folders=include_folders,
-                                             exclude_folders=exclude_folders,
-                                             include_files=include_files,
-                                             exclude_files=exclude_files,
-                                             regex=regex)
+        listdir = filter_item_names(path, listdir,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex)
     for i, f in enumerate(listdir):
         if i == itemlimit:
             break
@@ -2088,16 +2282,23 @@ default is '/'.</dd>
         Folder tree diagram.
 
     &#39;&#39;&#39;
+    # initialize
     output = &#39;&#39;
     if incomplete is None:
         incomplete = []
     if depth == 0:
         output += folderstart + fakedir.name + slash +&#39;\n&#39;
+
+    # stop when too deep
     if depth == depthlimit and beyond is None:
         return output
+
+    # enter folder, increase depth
     listdir = fakedir._children.copy()
     incomplete.append(depth)
     depth += 1
+
+    # if depth passed limit, return with &#34;beyond&#34; added
     if depthlimit and depth &gt; depthlimit:
         extra = beyond_fakedepth_str(beyond, listdir)
         if beyond is not None and extra:
@@ -2107,6 +2308,8 @@ default is '/'.</dd>
             incomplete.remove(depth-1)
         incomplete = [n for n in incomplete if n &lt; depth]
         return output
+
+    # sort and trim the contents of listdir
     if sort or first is not None:
         pass
         listdir = sort_fakedir(listdir, first=first,
@@ -2116,22 +2319,28 @@ default is '/'.</dd>
             exclude_folders,
             include_files,
             exclude_files]):
-        listdir = filter_item_names(listdir,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex)
+        listdir = filter_fakeitem_names(listdir,
+                                        include_folders=include_folders,
+                                        exclude_folders=exclude_folders,
+                                        include_files=include_files,
+                                        exclude_files=exclude_files,
+                                        regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
-            incomplete.remove(depth-1)
+            incomplete.remove(depth-1) # remove from incomplete if empty
+
+    # get output for each item in folder
     for i, f in enumerate(listdir):
+
+        # if passed itemlimit, return with &#34;beyond&#34; added
         if i == itemlimit:
             remaining = [rem for rem in listdir[i:]]
             if beyond is not None:
                 extra = beyond_fakedepth_str(beyond, remaining)
                 output += base_header + final + extra + &#39;\n&#39;
             return output
+
+        # create header for the item
         base_header = get_fakebase_header(incomplete, extend, space)
         if i == len(listdir) - 1 or (itemlimit is not None and
                                      i == itemlimit - 1 and
@@ -2145,6 +2354,8 @@ default is '/'.</dd>
         else:
             branch = split
         header = base_header + branch
+
+        # concat to output and recurse if item is folder
         if isinstance(f, FakeDir):
             output += header + folderstart + f.name + slash +&#39;\n&#39;
             output += recursive_fakedir_structure(f, depth=depth,
@@ -2168,6 +2379,8 @@ default is '/'.</dd>
                                                  exclude_files=exclude_files,
                                                  regex=regex,
                                                  slash=slash)
+
+        # only concat to output if file
         else:
             output += header + filestart + f.name + &#39;\n&#39;
     return output</code></pre>
@@ -2225,11 +2438,19 @@ for keeping track of items inside the fake dir.</p></div>
 
     def create_folder(self, name):
         &#39;&#39;&#39;Insert a new folder with name &#34;name&#34;.&#39;&#39;&#39;
-        FakeDir(name, parent=self)
+        if isinstance(name, str):
+            FakeDir(name, parent=self)
+        else:
+            for s in name:
+                FakeDir(s, parent=self)
 
     def create_file(self, name):
         &#39;&#39;&#39;Insert a new file with name &#34;name&#34;.&#39;&#39;&#39;
-        FakeFile(name, parent=self)
+        if isinstance(name, str):
+            FakeFile(name, parent=self)
+        else:
+            for s in name:
+                FakeFile(s, parent=self)
 
     def delete(self, child):
         &#39;&#39;&#39;
@@ -2505,7 +2726,11 @@ for keeping track of items inside the fake dir.</p></div>
 </summary>
 <pre><code class="python">def create_file(self, name):
     &#39;&#39;&#39;Insert a new file with name &#34;name&#34;.&#39;&#39;&#39;
-    FakeFile(name, parent=self)</code></pre>
+    if isinstance(name, str):
+        FakeFile(name, parent=self)
+    else:
+        for s in name:
+            FakeFile(s, parent=self)</code></pre>
 </details>
 </dd>
 <dt id="seedir.fakedir.FakeDir.create_folder"><code class="name flex">
@@ -2519,7 +2744,11 @@ for keeping track of items inside the fake dir.</p></div>
 </summary>
 <pre><code class="python">def create_folder(self, name):
     &#39;&#39;&#39;Insert a new folder with name &#34;name&#34;.&#39;&#39;&#39;
-    FakeDir(name, parent=self)</code></pre>
+    if isinstance(name, str):
+        FakeDir(name, parent=self)
+    else:
+        for s in name:
+            FakeDir(s, parent=self)</code></pre>
 </details>
 </dd>
 <dt id="seedir.fakedir.FakeDir.delete"><code class="name flex">
@@ -3262,6 +3491,7 @@ parent == None).</p></div>
 <ul class="">
 <li><code><a title="seedir.fakedir.fakedir" href="#seedir.fakedir.fakedir">fakedir</a></code></li>
 <li><code><a title="seedir.fakedir.fakedir_fromstring" href="#seedir.fakedir.fakedir_fromstring">fakedir_fromstring</a></code></li>
+<li><code><a title="seedir.fakedir.filter_fakeitem_names" href="#seedir.fakedir.filter_fakeitem_names">filter_fakeitem_names</a></code></li>
 <li><code><a title="seedir.fakedir.get_random_int" href="#seedir.fakedir.get_random_int">get_random_int</a></code></li>
 <li><code><a title="seedir.fakedir.populate" href="#seedir.fakedir.populate">populate</a></code></li>
 <li><code><a title="seedir.fakedir.randomdir" href="#seedir.fakedir.randomdir">randomdir</a></code></li>
