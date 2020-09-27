@@ -37,7 +37,7 @@ pip install seedir
 
 ## Usage
 
-See the [example usage Notebook](https://github.com/earnestt1234/seedir/blob/master/examples.ipynb) for guided examples or the documentation (coming soon!).
+See the [example usage Notebook](https://github.com/earnestt1234/seedir/blob/master/examples.ipynb) for guided examples or the [API documentation](https://earnestt1234.github.io/seedir/).
 
 ## License
 
