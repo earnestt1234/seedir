@@ -374,16 +374,23 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
         Folder tree diagram.
 
     '''
+    # initialize
     output = ''
     if incomplete is None:
         incomplete = []
     if depth == 0:
         output += folderstart + os.path.basename(path) + slash +'\n'
+
+    # stop when too deep
     if depth == depthlimit and beyond is None:
         return output
+
+    # enter folder, increase depth
     listdir = os.listdir(path)
     incomplete.append(depth)
     depth += 1
+
+    # if depth passed limit, return with "beyond" added
     if depthlimit and depth > depthlimit:
         paths = [os.path.join(path, item) for item in listdir]
         extra = beyond_depth_str(beyond, paths)
@@ -394,6 +401,8 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
             incomplete.remove(depth-1)
         incomplete = [n for n in incomplete if n < depth]
         return output
+
+    # sort and trim the contents of listdir
     if sort or first is not None:
         listdir = sort_dir(names=listdir, root=path, first=first,
                            sort_reverse=sort_reverse, sort_key=sort_key)
@@ -410,8 +419,12 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
                                     regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
-            incomplete.remove(depth-1)
+            incomplete.remove(depth-1) # remove from incomplete if empty
+
+    # get output for each item in folder
     for i, f in enumerate(listdir):
+
+        #if passed itemlimit, return with "beyond" added
         if i == itemlimit:
             paths = [os.path.join(path, rem) for rem in listdir[i:]]
             if beyond is not None:
@@ -420,6 +433,8 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
             if depth - 1 in incomplete:
                 incomplete.remove(depth-1)
             return output
+
+        # create header for the item
         sub = os.path.join(path, f)
         base_header = get_base_header(incomplete, extend, space)
         if i == len(listdir) - 1 or (itemlimit is not None and
@@ -434,6 +449,8 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
         else:
             branch = split
         header = base_header + branch
+
+        # concat to output and recurse if item is folder
         if os.path.isdir(sub):
             output += header + folderstart + f + slash +'\n'
             output += recursive_folder_structure(sub, depth=depth,
@@ -456,6 +473,8 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
                                                  exclude_files=exclude_files,
                                                  regex=regex,
                                                  slash=slash)
+
+        # only concat to output if file
         else:
             output += header + filestart + f + '\n'
     return output

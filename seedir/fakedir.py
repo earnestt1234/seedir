@@ -368,16 +368,23 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
         Folder tree diagram.
 
     '''
+    # initialize
     output = ''
     if incomplete is None:
         incomplete = []
     if depth == 0:
         output += folderstart + fakedir.name + slash +'\n'
+
+    # stop when too deep
     if depth == depthlimit and beyond is None:
         return output
+
+    # enter folder, increase depth
     listdir = fakedir._children.copy()
     incomplete.append(depth)
     depth += 1
+
+    # if depth passed limit, return with "beyond" added
     if depthlimit and depth > depthlimit:
         extra = beyond_fakedepth_str(beyond, listdir)
         if beyond is not None and extra:
@@ -387,6 +394,8 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
             incomplete.remove(depth-1)
         incomplete = [n for n in incomplete if n < depth]
         return output
+
+    # sort and trim the contents of listdir
     if sort or first is not None:
         pass
         listdir = sort_fakedir(listdir, first=first,
@@ -404,14 +413,20 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
                                         regex=regex)
     if not listdir:
         if depth - 1 in incomplete:
-            incomplete.remove(depth-1)
+            incomplete.remove(depth-1) # remove from incomplete if empty
+
+    # get output for each item in folder
     for i, f in enumerate(listdir):
+
+        # if passed itemlimit, return with "beyond" added
         if i == itemlimit:
             remaining = [rem for rem in listdir[i:]]
             if beyond is not None:
                 extra = beyond_fakedepth_str(beyond, remaining)
                 output += base_header + final + extra + '\n'
             return output
+
+        # create header for the item
         base_header = get_fakebase_header(incomplete, extend, space)
         if i == len(listdir) - 1 or (itemlimit is not None and
                                      i == itemlimit - 1 and
@@ -425,6 +440,8 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
         else:
             branch = split
         header = base_header + branch
+
+        # concat to output and recurse if item is folder
         if isinstance(f, FakeDir):
             output += header + folderstart + f.name + slash +'\n'
             output += recursive_fakedir_structure(f, depth=depth,
@@ -448,6 +465,8 @@ def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─
                                                  exclude_files=exclude_files,
                                                  regex=regex,
                                                  slash=slash)
+
+        # only concat to output if file
         else:
             output += header + filestart + f.name + '\n'
     return output
@@ -897,7 +916,8 @@ def get_random_int(collection, seed=None):
         raise TypeError('non int found')
     return r
 
-def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
+def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
+             extensions=['txt']):
     '''
     Function for populating FakeDir objects with random files and folders.
     Used by seedir.randomdir().  Random names are chosen from seedir.words
@@ -920,6 +940,9 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
         Chance that an added folder will not be populated. The default is .5.
     seed : int or float, optional
         Random seed. The default is None.
+    extensions : list-likie, optional
+        Collection of extensions to randomly select from for files.  The
+        default is ['txt'].  Leading period can be included or omitted.
 
     Raises
     ------
@@ -947,9 +970,9 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
     else:
         file_num = files
     for i in range(file_num):
-        name = random.choice(words) + '.txt'
+        name = random.choice(words) + random.choice(extensions)
         while name in [f.name for f in fakedir._children]:
-            name = random.choice(words) + '.txt'
+            name = random.choice(words) + random.choice(extensions)
         fakedir.create_file(name)
     for i in range(fold_num):
         name = random.choice(words)
@@ -962,10 +985,11 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None):
                 if seed:
                     seed += random.randint(1,100)
                 populate(f, depth=depth, folders=folders, files=files,
-                         seed=seed, stopchance=stopchance)
+                         seed=seed, stopchance=stopchance,
+                         extensions=extensions)
 
 def randomdir(depth=2, files=range(1,4), folders=range(0,4),
-              stopchance=.5, seed=None):
+              stopchance=.5, seed=None, extensions=['txt']):
     '''
     Create a randomized FakeDir.
 
@@ -985,6 +1009,9 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
         Chance that an added folder will not be populated. The default is .5.
     seed : int or float, optional
         Random seed. The default is None.
+    extensions : list-likie, optional
+        Collection of extensions to randomly select from for files.  The
+        default is ['txt'].  Leading period can be included or omitted.
 
     Returns
     -------
@@ -993,7 +1020,14 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
 
     '''
     top = FakeDir('MyFakeDir')
-    populate(top, depth, folders, files, seed=seed, stopchance=stopchance)
+    new_ex = []
+    for x in extensions:
+        if x[0] != '.':
+            new_ex.append('.' + x)
+        else:
+            new_ex.append(x)
+    populate(top, depth, folders, files, seed=seed, stopchance=stopchance,
+             extensions=new_ex)
     return top
 
 def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
