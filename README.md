@@ -1,7 +1,7 @@
 # seedir
 A Python package for creating, editing, and reading folder tree diagrams.
 
-<div align='center'>Photo by <a href="https://unsplash.com/@adamkring">Adam Kring</a></div>
+<div align='center'><i>Photo by <a href="https://unsplash.com/@adamkring">Adam Kring</a></i></div>
 <p align="center">
 	<img src="img/pun.jpg" width="500">
 </p>
