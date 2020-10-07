@@ -6,7 +6,6 @@ A Python package for creating, editing, and reading folder tree diagrams.
 </p>
 <div align='center'>Photo by <a href="https://unsplash.com/@adamkring">Adam Kring</a></div>
 
-
 ```python
 >>> import seedir as sd
 >>> sd.seedir(style='lines', itemlimit=10, depthlimit=2, exclude_folders='.git')
