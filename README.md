@@ -4,7 +4,7 @@ A Python package for creating, editing, and reading folder tree diagrams.
 <p align="center">
 	<img src="img/pun.jpg" width="500">
 </p>
-*Photo by [Adam Kring](https://unsplash.com/@adamkring)*
+<div align='center'>Photo by <a href="https://unsplash.com/@adamkring">Adam Kring</a></div>
 
 
 ```python
