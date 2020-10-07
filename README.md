@@ -1,10 +1,10 @@
 # seedir
 A Python package for creating, editing, and reading folder tree diagrams.
 
+<div align='center'>Photo by <a href="https://unsplash.com/@adamkring">Adam Kring</a></div>
 <p align="center">
 	<img src="img/pun.jpg" width="500">
 </p>
-<div align='center'>Photo by <a href="https://unsplash.com/@adamkring">Adam Kring</a></div>
 
 ```python
 >>> import seedir as sd
