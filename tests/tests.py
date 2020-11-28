@@ -15,7 +15,7 @@ seedir\  < here!
 └─tests\
 
 With the command:
-    python -m test.tests
+    python -m tests.tests
 
 Test methods MUST start with "test"
 """
@@ -34,6 +34,13 @@ example = """mypkg/
     view.py
     test/
         __init__.py
+        test_app.py
+        test_view.py"""
+
+no_init = """mypkg/
+    app.py
+    view.py
+    test/
         test_app.py
         test_view.py"""
 
@@ -217,6 +224,36 @@ class TestFakeDir(unittest.TestCase):
         self.assertFalse(x.get_child_names())
         sd.populate(x)
         self.assertTrue(x.get_child_names())
+
+class TestMask(unittest.TestCase):
+    def test_mask_no_folders_or_files(self):
+        def foo(x):
+            if os.path.isdir(x) or os.path.isfile(x):
+                return False
+
+        s = sd.seedir(testdir, printout=False, depthlimit=2, itemlimit=10, mask=foo,)
+        s = s.split('\n')
+        self.assertEqual(len(s), 1)
+
+    def test_mask_always_false(self):
+        def bar(x):
+            return False
+        s = sd.seedir(testdir, printout=False, depthlimit=2, itemlimit=10, mask=bar)
+        s = s.split('\n')
+        self.assertEqual(len(s), 1)
+
+    def test_mask_fakedir_fromstring(self):
+        x = sd.fakedir_fromstring(example)
+        s = x.seedir(printout=False, mask=lambda x : not x.name[0] == '_',
+                     style='spaces', indent=4)
+        self.assertEqual(no_init, s)
+
+    def test_mask_fakedir(self):
+        def foo(x):
+            if os.path.isdir(x) or os.path.isfile(x):
+                return False
+        f = sd.fakedir(testdir, mask=foo)
+        self.assertEqual(len(f.listdir()), 0)
 
 if __name__ == '__main__':
     unittest.main()
