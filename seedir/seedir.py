@@ -621,14 +621,12 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         itemlimit can be expressed using the beyond parameter.  The files and
         folders left out are determined by the sorting parameters of seedir()
         (sort, sort_reverse, sort_key).  The default is None.
-    beyond : str ('ellipsis', 'cotent' or a string starting with an
-             underscore) or None, optional
+    beyond : str ('ellipsis', 'cotent' or a string starting with an underscore) or None, optional
         String to indicate directory contents beyond the itemlimit or the
-        depthlimit.  The default is None.  Options are:
-            - 'ellipsis' ('...')
-            - 'content' or 'contents' (the number of files and folders beyond)
-            - a string starting with '_' (everything after the leading
-              underscore will be returned)
+        depthlimit.  The default is None.  Options are: 'ellipsis' ('...'),
+        'content' or 'contents' (the number of files and folders beyond), or
+        a string starting with '_' (everything after the leading underscore
+        will be returned)
     first : 'files', 'folders', or None, optional
         Sort the directory so that either files or folders appear first.
         The default is None.

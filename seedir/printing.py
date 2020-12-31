@@ -7,6 +7,12 @@ in seedir.
 
 GitHub: https://github.com/earnestt1234/seedir
 """
+__pdoc__ = {}
+
+for key in ['is_match',
+            'format_indent']:
+    __pdoc__[key] = False
+
 import copy
 import os
 import re

@@ -939,6 +939,35 @@ class FakeDir(FakeItem):
 
         All files will be empty.
 
+            >>> import seedir as sd
+            >>> r = sd.randomdir(seed=456)
+            >>> r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            │ ├─Neptune.txt
+            │ ├─Savoyard.txt
+            │ ├─eventual/
+            │ ├─influential/
+            │ └─irrecoverable/
+            │   ├─vagabond.txt
+            │   ├─Casanova.txt
+            │   ├─Benjamin.txt
+            │   ├─dichloride/
+            │   └─sedition/
+            ├─Uganda/
+            └─pedantic/
+              └─Bertrand.txt
+
+            >>> r.realize()
+
+            >>> import os
+            >>> os.path.isdir('MyFakeDir/scrooge')
+            True
+
         Parameters
         ----------
         path : str, optional
@@ -1007,14 +1036,12 @@ class FakeDir(FakeItem):
             itemlimit can be expressed using the beyond parameter.  The files and
             folders left out are determined by the sorting parameters of seedir()
             (sort, sort_reverse, sort_key).  The default is None.
-        beyond : str ('ellipsis', 'cotent' or a string starting with an
-                 underscore) or None, optional
+        beyond : str ('ellipsis', 'cotent' or a string starting with an underscore) or None, optional
             String to indicate directory contents beyond the itemlimit or the
-            depthlimit.  The default is None.  Options are:
-                - 'ellipsis' ('...')
-                - 'content' or 'contents' (the number of files and folders beyond)
-                - a string starting with '_' (everything after the leading
-                  underscore will be returned)
+            depthlimit.  The default is None.  Options are: 'ellipsis' ('...'),
+            'content' or 'contents' (the number of files and folders beyond), or
+            a string starting with '_' (everything after the leading underscore
+            will be returned)
         first : 'files', 'folders', or None, optional
             Sort the directory so that either files or folders appear first.
             The default is None.
@@ -1131,7 +1158,59 @@ class FakeDir(FakeItem):
         self.walk_apply(apply_setdepth)
 
     def trim(self, depthlimit):
-        '''Remove folders and files beyond the depthlimit.'''
+        """
+        Remove items beyond the depth limit.
+
+            >>> import seedir as sd
+            >>> r = sd.randomdir(seed=456)
+            >>> r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            │ ├─Neptune.txt
+            │ ├─Savoyard.txt
+            │ ├─eventual/
+            │ ├─influential/
+            │ └─irrecoverable/
+            │   ├─vagabond.txt
+            │   ├─Casanova.txt
+            │   ├─Benjamin.txt
+            │   ├─dichloride/
+            │   └─sedition/
+            ├─Uganda/
+            └─pedantic/
+              └─Bertrand.txt
+
+            >>> r.trim(1)
+            >>> r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            ├─Uganda/
+            └─pedantic/
+
+
+        Parameters
+        ----------
+        depthlimit : non-negative int
+            Files beyond this depth will be cut. The root has depth 0.
+
+        Raises
+        ------
+        FakedirError
+            depthlimit is not a non-negative int
+
+        Returns
+        -------
+        None.
+
+        """
         depthlimit = int(depthlimit)
         if depthlimit < 0:
             raise FakedirError('depthlimit must be non-negative int')
@@ -1146,7 +1225,49 @@ class FakeDir(FakeItem):
             self.walk_apply(trim_apply, depthlimit=depthlimit)
 
     def walk_apply(self, foo, *args, **kwargs):
-        '''Recursively apply a function the children of self (and so on).'''
+        """
+        Recursively apply a function the children of self (and so on)
+
+            >>> import seedir as sd
+            >>> r = sd.randomdir(seed=1234)
+            >>> r
+
+            MyFakeDir/
+            ├─market.txt
+            ├─acuity.txt
+            ├─redwood/
+            │ └─yeomanry.txt
+            ├─apoplexy/
+            └─storytelling/
+
+            >>> def replace_txt(f):
+            ...    f.name = f.name.replace('txt', 'pdf')
+
+            >>> r.walk_apply(replace_txt)
+            >>> r
+
+            MyFakeDir/
+            ├─market.pdf
+            ├─acuity.pdf
+            ├─redwood/
+            │ └─yeomanry.pdf
+            ├─apoplexy/
+            └─storytelling/
+
+        Parameters
+        ----------
+        foo : function
+            Function to apply.
+        *args :
+            Additional positional arguments for foo.
+        **kwargs :
+            Additional keyword arguments for foo.
+
+        Returns
+        -------
+        None.
+
+        """
         for f in self._children:
             foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):

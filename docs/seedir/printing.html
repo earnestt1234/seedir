@@ -40,6 +40,12 @@ in seedir.
 
 GitHub: https://github.com/earnestt1234/seedir
 &#34;&#34;&#34;
+__pdoc__ = {}
+
+for key in [&#39;is_match&#39;,
+            &#39;format_indent&#39;]:
+    __pdoc__[key] = False
+
 import copy
 import os
 import re
@@ -203,91 +209,6 @@ def format_indent(style_dict, indent=2):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="seedir.printing.format_indent"><code class="name flex">
-<span>def <span class="ident">format_indent</span></span>(<span>style_dict, indent=2)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Format the indent of style tokens, from seedir.STYLE_DICT or returned
-by seedir.get_styleargs().</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>style_dict</code></strong> :&ensp;<code>dict</code></dt>
-<dd>Dictionary of style tokens.</dd>
-<dt><strong><code>indent</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Number of spaces to indent. The default is 2.
-With 0, all tokens
-become the null string.
-With 1, all tokens are only the first
-character.
-With 2, the style tokens are returned unedited.
-When &gt;2,
-the final character of each token (except 'folderstart' and
-'filestart') are extened n - indent times, to give a string whose
-length is equal to indent.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>SeedirError</code></dt>
-<dd>Indent is not a positive integer.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>output</code></strong> :&ensp;<code>dict</code></dt>
-<dd>New dictionary of edited tokens.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def format_indent(style_dict, indent=2):
-    &#39;&#39;&#39;
-    Format the indent of style tokens, from seedir.STYLE_DICT or returned
-    by seedir.get_styleargs().
-
-    Parameters
-    ----------
-    style_dict : dict
-        Dictionary of style tokens.
-    indent : int, optional
-        Number of spaces to indent. The default is 2.  With 0, all tokens
-        become the null string.  With 1, all tokens are only the first
-        character.  With 2, the style tokens are returned unedited.  When &gt;2,
-        the final character of each token (except &#39;folderstart&#39; and
-        &#39;filestart&#39;) are extened n - indent times, to give a string whose
-        length is equal to indent.
-
-    Raises
-    ------
-    SeedirError
-        Indent is not a positive integer.
-
-    Returns
-    -------
-    output : dict
-        New dictionary of edited tokens.
-
-    &#39;&#39;&#39;
-    folder = style_dict[&#39;folderstart&#39;]
-    file = style_dict[&#39;filestart&#39;]
-    if indent &lt; 0 or not isinstance(indent, int):
-        raise SeedirError(&#39;indent must be a positive integer&#39;)
-    elif indent == 0:
-        output = {k : &#39;&#39; for k,_ in style_dict.items()
-                  if k not in [&#39;folderstart&#39;,&#39;filestart&#39;]}
-    elif indent == 1:
-        output = {k : v[0] for k,v in style_dict.items()
-                  if k not in [&#39;folderstart&#39;,&#39;filestart&#39;]}
-    elif indent == 2:
-        output = style_dict
-    else:
-        indent -= 2
-        output = {k : v + v[-1]*indent for k,v in style_dict.items()
-                  if k not in [&#39;folderstart&#39;,&#39;filestart&#39;]}
-    output[&#39;folderstart&#39;] = folder
-    output[&#39;filestart&#39;] = file
-    return output</code></pre>
-</details>
-</dd>
 <dt id="seedir.printing.get_styleargs"><code class="name flex">
 <span>def <span class="ident">get_styleargs</span></span>(<span>style)</span>
 </code></dt>
@@ -345,25 +266,6 @@ Current options are 'lines', 'spaces', 'arrow', 'plus',
         return copy.deepcopy(STYLE_DICT[style])</code></pre>
 </details>
 </dd>
-<dt id="seedir.printing.is_match"><code class="name flex">
-<span>def <span class="ident">is_match</span></span>(<span>pattern, string, regex=True)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Function for matching strings using either regular expression
-or literal interpretation.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_match(pattern, string, regex=True):
-    &#39;&#39;&#39;Function for matching strings using either regular expression
-    or literal interpretation.&#39;&#39;&#39;
-    if regex:
-        return bool(re.search(pattern, string))
-    else:
-        return pattern == string</code></pre>
-</details>
-</dd>
 </dl>
 </section>
 <section>
@@ -388,9 +290,7 @@ or literal interpretation.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="seedir.printing.format_indent" href="#seedir.printing.format_indent">format_indent</a></code></li>
 <li><code><a title="seedir.printing.get_styleargs" href="#seedir.printing.get_styleargs">get_styleargs</a></code></li>
-<li><code><a title="seedir.printing.is_match" href="#seedir.printing.is_match">is_match</a></code></li>
 </ul>
 </li>
 </ul>

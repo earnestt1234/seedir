@@ -753,6 +753,7 @@ class FakeDir(FakeItem):
 
     See the examples notebook on GitHub for more uses,
     or the docstrings in the methods of FakeDir.
+    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
 
     &#39;&#39;&#39;
     def __init__(self, name, parent=None):
@@ -979,6 +980,35 @@ class FakeDir(FakeItem):
 
         All files will be empty.
 
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=456)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            │ ├─Neptune.txt
+            │ ├─Savoyard.txt
+            │ ├─eventual/
+            │ ├─influential/
+            │ └─irrecoverable/
+            │   ├─vagabond.txt
+            │   ├─Casanova.txt
+            │   ├─Benjamin.txt
+            │   ├─dichloride/
+            │   └─sedition/
+            ├─Uganda/
+            └─pedantic/
+              └─Bertrand.txt
+
+            &gt;&gt;&gt; r.realize()
+
+            &gt;&gt;&gt; import os
+            &gt;&gt;&gt; os.path.isdir(&#39;MyFakeDir/scrooge&#39;)
+            True
+
         Parameters
         ----------
         path : str, optional
@@ -1047,14 +1077,12 @@ class FakeDir(FakeItem):
             itemlimit can be expressed using the beyond parameter.  The files and
             folders left out are determined by the sorting parameters of seedir()
             (sort, sort_reverse, sort_key).  The default is None.
-        beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an
-                 underscore) or None, optional
+        beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
             String to indicate directory contents beyond the itemlimit or the
-            depthlimit.  The default is None.  Options are:
-                - &#39;ellipsis&#39; (&#39;...&#39;)
-                - &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond)
-                - a string starting with &#39;_&#39; (everything after the leading
-                  underscore will be returned)
+            depthlimit.  The default is None.  Options are: &#39;ellipsis&#39; (&#39;...&#39;),
+            &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond), or
+            a string starting with &#39;_&#39; (everything after the leading underscore
+            will be returned)
         first : &#39;files&#39;, &#39;folders&#39;, or None, optional
             Sort the directory so that either files or folders appear first.
             The default is None.
@@ -1171,7 +1199,59 @@ class FakeDir(FakeItem):
         self.walk_apply(apply_setdepth)
 
     def trim(self, depthlimit):
-        &#39;&#39;&#39;Remove folders and files beyond the depthlimit.&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Remove items beyond the depth limit.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=456)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            │ ├─Neptune.txt
+            │ ├─Savoyard.txt
+            │ ├─eventual/
+            │ ├─influential/
+            │ └─irrecoverable/
+            │   ├─vagabond.txt
+            │   ├─Casanova.txt
+            │   ├─Benjamin.txt
+            │   ├─dichloride/
+            │   └─sedition/
+            ├─Uganda/
+            └─pedantic/
+              └─Bertrand.txt
+
+            &gt;&gt;&gt; r.trim(1)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            ├─Uganda/
+            └─pedantic/
+
+
+        Parameters
+        ----------
+        depthlimit : non-negative int
+            Files beyond this depth will be cut. The root has depth 0.
+
+        Raises
+        ------
+        FakedirError
+            depthlimit is not a non-negative int
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         depthlimit = int(depthlimit)
         if depthlimit &lt; 0:
             raise FakedirError(&#39;depthlimit must be non-negative int&#39;)
@@ -1186,7 +1266,49 @@ class FakeDir(FakeItem):
             self.walk_apply(trim_apply, depthlimit=depthlimit)
 
     def walk_apply(self, foo, *args, **kwargs):
-        &#39;&#39;&#39;Recursively apply a function the children of self (and so on).&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Recursively apply a function the children of self (and so on)
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=1234)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─market.txt
+            ├─acuity.txt
+            ├─redwood/
+            │ └─yeomanry.txt
+            ├─apoplexy/
+            └─storytelling/
+
+            &gt;&gt;&gt; def replace_txt(f):
+            ...    f.name = f.name.replace(&#39;txt&#39;, &#39;pdf&#39;)
+
+            &gt;&gt;&gt; r.walk_apply(replace_txt)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─market.pdf
+            ├─acuity.pdf
+            ├─redwood/
+            │ └─yeomanry.pdf
+            ├─apoplexy/
+            └─storytelling/
+
+        Parameters
+        ----------
+        foo : function
+            Function to apply.
+        *args :
+            Additional positional arguments for foo.
+        **kwargs :
+            Additional keyword arguments for foo.
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         for f in self._children:
             foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):
@@ -2425,7 +2547,8 @@ myfakedir/
 FakeFile(myfakedir/resources/images/a.png)
 </code></pre>
 <p>See the examples notebook on GitHub for more uses,
-or the docstrings in the methods of FakeDir.</p>
+or the docstrings in the methods of FakeDir.
+<a href="https://github.com/earnestt1234/seedir/blob/master/examples.ipynb">https://github.com/earnestt1234/seedir/blob/master/examples.ipynb</a></p>
 <p>Same as FakeItem initialization, but adds the _children attribute
 for keeping track of items inside the fake dir.</p></div>
 <details class="source">
@@ -2484,6 +2607,7 @@ for keeping track of items inside the fake dir.</p></div>
 
     See the examples notebook on GitHub for more uses,
     or the docstrings in the methods of FakeDir.
+    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
 
     &#39;&#39;&#39;
     def __init__(self, name, parent=None):
@@ -2710,6 +2834,35 @@ for keeping track of items inside the fake dir.</p></div>
 
         All files will be empty.
 
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=456)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            │ ├─Neptune.txt
+            │ ├─Savoyard.txt
+            │ ├─eventual/
+            │ ├─influential/
+            │ └─irrecoverable/
+            │   ├─vagabond.txt
+            │   ├─Casanova.txt
+            │   ├─Benjamin.txt
+            │   ├─dichloride/
+            │   └─sedition/
+            ├─Uganda/
+            └─pedantic/
+              └─Bertrand.txt
+
+            &gt;&gt;&gt; r.realize()
+
+            &gt;&gt;&gt; import os
+            &gt;&gt;&gt; os.path.isdir(&#39;MyFakeDir/scrooge&#39;)
+            True
+
         Parameters
         ----------
         path : str, optional
@@ -2778,14 +2931,12 @@ for keeping track of items inside the fake dir.</p></div>
             itemlimit can be expressed using the beyond parameter.  The files and
             folders left out are determined by the sorting parameters of seedir()
             (sort, sort_reverse, sort_key).  The default is None.
-        beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an
-                 underscore) or None, optional
+        beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
             String to indicate directory contents beyond the itemlimit or the
-            depthlimit.  The default is None.  Options are:
-                - &#39;ellipsis&#39; (&#39;...&#39;)
-                - &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond)
-                - a string starting with &#39;_&#39; (everything after the leading
-                  underscore will be returned)
+            depthlimit.  The default is None.  Options are: &#39;ellipsis&#39; (&#39;...&#39;),
+            &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond), or
+            a string starting with &#39;_&#39; (everything after the leading underscore
+            will be returned)
         first : &#39;files&#39;, &#39;folders&#39;, or None, optional
             Sort the directory so that either files or folders appear first.
             The default is None.
@@ -2902,7 +3053,59 @@ for keeping track of items inside the fake dir.</p></div>
         self.walk_apply(apply_setdepth)
 
     def trim(self, depthlimit):
-        &#39;&#39;&#39;Remove folders and files beyond the depthlimit.&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Remove items beyond the depth limit.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=456)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            │ ├─Neptune.txt
+            │ ├─Savoyard.txt
+            │ ├─eventual/
+            │ ├─influential/
+            │ └─irrecoverable/
+            │   ├─vagabond.txt
+            │   ├─Casanova.txt
+            │   ├─Benjamin.txt
+            │   ├─dichloride/
+            │   └─sedition/
+            ├─Uganda/
+            └─pedantic/
+              └─Bertrand.txt
+
+            &gt;&gt;&gt; r.trim(1)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Vogel.txt
+            ├─monkish.txt
+            ├─jowly.txt
+            ├─scrooge/
+            ├─Uganda/
+            └─pedantic/
+
+
+        Parameters
+        ----------
+        depthlimit : non-negative int
+            Files beyond this depth will be cut. The root has depth 0.
+
+        Raises
+        ------
+        FakedirError
+            depthlimit is not a non-negative int
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         depthlimit = int(depthlimit)
         if depthlimit &lt; 0:
             raise FakedirError(&#39;depthlimit must be non-negative int&#39;)
@@ -2917,7 +3120,49 @@ for keeping track of items inside the fake dir.</p></div>
             self.walk_apply(trim_apply, depthlimit=depthlimit)
 
     def walk_apply(self, foo, *args, **kwargs):
-        &#39;&#39;&#39;Recursively apply a function the children of self (and so on).&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Recursively apply a function the children of self (and so on)
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=1234)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─market.txt
+            ├─acuity.txt
+            ├─redwood/
+            │ └─yeomanry.txt
+            ├─apoplexy/
+            └─storytelling/
+
+            &gt;&gt;&gt; def replace_txt(f):
+            ...    f.name = f.name.replace(&#39;txt&#39;, &#39;pdf&#39;)
+
+            &gt;&gt;&gt; r.walk_apply(replace_txt)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─market.pdf
+            ├─acuity.pdf
+            ├─redwood/
+            │ └─yeomanry.pdf
+            ├─apoplexy/
+            └─storytelling/
+
+        Parameters
+        ----------
+        foo : function
+            Function to apply.
+        *args :
+            Additional positional arguments for foo.
+        **kwargs :
+            Additional keyword arguments for foo.
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         for f in self._children:
             foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):
@@ -3286,6 +3531,35 @@ MyFakeDir/
 <div class="desc"><p>Convert a fake file tree into a real one by creating a folder at a
 given path, and populating it with files and sub-directories.</p>
 <p>All files will be empty.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; r = sd.randomdir(seed=456)
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ ├─Neptune.txt
+│ ├─Savoyard.txt
+│ ├─eventual/
+│ ├─influential/
+│ └─irrecoverable/
+│   ├─vagabond.txt
+│   ├─Casanova.txt
+│   ├─Benjamin.txt
+│   ├─dichloride/
+│   └─sedition/
+├─Uganda/
+└─pedantic/
+  └─Bertrand.txt
+
+&gt;&gt;&gt; r.realize()
+
+&gt;&gt;&gt; import os
+&gt;&gt;&gt; os.path.isdir('MyFakeDir/scrooge')
+True
+</code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
@@ -3304,6 +3578,35 @@ in which the current working directory is used.</dd>
     given path, and populating it with files and sub-directories.
 
     All files will be empty.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; r = sd.randomdir(seed=456)
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─Vogel.txt
+        ├─monkish.txt
+        ├─jowly.txt
+        ├─scrooge/
+        │ ├─Neptune.txt
+        │ ├─Savoyard.txt
+        │ ├─eventual/
+        │ ├─influential/
+        │ └─irrecoverable/
+        │   ├─vagabond.txt
+        │   ├─Casanova.txt
+        │   ├─Benjamin.txt
+        │   ├─dichloride/
+        │   └─sedition/
+        ├─Uganda/
+        └─pedantic/
+          └─Bertrand.txt
+
+        &gt;&gt;&gt; r.realize()
+
+        &gt;&gt;&gt; import os
+        &gt;&gt;&gt; os.path.isdir(&#39;MyFakeDir/scrooge&#39;)
+        True
 
     Parameters
     ----------
@@ -3382,16 +3685,14 @@ The files and
 folders left out are determined by the sorting parameters of seedir()
 (sort, sort_reverse, sort_key).
 The default is None.</dd>
-<dt><strong><code>beyond</code></strong> :&ensp;<code>str ('ellipsis', 'cotent'</code> or <code>a string starting with an</code></dt>
-<dd>underscore) or None, optional
-String to indicate directory contents beyond the itemlimit or the
+<dt><strong><code>beyond</code></strong> :&ensp;<code>str ('ellipsis', 'cotent'</code> or <code>a string starting with an underscore)</code> or <code>None</code>, optional</dt>
+<dd>String to indicate directory contents beyond the itemlimit or the
 depthlimit.
 The default is None.
-Options are:
-- 'ellipsis' ('&hellip;')
-- 'content' or 'contents' (the number of files and folders beyond)
-- a string starting with '_' (everything after the leading
-underscore will be returned)</dd>
+Options are: 'ellipsis' ('&hellip;'),
+'content' or 'contents' (the number of files and folders beyond), or
+a string starting with '_' (everything after the leading underscore
+will be returned)</dd>
 <dt><strong><code>first</code></strong> :&ensp;<code>'files', 'folders',</code> or <code>None</code>, optional</dt>
 <dd>Sort the directory so that either files or folders appear first.
 The default is None.</dd>
@@ -3517,14 +3818,12 @@ case the tree diagram is printed in the console.</dd>
         itemlimit can be expressed using the beyond parameter.  The files and
         folders left out are determined by the sorting parameters of seedir()
         (sort, sort_reverse, sort_key).  The default is None.
-    beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an
-             underscore) or None, optional
+    beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
         String to indicate directory contents beyond the itemlimit or the
-        depthlimit.  The default is None.  Options are:
-            - &#39;ellipsis&#39; (&#39;...&#39;)
-            - &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond)
-            - a string starting with &#39;_&#39; (everything after the leading
-              underscore will be returned)
+        depthlimit.  The default is None.  Options are: &#39;ellipsis&#39; (&#39;...&#39;),
+        &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond), or
+        a string starting with &#39;_&#39; (everything after the leading underscore
+        will be returned)
     first : &#39;files&#39;, &#39;folders&#39;, or None, optional
         Sort the directory so that either files or folders appear first.
         The default is None.
@@ -3656,13 +3955,111 @@ Called automatically when a new parent is assigned.</p></div>
 <span>def <span class="ident">trim</span></span>(<span>self, depthlimit)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Remove folders and files beyond the depthlimit.</p></div>
+<div class="desc"><p>Remove items beyond the depth limit.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; r = sd.randomdir(seed=456)
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ ├─Neptune.txt
+│ ├─Savoyard.txt
+│ ├─eventual/
+│ ├─influential/
+│ └─irrecoverable/
+│   ├─vagabond.txt
+│   ├─Casanova.txt
+│   ├─Benjamin.txt
+│   ├─dichloride/
+│   └─sedition/
+├─Uganda/
+└─pedantic/
+  └─Bertrand.txt
+
+&gt;&gt;&gt; r.trim(1)
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+├─Uganda/
+└─pedantic/
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>depthlimit</code></strong> :&ensp;<code>non-negative int</code></dt>
+<dd>Files beyond this depth will be cut. The root has depth 0.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>FakedirError</code></dt>
+<dd>depthlimit is not a non-negative int</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def trim(self, depthlimit):
-    &#39;&#39;&#39;Remove folders and files beyond the depthlimit.&#39;&#39;&#39;
+    &#34;&#34;&#34;
+    Remove items beyond the depth limit.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; r = sd.randomdir(seed=456)
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─Vogel.txt
+        ├─monkish.txt
+        ├─jowly.txt
+        ├─scrooge/
+        │ ├─Neptune.txt
+        │ ├─Savoyard.txt
+        │ ├─eventual/
+        │ ├─influential/
+        │ └─irrecoverable/
+        │   ├─vagabond.txt
+        │   ├─Casanova.txt
+        │   ├─Benjamin.txt
+        │   ├─dichloride/
+        │   └─sedition/
+        ├─Uganda/
+        └─pedantic/
+          └─Bertrand.txt
+
+        &gt;&gt;&gt; r.trim(1)
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─Vogel.txt
+        ├─monkish.txt
+        ├─jowly.txt
+        ├─scrooge/
+        ├─Uganda/
+        └─pedantic/
+
+
+    Parameters
+    ----------
+    depthlimit : non-negative int
+        Files beyond this depth will be cut. The root has depth 0.
+
+    Raises
+    ------
+    FakedirError
+        depthlimit is not a non-negative int
+
+    Returns
+    -------
+    None.
+
+    &#34;&#34;&#34;
     depthlimit = int(depthlimit)
     if depthlimit &lt; 0:
         raise FakedirError(&#39;depthlimit must be non-negative int&#39;)
@@ -3681,13 +4078,92 @@ Called automatically when a new parent is assigned.</p></div>
 <span>def <span class="ident">walk_apply</span></span>(<span>self, foo, *args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Recursively apply a function the children of self (and so on).</p></div>
+<div class="desc"><p>Recursively apply a function the children of self (and so on)</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; r = sd.randomdir(seed=1234)
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─market.txt
+├─acuity.txt
+├─redwood/
+│ └─yeomanry.txt
+├─apoplexy/
+└─storytelling/
+
+&gt;&gt;&gt; def replace_txt(f):
+...    f.name = f.name.replace('txt', 'pdf')
+
+&gt;&gt;&gt; r.walk_apply(replace_txt)
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─market.pdf
+├─acuity.pdf
+├─redwood/
+│ └─yeomanry.pdf
+├─apoplexy/
+└─storytelling/
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>foo</code></strong> :&ensp;<code>function</code></dt>
+<dd>Function to apply.</dd>
+</dl>
+<p><em>args :
+Additional positional arguments for foo.
+</em>*kwargs :
+Additional keyword arguments for foo.</p>
+<h2 id="returns">Returns</h2>
+<p>None.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def walk_apply(self, foo, *args, **kwargs):
-    &#39;&#39;&#39;Recursively apply a function the children of self (and so on).&#39;&#39;&#39;
+    &#34;&#34;&#34;
+    Recursively apply a function the children of self (and so on)
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; r = sd.randomdir(seed=1234)
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─market.txt
+        ├─acuity.txt
+        ├─redwood/
+        │ └─yeomanry.txt
+        ├─apoplexy/
+        └─storytelling/
+
+        &gt;&gt;&gt; def replace_txt(f):
+        ...    f.name = f.name.replace(&#39;txt&#39;, &#39;pdf&#39;)
+
+        &gt;&gt;&gt; r.walk_apply(replace_txt)
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─market.pdf
+        ├─acuity.pdf
+        ├─redwood/
+        │ └─yeomanry.pdf
+        ├─apoplexy/
+        └─storytelling/
+
+    Parameters
+    ----------
+    foo : function
+        Function to apply.
+    *args :
+        Additional positional arguments for foo.
+    **kwargs :
+        Additional keyword arguments for foo.
+
+    Returns
+    -------
+    None.
+
+    &#34;&#34;&#34;
     for f in self._children:
         foo(f, *args, **kwargs)
         if isinstance(f, FakeDir):
