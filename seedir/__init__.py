@@ -20,16 +20,12 @@ GitHub: https://github.com/earnestt1234/seedir
 __pdoc__ = {'command_line' : False}
 
 #imports for package namespace
-from .seedir import (recursive_folder_structure,
-                     seedir)
+from .seedir import seedir
 
 from .fakedir import (fakedir,
                       fakedir_fromstring,
                       populate,
-                      randomdir,
-                      recursive_add_fakes,
-                      recursive_fakedir_structure,
-                      sort_fakedir)
+                      randomdir,)
 
 from .fakedir import FakeDir as FakeDir
 from .fakedir import FakeFile as FakeFile
@@ -37,8 +33,6 @@ from .fakedir import FakeItem as FakeItem
 
 from .errors import SeedirError, FakedirError
 
-from .printing import (format_indent,
-                       get_styleargs,
-                       is_match,
+from .printing import (get_styleargs,
                        STYLE_DICT,
                        words)

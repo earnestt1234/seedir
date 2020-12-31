@@ -16,7 +16,8 @@ for key in ['count_files',
             'sort_dir',
             'beyond_depth_str',
             'get_base_header',
-            'filter_item_names']:
+            'filter_item_names',
+            'recursive_folder_structure']:
     __pdoc__[key] = False
 
 import os
@@ -581,6 +582,9 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         ├─conf.py
         └─index.rst
 
+    See more examples on the notebook on GitHub!
+    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
+
     Parameters
     ----------
     path : str or None, optional
@@ -655,21 +659,30 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     **kwargs : str
         Specific tokens to use for creating the file tree diagram.  The tokens
         use by each builtin style can be seen with sd.get_styleargs().  Valid
-        options are (with the example token for the 'lines' style):
-            - extend ('│ '): characters to show the extension of a directory
-            while its children are traversed
-            - space ('  '): character to provide the correct indentation
-            of an item when some of its parent / grandparent directories
-            are completely traversed
-            - split ('├─'): characters to show a folder or file within
-            a directory (with more items following)
-            - final ('└─'): characters to show a folder or file within
-            a directory (with no more items following)
-            - folderstart (''): characters to append before any folder
-            - filestart (''): characters to append beffore any file
-        All default style tokens are 2 character strings.  Style tokens
-        from **kwargs are not affected by the indent parameter.  The uniform
-        and anystart parameters can be used to affect multiple style tokens.
+        options are extend (characters to show the extension of a directory
+        while its children are traversed), space (character to provide the
+        correct indentation of an item when some of its parent / grandparent
+        directories are completely traversed), split (characters to show a
+        folder or file within a directory, with more items following),
+        final (characters to show a folder or file within a directory,
+        with no more items following), folderstart (characters to append
+        before any folder), and filestart (characters to append beffore any
+        file).  The following shows the default tokens for the 'lines' style:
+
+            >>> import seedir as sd
+            >>> sd.get_styleargs('lines')
+
+            {'split': '├─',
+             'extend': '│ ',
+             'space': '  ',
+             'final': '└─',
+             'folderstart': '',
+             'filestart': ''}
+
+        All default style tokens are 2 character strings, except for
+        folderstart and filestart.  Style tokens from **kwargs are not
+        affected by the indent parameter.  The uniform and anystart
+        parameters can be used to affect multiple style tokens.
 
     Raises
     ------

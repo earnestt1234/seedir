@@ -59,7 +59,10 @@ for key in [&#39;count_fakefiles&#39;,
             &#39;sort_fakedir&#39;,
             &#39;beyond_fakedepth_str&#39;,
             &#39;get_fakebase_header&#39;,
-            &#39;filter_item_names&#39;]:
+            &#39;filter_fakeitem_names&#39;,
+            &#39;get_random_int&#39;,
+            &#39;recursive_add_fakes&#39;,
+            &#39;recursive_fakedir_structure&#39;]:
     __pdoc__[key] = False
 
 import os
@@ -608,7 +611,33 @@ class FakeItem:
 
     def get_path(self):
         &#39;&#39;&#39;Return a &#34;path&#34; string of self, from the head FakeDir (which has
-        parent == None).&#39;&#39;&#39;
+        parent == None).
+
+        EXAMPLE
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; f = sd.randomdir(seed=3) # create a random FakeDir
+            &gt;&gt;&gt; f
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─Myra.txt
+              ├─Sherwin.txt
+              ├─pinnacle/
+              ├─sylvan/
+              └─alai/
+                ├─weld.txt
+                ├─penates.txt
+                ├─Marquette/
+                ├─America/
+                └─Stalin/
+
+            &gt;&gt;&gt; x = sd.FakeDir(&#39;newfolder&#39;, parent=f[&#39;infusoria/alai&#39;])
+            &gt;&gt;&gt; print(x.get_path())
+
+            &#39;MyFakeDir/infusoria/alai/newfolder&#39;
+        &#39;&#39;&#39;
         parents = [self.name]
         on = self
         while on.parent is not None:
@@ -617,7 +646,8 @@ class FakeItem:
         return &#39;/&#39;.join(parents[::-1])
 
     def set_depth(self):
-        &#39;&#39;&#39;Set the depth attribute of self, based on the depth of parent.&#39;&#39;&#39;
+        &#39;&#39;&#39;Set the depth attribute of self, based on the depth of parent.
+        Automatically called when setting new parents.&#39;&#39;&#39;
         if self.parent is None:
             self.depth = 0
         else:
@@ -632,7 +662,32 @@ class FakeItem:
         return isinstance(self, FakeDir)
 
 class FakeFile(FakeItem):
-    &#39;&#39;&#39;Class to represent files in FakeDir objects.&#39;&#39;&#39;
+    &#39;&#39;&#39;Class to represent files in FakeDir objects.
+
+    Files in FakeDir have this type:
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; f = sd.randomdir(seed=3) # create a random FakeDir
+        &gt;&gt;&gt; f
+
+        MyFakeDir/
+        ├─Endicott.txt
+        └─infusoria/
+          ├─Myra.txt
+          ├─Sherwin.txt
+          ├─pinnacle/
+          ├─sylvan/
+          └─alai/
+            ├─weld.txt
+            ├─penates.txt
+            ├─Marquette/
+            ├─America/
+            └─Stalin/
+
+        &gt;&gt;&gt; f[&#39;Endicott.txt&#39;]
+
+        FakeFile(MyFakeDir/Endicott.txt)
+    &#39;&#39;&#39;
     def __init__(self, name, parent=None):
         &#39;&#39;&#39;Same as FakeItem initialization, but adds filename and extension
         attributes.
@@ -647,7 +702,59 @@ class FakeFile(FakeItem):
         return &#39;FakeFile({})&#39;.format(self.get_path())
 
 class FakeDir(FakeItem):
-    &#39;&#39;&#39;Class to represent fake folders.&#39;&#39;&#39;
+    &#39;&#39;&#39;Class to represent fake folders.  Can be used to create
+    custom folder tree diagrams.  See seedir.fakedir() for converting
+    a real directory into a FakeDir, seedir.fakedir_fromstring() for converting
+    a text folder diagram into a FakeDir, and seedir.randomdir() for
+    creating a random one.
+
+    To make a FakeDir from scratch, use this class:
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; x = sd.FakeDir(&#39;myfakedir&#39;)
+        &gt;&gt;&gt; x.seedir()
+
+        myfakedir/
+
+    There are various ways to add to it:
+
+        # using methods
+        &gt;&gt;&gt; x.create_file([&#39;__init__.py&#39;, &#39;main.py&#39;, &#39;styles.txt&#39;])
+        &gt;&gt;&gt; x.create_folder(&#39;docs&#39;)
+
+        # initializing new objects and setting the parent
+        &gt;&gt;&gt; y = sd.FakeDir(&#39;resources&#39;, parent=x)
+
+        # changing the parent of existing objects
+        &gt;&gt;&gt; z = sd.FakeDir(&#39;images&#39;)
+        &gt;&gt;&gt; z.parent = y
+
+        &gt;&gt;&gt; for n in [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]:
+        &gt;&gt;&gt;     z.create_file(n + &#39;.png&#39;)
+
+        &gt;&gt;&gt; x.seedir(sort=True, first=&#39;folders&#39;)
+
+        myfakedir/
+        ├─docs/
+        ├─resources/
+        │ └─images/
+        │   ├─a.png
+        │   ├─b.png
+        │   └─c.png
+        ├─__init__.py
+        ├─main.py
+        └─styles.txt
+
+    You can index with path-like strings:
+
+        &gt;&gt;&gt; x[&#39;resources/images/a.png&#39;]
+
+        FakeFile(myfakedir/resources/images/a.png)
+
+    See the examples notebook on GitHub for more uses,
+    or the docstrings in the methods of FakeDir.
+
+    &#39;&#39;&#39;
     def __init__(self, name, parent=None):
         &#39;&#39;&#39;Same as FakeItem initialization, but adds the _children attribute
         for keeping track of items inside the fake dir.
@@ -665,6 +772,7 @@ class FakeDir(FakeItem):
         return self.seedir(printout=False)
 
     def __getitem__(self, path):
+        &#34;&#34;&#34;Use path-like strings to index FakeDir objects.&#34;&#34;&#34;
         if not isinstance(path, str):
             raise FakedirError(&#34;Can only index FakeDir with int or str, &#34;
                                &#34;not {}&#34;.format(type(path)))
@@ -680,7 +788,27 @@ class FakeDir(FakeItem):
         return current
 
     def create_folder(self, name):
-        &#39;&#39;&#39;Insert a new folder with name &#34;name&#34;.&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Create a new folder (FakeDir) as a child.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
+            &gt;&gt;&gt; x.create_folder(&#34;new_folder&#34;)
+            &gt;&gt;&gt; x.seedir()
+
+            Test/
+            └─new_folder/
+
+        Parameters
+        ----------
+        name : str
+            Name of the new folder
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         if isinstance(name, str):
             FakeDir(name, parent=self)
         else:
@@ -688,7 +816,27 @@ class FakeDir(FakeItem):
                 FakeDir(s, parent=self)
 
     def create_file(self, name):
-        &#39;&#39;&#39;Insert a new file with name &#34;name&#34;.&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Create a new file (FakeFile) as a child.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
+            &gt;&gt;&gt; x.create_file(&#34;new_file.txt&#34;)
+            &gt;&gt;&gt; x.seedir()
+
+            Test/
+            └─new_file.txt
+
+        Parameters
+        ----------
+        name : str
+            Name of the new file.
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         if isinstance(name, str):
             FakeFile(name, parent=self)
         else:
@@ -697,7 +845,35 @@ class FakeDir(FakeItem):
 
     def delete(self, child):
         &#39;&#39;&#39;
-        Delete items from a FakeDir
+        Delete items from a FakeDir.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=3)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─Myra.txt
+              ├─Sherwin.txt
+              ├─pinnacle/
+              ├─sylvan/
+              └─alai/
+                ├─weld.txt
+                ├─penates.txt
+                ├─Marquette/
+                ├─America/
+                └─Stalin/
+
+            &gt;&gt;&gt; r[&#39;infusoria&#39;].delete([&#39;Myra.txt&#39;, &#39;Sherwin.txt&#39;]) # delete with string names
+            &gt;&gt;&gt; r[&#39;infusoria&#39;].delete(r[&#39;infusoria/alai&#39;]) # delete with objects
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─pinnacle/
+              └─sylvan/
 
         Parameters
         ----------
@@ -743,12 +919,57 @@ class FakeDir(FakeItem):
                         raise FakedirError(&#39;{} has no child with name &#34;{}&#34;&#39;.format(self, target))
 
     def get_child_names(self):
-        &#39;&#39;&#39;Return a list of child names.&#39;&#39;&#39;
+        &#39;&#39;&#39;Return a list of child names.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=3)
+            &gt;&gt;&gt; r
+
+                MyFakeDir/
+                ├─Endicott.txt
+                └─infusoria/
+                  ├─Myra.txt
+                  ├─Sherwin.txt
+                  ├─pinnacle/
+                  ├─sylvan/
+                  └─alai/
+                    ├─weld.txt
+                    ├─penates.txt
+                    ├─Marquette/
+                    ├─America/
+                    └─Stalin/
+
+            &gt;&gt;&gt; r.get_child_names()
+            [&#39;Endicott.txt&#39;, &#39;infusoria&#39;]
+
+        &#39;&#39;&#39;
         return [c.name for c in self._children]
 
     def listdir(self):
         &#39;&#39;&#39;Return the list of FakeFile and FakeDir objects that
-        are children of self (like os.listdir).&#39;&#39;&#39;
+        are children of self (like os.listdir).
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=3)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─Myra.txt
+              ├─Sherwin.txt
+              ├─pinnacle/
+              ├─sylvan/
+              └─alai/
+                ├─weld.txt
+                ├─penates.txt
+                ├─Marquette/
+                ├─America/
+                └─Stalin/
+
+            &gt;&gt;&gt; print([str(i) for i in r.listdir()])
+            [&#39;FakeFile(MyFakeDir/Endicott.txt)&#39;, &#39;FakeDir(MyFakeDir/infusoria)&#39;]
+        &#39;&#39;&#39;
         return self._children
 
     def realize(self, path=None):
@@ -864,21 +1085,30 @@ class FakeDir(FakeItem):
         **kwargs : str
             Specific tokens to use for creating the file tree diagram.  The tokens
             use by each builtin style can be seen with sd.get_styleargs().  Valid
-            options are (with the example token for the &#39;lines&#39; style):
-                - extend (&#39;│ &#39;): characters to show the extension of a directory
-                while its children are traversed
-                - space (&#39;  &#39;): character to provide the correct indentation
-                of an item when some of its parent / grandparent directories
-                are completely traversed
-                - split (&#39;├─&#39;): characters to show a folder or file within
-                a directory (with more items following)
-                - final (&#39;└─&#39;): characters to show a folder or file within
-                a directory (with no more items following)
-                - folderstart (&#39;&#39;): characters to append before any folder
-                - filestart (&#39;&#39;): characters to append beffore any file
-            All default style tokens are 2 character strings.  Style tokens
-            from **kwargs are not affected by the indent parameter.  The uniform
-            and anystart parameters can be used to affect multiple style tokens.
+            options are extend (characters to show the extension of a directory
+            while its children are traversed), space (character to provide the
+            correct indentation of an item when some of its parent / grandparent
+            directories are completely traversed), split (characters to show a
+            folder or file within a directory, with more items following),
+            final (characters to show a folder or file within a directory,
+            with no more items following), folderstart (characters to append
+            before any folder), and filestart (characters to append beffore any
+            file).  The following shows the default tokens for the &#39;lines&#39; style:
+
+                &gt;&gt;&gt; import seedir as sd
+                &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
+
+                {&#39;split&#39;: &#39;├─&#39;,
+                 &#39;extend&#39;: &#39;│ &#39;,
+                 &#39;space&#39;: &#39;  &#39;,
+                 &#39;final&#39;: &#39;└─&#39;,
+                 &#39;folderstart&#39;: &#39;&#39;,
+                 &#39;filestart&#39;: &#39;&#39;}
+
+            All default style tokens are 2 character strings, except for
+            folderstart and filestart.  Style tokens from **kwargs are not
+            affected by the indent parameter.  The uniform and anystart
+            parameters can be used to affect multiple style tokens.
 
         Raises
         ------
@@ -934,7 +1164,8 @@ class FakeDir(FakeItem):
             return rfs
 
     def set_child_depths(self):
-        &#39;&#39;&#39;Recursively set depths of self and its children.&#39;&#39;&#39;
+        &#39;&#39;&#39;Recursively set depths of self and its children.
+        Called automatically when a new parent is assigned.&#39;&#39;&#39;
         def apply_setdepth(FD):
             FD.set_depth()
         self.walk_apply(apply_setdepth)
@@ -1063,7 +1294,30 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
 def randomdir(depth=2, files=range(1,4), folders=range(0,4),
               stopchance=.5, seed=None, extensions=[&#39;txt&#39;]):
     &#39;&#39;&#39;
-    Create a randomized FakeDir.
+    Create a randomized FakeDir, initialized with random
+    dictionary words.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; sd.randomdir(seed=456)
+
+        MyFakeDir/
+        ├─Vogel.txt
+        ├─monkish.txt
+        ├─jowly.txt
+        ├─scrooge/
+        │ ├─Neptune.txt
+        │ ├─Savoyard.txt
+        │ ├─eventual/
+        │ ├─influential/
+        │ └─irrecoverable/
+        │   ├─vagabond.txt
+        │   ├─Casanova.txt
+        │   ├─Benjamin.txt
+        │   ├─dichloride/
+        │   └─sedition/
+        ├─Uganda/
+        └─pedantic/
+          └─Bertrand.txt
 
     Parameters
     ----------
@@ -1196,6 +1450,26 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
     to create an editable representation of the directory, or to join one or
     more directories.
 
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; f = sd.fakedir(&#39;/path/to/some/folder&#39;)
+        &gt;&gt;&gt; f
+
+        doc/
+        ├─_static/
+        │ ├─embedded/
+        │ │ ├─deep_file
+        │ │ └─very/
+        │ │   └─deep/
+        │ │     └─folder/
+        │ │       └─very_deep_file
+        │ └─less_deep_file
+        ├─about.rst
+        ├─conf.py
+        └─index.rst
+
+        &gt;&gt;&gt; type(f)
+        seedir.fakedir.FakeDir
+
     Parameters
     ----------
     path : str
@@ -1265,6 +1539,36 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     This function has mostly been tested with examples from Stack Overflow
     and other Python learning sites (as well as output from seedir.seedir()).
     There are surely cases which will causes errors or unexpected results.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; s = &#34;&#34;&#34;doc/
+        ├─_static/
+        │ ├─embedded/
+        │ │ ├─deep_file
+        │ │ └─very/
+        │ │   └─deep/
+        │ │     └─folder/
+        │ │       └─very_deep_file
+        │ └─less_deep_file
+        ├─about.rst
+        ├─conf.py
+        └─index.rst&#34;&#34;&#34;
+
+        &gt;&gt;&gt; f = sd.fakedir_fromstring(s) # now can be edited or restyled
+        &gt;&gt;&gt; f.seedir(style=&#39;spaces&#39;)
+
+        doc/
+          _static/
+            embedded/
+              deep_file
+              very/
+                deep/
+                  folder/
+                    very_deep_file
+            less_deep_file
+          about.rst
+          conf.py
+          index.rst
 
 
     Parameters
@@ -1407,6 +1711,26 @@ Rather than immediately representing
 a directory as a string (seedir.seedir()), this function can be used
 to create an editable representation of the directory, or to join one or
 more directories.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; f = sd.fakedir('/path/to/some/folder')
+&gt;&gt;&gt; f
+
+doc/
+├─_static/
+│ ├─embedded/
+│ │ ├─deep_file
+│ │ └─very/
+│ │   └─deep/
+│ │     └─folder/
+│ │       └─very_deep_file
+│ └─less_deep_file
+├─about.rst
+├─conf.py
+└─index.rst
+
+&gt;&gt;&gt; type(f)
+seedir.fakedir.FakeDir
+</code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
@@ -1466,6 +1790,26 @@ expressions. The default is False.</dd>
     a directory as a string (seedir.seedir()), this function can be used
     to create an editable representation of the directory, or to join one or
     more directories.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; f = sd.fakedir(&#39;/path/to/some/folder&#39;)
+        &gt;&gt;&gt; f
+
+        doc/
+        ├─_static/
+        │ ├─embedded/
+        │ │ ├─deep_file
+        │ │ └─very/
+        │ │   └─deep/
+        │ │     └─folder/
+        │ │       └─very_deep_file
+        │ └─less_deep_file
+        ├─about.rst
+        ├─conf.py
+        └─index.rst
+
+        &gt;&gt;&gt; type(f)
+        seedir.fakedir.FakeDir
 
     Parameters
     ----------
@@ -1537,6 +1881,36 @@ edit them, and recreate them in a new location.</p>
 <p>This function has mostly been tested with examples from Stack Overflow
 and other Python learning sites (as well as output from seedir.seedir()).
 There are surely cases which will causes errors or unexpected results.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; s = """doc/
+├─_static/
+│ ├─embedded/
+│ │ ├─deep_file
+│ │ └─very/
+│ │   └─deep/
+│ │     └─folder/
+│ │       └─very_deep_file
+│ └─less_deep_file
+├─about.rst
+├─conf.py
+└─index.rst"""
+
+&gt;&gt;&gt; f = sd.fakedir_fromstring(s) # now can be edited or restyled
+&gt;&gt;&gt; f.seedir(style='spaces')
+
+doc/
+  _static/
+    embedded/
+      deep_file
+      very/
+        deep/
+          folder/
+            very_deep_file
+    less_deep_file
+  about.rst
+  conf.py
+  index.rst
+</code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>s</code></strong> :&ensp;<code>str</code></dt>
@@ -1592,6 +1966,36 @@ The default is True.</dd>
     This function has mostly been tested with examples from Stack Overflow
     and other Python learning sites (as well as output from seedir.seedir()).
     There are surely cases which will causes errors or unexpected results.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; s = &#34;&#34;&#34;doc/
+        ├─_static/
+        │ ├─embedded/
+        │ │ ├─deep_file
+        │ │ └─very/
+        │ │   └─deep/
+        │ │     └─folder/
+        │ │       └─very_deep_file
+        │ └─less_deep_file
+        ├─about.rst
+        ├─conf.py
+        └─index.rst&#34;&#34;&#34;
+
+        &gt;&gt;&gt; f = sd.fakedir_fromstring(s) # now can be edited or restyled
+        &gt;&gt;&gt; f.seedir(style=&#39;spaces&#39;)
+
+        doc/
+          _static/
+            embedded/
+              deep_file
+              very/
+                deep/
+                  folder/
+                    very_deep_file
+            less_deep_file
+          about.rst
+          conf.py
+          index.rst
 
 
     Parameters
@@ -1717,202 +2121,6 @@ The default is True.</dd>
         return fakeitems[idx]</code></pre>
 </details>
 </dd>
-<dt id="seedir.fakedir.filter_fakeitem_names"><code class="name flex">
-<span>def <span class="ident">filter_fakeitem_names</span></span>(<span>listdir, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Filter for folder and file names in seedir.FakeDir.seedir().
-Removes or
-includes items matching filtering strings.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>listdir</code></strong> :&ensp;<code>list-like</code></dt>
-<dd>Collection of FakeDir and FakeFile objects</dd>
-<dt><strong><code>include_folders</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
-<dd>Folder names to include. The default is None.</dd>
-<dt><strong><code>exclude_folders</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
-<dd>Folder names to exclude. The default is None.</dd>
-<dt><strong><code>include_files</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
-<dd>File names to include. The default is None.</dd>
-<dt><strong><code>exclude_files</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
-<dd>File names to exclude. The default is None.</dd>
-<dt><strong><code>mask</code></strong> :&ensp;<code>function</code>, optional</dt>
-<dd>Function for filtering items.
-Each individual item object
-are passed to the mask function.
-If True is returned, the
-item is kept.
-The default is None.</dd>
-<dt><strong><code>regex</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Interpret strings as regular expressions. The default is False.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>SeedirError</code></dt>
-<dd>When the exlcusion or inclusion arguments are not strings or
-iterables.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>keep</code></strong> :&ensp;<code>list</code></dt>
-<dd>Filtered input.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def filter_fakeitem_names(listdir, include_folders=None,
-                          exclude_folders=None, include_files=None,
-                          exclude_files=None, regex=False, mask=None):
-    &#39;&#39;&#39;
-    Filter for folder and file names in seedir.FakeDir.seedir().  Removes or
-    includes items matching filtering strings.
-
-    Parameters
-    ----------
-    listdir : list-like
-        Collection of FakeDir and FakeFile objects
-    include_folders : str or list-like, optional
-        Folder names to include. The default is None.
-    exclude_folders : str or list-like, optional
-        Folder names to exclude. The default is None.
-    include_files : str or list-like, optional
-        File names to include. The default is None.
-    exclude_files : str or list-like, optional
-        File names to exclude. The default is None.
-    mask : function, optional
-        Function for filtering items.  Each individual item object
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-    regex : bool, optional
-        Interpret strings as regular expressions. The default is False.
-
-    Raises
-    ------
-    SeedirError
-        When the exlcusion or inclusion arguments are not strings or
-        iterables.
-
-    Returns
-    -------
-    keep : list
-        Filtered input.
-
-    &#39;&#39;&#39;
-    keep = []
-    for l in listdir:
-        if mask is not None:
-            if mask(l) is not True:
-                continue
-
-        if isinstance(l, FakeDir):
-            if isinstance(include_folders, str):
-                if not printing.is_match(include_folders, l.name, regex):
-                    continue
-            elif include_folders is not None:
-                try:
-                    if not any(printing.is_match(n, l.name, regex)
-                               for n in include_folders):
-                        continue
-                except:
-                    raise FakedirError(&#39;Failure when trying to iterate &#39;
-                                       &#39;over &#34;include_folders&#34; and &#39;
-                                       &#39;match strings&#39;)
-            if isinstance(exclude_folders, str):
-                if printing.is_match(exclude_folders, l.name, regex):
-                    continue
-            elif exclude_folders is not None:
-                try:
-                    if any(printing.is_match(x, l.name, regex)
-                           for x in exclude_folders):
-                        continue
-                except:
-                    raise FakedirError(&#39;Failure when trying to iterate &#39;
-                                      &#39;over &#34;exclude_folders&#34; and &#39;
-                                      &#39;match strings&#39;)
-        else:
-            if isinstance(include_files, str):
-                if not printing.is_match(include_files, l.name, regex):
-                    continue
-            elif include_files is not None:
-                try:
-                    if not any(printing.is_match(n, l.name, regex)
-                               for n in include_files):
-                        continue
-                except:
-                    raise FakedirError(&#39;Failure when trying to iterate &#39;
-                                      &#39;over &#34;include_files&#34; and &#39;
-                                      &#39;match strings&#39;)
-            if isinstance(exclude_files, str):
-                if printing.is_match(exclude_files, l.name, regex):
-                    continue
-            elif exclude_files is not None:
-                try:
-                    if any(printing.is_match(x, l.name, regex)
-                           for x in exclude_files):
-                        continue
-                except:
-                    raise FakedirError(&#39;Failure when trying to iterate &#39;
-                                      &#39;over &#34;exclude_files&#34; and &#39;
-                                      &#39;match strings&#39;)
-        keep.append(l)
-    return keep</code></pre>
-</details>
-</dd>
-<dt id="seedir.fakedir.get_random_int"><code class="name flex">
-<span>def <span class="ident">get_random_int</span></span>(<span>collection, seed=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Helper function for selecting a random integer, used by seedir.populate().</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>collection</code></strong> :&ensp;<code>list-like</code></dt>
-<dd>Collection of integers to select from.</dd>
-<dt><strong><code>seed</code></strong> :&ensp;<code>int</code> or <code>float</code>, optional</dt>
-<dd>Random seed. The default is None.</dd>
-</dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>TypeError</code></dt>
-<dd>Non-integer found.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>r</code></strong> :&ensp;<code>int</code></dt>
-<dd>Randomly chosen int from collection.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_random_int(collection, seed=None):
-    &#39;&#39;&#39;
-    Helper function for selecting a random integer, used by seedir.populate().
-
-    Parameters
-    ----------
-    collection : list-like
-        Collection of integers to select from.
-    seed : int or float, optional
-        Random seed. The default is None.
-
-    Raises
-    ------
-    TypeError
-        Non-integer found.
-
-    Returns
-    -------
-    r : int
-        Randomly chosen int from collection.
-
-    &#39;&#39;&#39;
-    r = random.Random(seed).choice(collection)
-    if not isinstance(r, int):
-        raise TypeError(&#39;non int found&#39;)
-    return r</code></pre>
-</details>
-</dd>
 <dt id="seedir.fakedir.populate"><code class="name flex">
 <span>def <span class="ident">populate</span></span>(<span>fakedir, depth=3, folders=2, files=2, stopchance=0.5, seed=None, extensions=['txt'])</span>
 </code></dt>
@@ -2035,7 +2243,30 @@ fakedir is modified in place.</p></div>
 <span>def <span class="ident">randomdir</span></span>(<span>depth=2, files=range(1, 4), folders=range(0, 4), stopchance=0.5, seed=None, extensions=['txt'])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Create a randomized FakeDir.</p>
+<div class="desc"><p>Create a randomized FakeDir, initialized with random
+dictionary words.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; sd.randomdir(seed=456)
+
+MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ ├─Neptune.txt
+│ ├─Savoyard.txt
+│ ├─eventual/
+│ ├─influential/
+│ └─irrecoverable/
+│   ├─vagabond.txt
+│   ├─Casanova.txt
+│   ├─Benjamin.txt
+│   ├─dichloride/
+│   └─sedition/
+├─Uganda/
+└─pedantic/
+  └─Bertrand.txt
+</code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>depth</code></strong> :&ensp;<code>int</code>, optional</dt>
@@ -2073,7 +2304,30 @@ Leading period can be included or omitted.</dd>
 <pre><code class="python">def randomdir(depth=2, files=range(1,4), folders=range(0,4),
               stopchance=.5, seed=None, extensions=[&#39;txt&#39;]):
     &#39;&#39;&#39;
-    Create a randomized FakeDir.
+    Create a randomized FakeDir, initialized with random
+    dictionary words.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; sd.randomdir(seed=456)
+
+        MyFakeDir/
+        ├─Vogel.txt
+        ├─monkish.txt
+        ├─jowly.txt
+        ├─scrooge/
+        │ ├─Neptune.txt
+        │ ├─Savoyard.txt
+        │ ├─eventual/
+        │ ├─influential/
+        │ └─irrecoverable/
+        │   ├─vagabond.txt
+        │   ├─Casanova.txt
+        │   ├─Benjamin.txt
+        │   ├─dichloride/
+        │   └─sedition/
+        ├─Uganda/
+        └─pedantic/
+          └─Bertrand.txt
 
     Parameters
     ----------
@@ -2113,392 +2367,6 @@ Leading period can be included or omitted.</dd>
     return top</code></pre>
 </details>
 </dd>
-<dt id="seedir.fakedir.recursive_add_fakes"><code class="name flex">
-<span>def <span class="ident">recursive_add_fakes</span></span>(<span>path, parent, depth=0, depthlimit=None, itemlimit=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, mask=None, regex=False)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Recursive helper function for seedir.fakedir(), for creating a
-fake folder tree from a real one.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
-<dd>System path of a folder.</dd>
-<dt><strong><code>parent</code></strong> :&ensp;<code>seedir.FakeDir</code></dt>
-<dd>Fake directory to add items to.</dd>
-<dt><strong><code>depth</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Tracker for depth of folders traversed. The default is 0.</dd>
-<dt><strong><code>depthlimit</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Limit on the depth of folders to traverse. The default is None.</dd>
-<dt><strong><code>itemlimit</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Limit on the number of items to include per directory.
-The default is None.</dd>
-<dt><strong><code>first</code></strong> :&ensp;<code>'folders'</code> or <code>'files'</code>, optional</dt>
-<dd>Sort to have folders or files appear first. The default is None.</dd>
-<dt><strong><code>sort</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Apply a sort to items in each directory. The default is False.</dd>
-<dt><strong><code>sort_reverse</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Reverse the sort. The default is False.</dd>
-<dt><strong><code>sort_key</code></strong> :&ensp;<code>function</code>, optional</dt>
-<dd>Key function for sorting item names. The default is None.</dd>
-<dt><strong><code>include_folders</code></strong>, <strong><code>exclude_folders</code></strong>, <strong><code>include_files</code></strong>, <strong><code>exclude_files</code></strong> :&ensp;<code>str, list-like,</code> or <code>None</code>, optional</dt>
-<dd>Folder / file names to include or exclude. The default is None.</dd>
-<dt><strong><code>mask</code></strong> :&ensp;<code>function</code>, optional</dt>
-<dd>Function for filtering items.
-Absolute paths of each individual item
-are passed to the mask function.
-If True is returned, the
-item is kept.
-The default is None.</dd>
-<dt><strong><code>regex</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Interpret include/exclude folder/file arguments as regular
-expressions. The default is False.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>None.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
-                        itemlimit=None, first=None, sort=False,
-                        sort_reverse=False, sort_key=None,
-                        include_folders=None, exclude_folders=None,
-                        include_files=None, exclude_files=None,
-                        mask=None, regex=False):
-    &#39;&#39;&#39;
-    Recursive helper function for seedir.fakedir(), for creating a
-    fake folder tree from a real one.
-
-    Parameters
-    ----------
-    path : str
-        System path of a folder.
-    parent : seedir.FakeDir
-        Fake directory to add items to.
-    depth : int, optional
-        Tracker for depth of folders traversed. The default is 0.
-    depthlimit : int, optional
-        Limit on the depth of folders to traverse. The default is None.
-    itemlimit : int, optional
-        Limit on the number of items to include per directory.
-        The default is None.
-    first : &#39;folders&#39; or &#39;files&#39;, optional
-        Sort to have folders or files appear first. The default is None.
-    sort : bool, optional
-        Apply a sort to items in each directory. The default is False.
-    sort_reverse : bool, optional
-        Reverse the sort. The default is False.
-    sort_key : function, optional
-        Key function for sorting item names. The default is None.
-    include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
-            Folder / file names to include or exclude. The default is None.
-    mask : function, optional
-        Function for filtering items.  Absolute paths of each individual item
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-    regex : bool, optional
-        Interpret include/exclude folder/file arguments as regular
-        expressions. The default is False.
-
-    Returns
-    -------
-    None.
-
-    &#39;&#39;&#39;
-    if depthlimit is not None and depth &gt;= depthlimit:
-        return
-    depth +=1
-    listdir = os.listdir(path)
-    if sort or first is not None:
-        listdir = sort_dir(path, listdir, first=first,
-                           sort_reverse=sort_reverse, sort_key=sort_key)
-    if any(arg is not None for arg in [
-            include_folders,
-            exclude_folders,
-            include_files,
-            exclude_files,
-            mask]):
-        listdir = filter_item_names(path, listdir,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex,
-                                    mask=mask)
-    for i, f in enumerate(listdir):
-        if i == itemlimit:
-            break
-        sub = os.path.join(path, f)
-        if os.path.isdir(sub):
-            new = FakeDir(f, parent=parent)
-            recursive_add_fakes(path=sub, parent=new, depth=depth,
-                                depthlimit=depthlimit,
-                                itemlimit=itemlimit,
-                                include_folders=include_folders,
-                                exclude_folders=exclude_folders,
-                                include_files=include_files,
-                                exclude_files=exclude_files,
-                                mask=mask, regex=regex)
-        else:
-            new = FakeFile(f, parent=parent)</code></pre>
-</details>
-</dd>
-<dt id="seedir.fakedir.recursive_fakedir_structure"><code class="name flex">
-<span>def <span class="ident">recursive_fakedir_structure</span></span>(<span>fakedir, depth=0, incomplete=None, split='├─', extend='│ ', space='
-', final='└─', filestart='', folderstart='', depthlimit=None, itemlimit=None, beyond=None, first=None, sort=True, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None, slash='/')</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Recursive function for generating folder structures.
-Main tool for
-building output generated by seedir.FakeDir.seedir()</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>fakedir</code></strong> :&ensp;<code>seedir.FakeDir</code></dt>
-<dd>Fake directory from seedir package</dd>
-<dt><strong><code>depth</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Integer denoting the current folder depth. Starts at 0.</dd>
-<dt><strong><code>incomplete</code></strong> :&ensp;<code>list-like</code>, optional</dt>
-<dd>List of incomplete folder depths, passed to seedir.get_base_header().
-The default is None.</dd>
-<dt><strong><code>extend</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Token to denote a folder has more children below. The default is '│ '.</dd>
-<dt><strong><code>space</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Token to space items out to the correct depth. The default is '
-'.</dd>
-<dt><strong><code>split</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Token before file/folder when there are more items in the directory
-below it. The default is '├─'.</dd>
-<dt><strong><code>final</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Token before the last file/folder in a directory. The default is '└─'.</dd>
-<dt><strong><code>filestart</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>String to prepend to file names. The default is ''.</dd>
-<dt><strong><code>folderstart</code></strong> :&ensp;<code>TYPE</code>, optional</dt>
-<dd>String to prepend to folder names. The default is ''.</dd>
-<dt><strong><code>depthlimit</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Limit on how many folders deep to traverse. The default is None.</dd>
-<dt><strong><code>itemlimit</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Limit on how many items to show for a directory. The default is None.</dd>
-<dt><strong><code>beyond</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Method to denote items beyond the depthlimit or itemlimit.
-The default is None.
-Options are:
-- 'ellipsis' ('&hellip;')
-- 'content' or 'contents' (the number of files and folders beyond)
-- a string starting with '_' (everything after the leading
-underscore will be returned)</dd>
-<dt><strong><code>first</code></strong> :&ensp;<code>'folders'</code> or <code>'files'</code>, optional</dt>
-<dd>Show folders first for files first. The default is None.</dd>
-<dt><strong><code>sort</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Sort directories being diagrammed. The default is True.</dd>
-<dt><strong><code>sort_reverse</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Reverse the sort. The default is False.</dd>
-<dt><strong><code>sort_key</code></strong> :&ensp;<code>function</code>, optional</dt>
-<dd>Key function used for sorting item names. The default is None.</dd>
-<dt><strong><code>include_folders</code></strong>, <strong><code>exclude_folders</code></strong>, <strong><code>include_files</code></strong>, <strong><code>exclude_files</code></strong> :&ensp;<code>str</code> or <code>list-like</code>, optional</dt>
-<dd>Folder / file names to include or exclude. The default is None.</dd>
-<dt><strong><code>regex</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>Interpret include/exclude file/folder arguments as
-regular expressions. The default is False.</dd>
-<dt><strong><code>mask</code></strong> :&ensp;<code>function</code>, optional</dt>
-<dd>Function for filtering items.
-Each individual item object
-are passed to the mask function.
-If True is returned, the
-item is kept.
-The default is None.</dd>
-<dt><strong><code>slash</code></strong> :&ensp;<code>str, option:</code></dt>
-<dd>Slash character to follow folders.
-If 'sep', uses os.sep.
-The
-default is '/'.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>output</code></strong> :&ensp;<code>str</code></dt>
-<dd>Folder tree diagram.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split=&#39;├─&#39;,
-                                extend=&#39;│ &#39;, space=&#39;  &#39;, final=&#39;└─&#39;,
-                                filestart=&#39;&#39;, folderstart=&#39;&#39;, depthlimit=None,
-                                itemlimit=None, beyond=None, first=None,
-                                sort=True, sort_reverse=False, sort_key=None,
-                                include_folders=None, exclude_folders=None,
-                                include_files=None, exclude_files=None,
-                                regex=False, mask=None, slash=&#39;/&#39;):
-    &#39;&#39;&#39;
-    Recursive function for generating folder structures.  Main tool for
-    building output generated by seedir.FakeDir.seedir()
-
-    Parameters
-    ----------
-    fakedir : seedir.FakeDir
-        Fake directory from seedir package
-    depth : int, optional
-        Integer denoting the current folder depth. Starts at 0.
-    incomplete : list-like, optional
-        List of incomplete folder depths, passed to seedir.get_base_header().
-        The default is None.
-    extend : str, optional
-        Token to denote a folder has more children below. The default is &#39;│ &#39;.
-    space : str, optional
-        Token to space items out to the correct depth. The default is &#39;  &#39;.
-    split : str, optional
-        Token before file/folder when there are more items in the directory
-        below it. The default is &#39;├─&#39;.
-    final : str, optional
-        Token before the last file/folder in a directory. The default is &#39;└─&#39;.
-    filestart : str, optional
-        String to prepend to file names. The default is &#39;&#39;.
-    folderstart : TYPE, optional
-        String to prepend to folder names. The default is &#39;&#39;.
-    depthlimit : int, optional
-        Limit on how many folders deep to traverse. The default is None.
-    itemlimit : int, optional
-        Limit on how many items to show for a directory. The default is None.
-    beyond : str, optional
-        Method to denote items beyond the depthlimit or itemlimit.
-        The default is None.  Options are:
-            - &#39;ellipsis&#39; (&#39;...&#39;)
-            - &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond)
-            - a string starting with &#39;_&#39; (everything after the leading
-              underscore will be returned)
-    first : &#39;folders&#39; or &#39;files&#39;, optional
-        Show folders first for files first. The default is None.
-    sort : bool, optional
-        Sort directories being diagrammed. The default is True.
-    sort_reverse : bool, optional
-        Reverse the sort. The default is False.
-    sort_key : function, optional
-        Key function used for sorting item names. The default is None.
-    include_folders, exclude_folders, include_files, exclude_files : str or list-like, optional
-        Folder / file names to include or exclude. The default is None.
-    regex : bool, optional
-        Interpret include/exclude file/folder arguments as
-        regular expressions. The default is False.
-    mask : function, optional
-        Function for filtering items.  Each individual item object
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-    slash : str, option:
-        Slash character to follow folders.  If &#39;sep&#39;, uses os.sep.  The
-        default is &#39;/&#39;.
-
-    Returns
-    -------
-    output : str
-        Folder tree diagram.
-
-    &#39;&#39;&#39;
-    # initialize
-    output = &#39;&#39;
-    if incomplete is None:
-        incomplete = []
-    if depth == 0:
-        output += folderstart + fakedir.name + slash +&#39;\n&#39;
-
-    # stop when too deep
-    if depth == depthlimit and beyond is None:
-        return output
-
-    # enter folder, increase depth
-    listdir = fakedir._children.copy()
-    incomplete.append(depth)
-    depth += 1
-
-    # if depth passed limit, return with &#34;beyond&#34; added
-    if depthlimit and depth &gt; depthlimit:
-        extra = beyond_fakedepth_str(beyond, listdir)
-        if beyond is not None and extra:
-            base_header = get_fakebase_header(incomplete, extend, space)
-            output += base_header + final + extra + &#39;\n&#39;
-        if depth - 1 in incomplete:
-            incomplete.remove(depth-1)
-        incomplete = [n for n in incomplete if n &lt; depth]
-        return output
-
-    # sort and trim the contents of listdir
-    if sort or first is not None:
-        pass
-        listdir = sort_fakedir(listdir, first=first,
-                               sort_reverse=sort_reverse, sort_key=sort_key)
-    if any(arg is not None for arg in [
-            include_folders,
-            exclude_folders,
-            include_files,
-            exclude_files,
-            mask]):
-        listdir = filter_fakeitem_names(listdir,
-                                        include_folders=include_folders,
-                                        exclude_folders=exclude_folders,
-                                        include_files=include_files,
-                                        exclude_files=exclude_files,
-                                        regex=regex, mask=mask)
-    if not listdir:
-        if depth - 1 in incomplete:
-            incomplete.remove(depth-1) # remove from incomplete if empty
-
-    # get output for each item in folder
-    for i, f in enumerate(listdir):
-
-        # if passed itemlimit, return with &#34;beyond&#34; added
-        if i == itemlimit:
-            remaining = [rem for rem in listdir[i:]]
-            if beyond is not None:
-                extra = beyond_fakedepth_str(beyond, remaining)
-                output += base_header + final + extra + &#39;\n&#39;
-            return output
-
-        # create header for the item
-        base_header = get_fakebase_header(incomplete, extend, space)
-        if i == len(listdir) - 1 or (itemlimit is not None and
-                                     i == itemlimit - 1 and
-                                     beyond is None):
-            incomplete.remove(depth-1)
-            incomplete = [n for n in incomplete if n &lt; depth]
-        if itemlimit and i == itemlimit - 1 and beyond is None:
-            branch = final
-        elif i == len(listdir) - 1:
-            branch = final
-        else:
-            branch = split
-        header = base_header + branch
-
-        # concat to output and recurse if item is folder
-        if isinstance(f, FakeDir):
-            output += header + folderstart + f.name + slash +&#39;\n&#39;
-            output += recursive_fakedir_structure(f, depth=depth,
-                                                 incomplete=incomplete,
-                                                 split=split,
-                                                 extend=extend,
-                                                 space=space,
-                                                 final=final,
-                                                 filestart=filestart,
-                                                 folderstart=folderstart,
-                                                 depthlimit=depthlimit,
-                                                 itemlimit=itemlimit,
-                                                 beyond=beyond,
-                                                 first=first,
-                                                 sort=sort,
-                                                 sort_reverse=sort_reverse,
-                                                 sort_key=sort_key,
-                                                 include_folders=include_folders,
-                                                 exclude_folders=exclude_folders,
-                                                 include_files=include_files,
-                                                 exclude_files=exclude_files,
-                                                 regex=regex,
-                                                 mask=mask,
-                                                 slash=slash)
-
-        # only concat to output if file
-        else:
-            output += header + filestart + f.name + &#39;\n&#39;
-    return output</code></pre>
-</details>
-</dd>
 </dl>
 </section>
 <section>
@@ -2509,7 +2377,55 @@ default is '/'.</dd>
 <span>(</span><span>name, parent=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Class to represent fake folders.</p>
+<div class="desc"><p>Class to represent fake folders.
+Can be used to create
+custom folder tree diagrams.
+See seedir.fakedir() for converting
+a real directory into a FakeDir, seedir.fakedir_fromstring() for converting
+a text folder diagram into a FakeDir, and seedir.randomdir() for
+creating a random one.</p>
+<p>To make a FakeDir from scratch, use this class:</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; x = sd.FakeDir('myfakedir')
+&gt;&gt;&gt; x.seedir()
+
+myfakedir/
+</code></pre>
+<p>There are various ways to add to it:</p>
+<pre><code># using methods
+&gt;&gt;&gt; x.create_file(['__init__.py', 'main.py', 'styles.txt'])
+&gt;&gt;&gt; x.create_folder('docs')
+
+# initializing new objects and setting the parent
+&gt;&gt;&gt; y = sd.FakeDir('resources', parent=x)
+
+# changing the parent of existing objects
+&gt;&gt;&gt; z = sd.FakeDir('images')
+&gt;&gt;&gt; z.parent = y
+
+&gt;&gt;&gt; for n in ['a', 'b', 'c']:
+&gt;&gt;&gt;     z.create_file(n + '.png')
+
+&gt;&gt;&gt; x.seedir(sort=True, first='folders')
+
+myfakedir/
+├─docs/
+├─resources/
+│ └─images/
+│   ├─a.png
+│   ├─b.png
+│   └─c.png
+├─__init__.py
+├─main.py
+└─styles.txt
+</code></pre>
+<p>You can index with path-like strings:</p>
+<pre><code>&gt;&gt;&gt; x['resources/images/a.png']
+
+FakeFile(myfakedir/resources/images/a.png)
+</code></pre>
+<p>See the examples notebook on GitHub for more uses,
+or the docstrings in the methods of FakeDir.</p>
 <p>Same as FakeItem initialization, but adds the _children attribute
 for keeping track of items inside the fake dir.</p></div>
 <details class="source">
@@ -2517,7 +2433,59 @@ for keeping track of items inside the fake dir.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class FakeDir(FakeItem):
-    &#39;&#39;&#39;Class to represent fake folders.&#39;&#39;&#39;
+    &#39;&#39;&#39;Class to represent fake folders.  Can be used to create
+    custom folder tree diagrams.  See seedir.fakedir() for converting
+    a real directory into a FakeDir, seedir.fakedir_fromstring() for converting
+    a text folder diagram into a FakeDir, and seedir.randomdir() for
+    creating a random one.
+
+    To make a FakeDir from scratch, use this class:
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; x = sd.FakeDir(&#39;myfakedir&#39;)
+        &gt;&gt;&gt; x.seedir()
+
+        myfakedir/
+
+    There are various ways to add to it:
+
+        # using methods
+        &gt;&gt;&gt; x.create_file([&#39;__init__.py&#39;, &#39;main.py&#39;, &#39;styles.txt&#39;])
+        &gt;&gt;&gt; x.create_folder(&#39;docs&#39;)
+
+        # initializing new objects and setting the parent
+        &gt;&gt;&gt; y = sd.FakeDir(&#39;resources&#39;, parent=x)
+
+        # changing the parent of existing objects
+        &gt;&gt;&gt; z = sd.FakeDir(&#39;images&#39;)
+        &gt;&gt;&gt; z.parent = y
+
+        &gt;&gt;&gt; for n in [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]:
+        &gt;&gt;&gt;     z.create_file(n + &#39;.png&#39;)
+
+        &gt;&gt;&gt; x.seedir(sort=True, first=&#39;folders&#39;)
+
+        myfakedir/
+        ├─docs/
+        ├─resources/
+        │ └─images/
+        │   ├─a.png
+        │   ├─b.png
+        │   └─c.png
+        ├─__init__.py
+        ├─main.py
+        └─styles.txt
+
+    You can index with path-like strings:
+
+        &gt;&gt;&gt; x[&#39;resources/images/a.png&#39;]
+
+        FakeFile(myfakedir/resources/images/a.png)
+
+    See the examples notebook on GitHub for more uses,
+    or the docstrings in the methods of FakeDir.
+
+    &#39;&#39;&#39;
     def __init__(self, name, parent=None):
         &#39;&#39;&#39;Same as FakeItem initialization, but adds the _children attribute
         for keeping track of items inside the fake dir.
@@ -2535,6 +2503,7 @@ for keeping track of items inside the fake dir.</p></div>
         return self.seedir(printout=False)
 
     def __getitem__(self, path):
+        &#34;&#34;&#34;Use path-like strings to index FakeDir objects.&#34;&#34;&#34;
         if not isinstance(path, str):
             raise FakedirError(&#34;Can only index FakeDir with int or str, &#34;
                                &#34;not {}&#34;.format(type(path)))
@@ -2550,7 +2519,27 @@ for keeping track of items inside the fake dir.</p></div>
         return current
 
     def create_folder(self, name):
-        &#39;&#39;&#39;Insert a new folder with name &#34;name&#34;.&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Create a new folder (FakeDir) as a child.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
+            &gt;&gt;&gt; x.create_folder(&#34;new_folder&#34;)
+            &gt;&gt;&gt; x.seedir()
+
+            Test/
+            └─new_folder/
+
+        Parameters
+        ----------
+        name : str
+            Name of the new folder
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         if isinstance(name, str):
             FakeDir(name, parent=self)
         else:
@@ -2558,7 +2547,27 @@ for keeping track of items inside the fake dir.</p></div>
                 FakeDir(s, parent=self)
 
     def create_file(self, name):
-        &#39;&#39;&#39;Insert a new file with name &#34;name&#34;.&#39;&#39;&#39;
+        &#34;&#34;&#34;
+        Create a new file (FakeFile) as a child.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
+            &gt;&gt;&gt; x.create_file(&#34;new_file.txt&#34;)
+            &gt;&gt;&gt; x.seedir()
+
+            Test/
+            └─new_file.txt
+
+        Parameters
+        ----------
+        name : str
+            Name of the new file.
+
+        Returns
+        -------
+        None.
+
+        &#34;&#34;&#34;
         if isinstance(name, str):
             FakeFile(name, parent=self)
         else:
@@ -2567,7 +2576,35 @@ for keeping track of items inside the fake dir.</p></div>
 
     def delete(self, child):
         &#39;&#39;&#39;
-        Delete items from a FakeDir
+        Delete items from a FakeDir.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=3)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─Myra.txt
+              ├─Sherwin.txt
+              ├─pinnacle/
+              ├─sylvan/
+              └─alai/
+                ├─weld.txt
+                ├─penates.txt
+                ├─Marquette/
+                ├─America/
+                └─Stalin/
+
+            &gt;&gt;&gt; r[&#39;infusoria&#39;].delete([&#39;Myra.txt&#39;, &#39;Sherwin.txt&#39;]) # delete with string names
+            &gt;&gt;&gt; r[&#39;infusoria&#39;].delete(r[&#39;infusoria/alai&#39;]) # delete with objects
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─pinnacle/
+              └─sylvan/
 
         Parameters
         ----------
@@ -2613,12 +2650,57 @@ for keeping track of items inside the fake dir.</p></div>
                         raise FakedirError(&#39;{} has no child with name &#34;{}&#34;&#39;.format(self, target))
 
     def get_child_names(self):
-        &#39;&#39;&#39;Return a list of child names.&#39;&#39;&#39;
+        &#39;&#39;&#39;Return a list of child names.
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=3)
+            &gt;&gt;&gt; r
+
+                MyFakeDir/
+                ├─Endicott.txt
+                └─infusoria/
+                  ├─Myra.txt
+                  ├─Sherwin.txt
+                  ├─pinnacle/
+                  ├─sylvan/
+                  └─alai/
+                    ├─weld.txt
+                    ├─penates.txt
+                    ├─Marquette/
+                    ├─America/
+                    └─Stalin/
+
+            &gt;&gt;&gt; r.get_child_names()
+            [&#39;Endicott.txt&#39;, &#39;infusoria&#39;]
+
+        &#39;&#39;&#39;
         return [c.name for c in self._children]
 
     def listdir(self):
         &#39;&#39;&#39;Return the list of FakeFile and FakeDir objects that
-        are children of self (like os.listdir).&#39;&#39;&#39;
+        are children of self (like os.listdir).
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; r = sd.randomdir(seed=3)
+            &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─Myra.txt
+              ├─Sherwin.txt
+              ├─pinnacle/
+              ├─sylvan/
+              └─alai/
+                ├─weld.txt
+                ├─penates.txt
+                ├─Marquette/
+                ├─America/
+                └─Stalin/
+
+            &gt;&gt;&gt; print([str(i) for i in r.listdir()])
+            [&#39;FakeFile(MyFakeDir/Endicott.txt)&#39;, &#39;FakeDir(MyFakeDir/infusoria)&#39;]
+        &#39;&#39;&#39;
         return self._children
 
     def realize(self, path=None):
@@ -2734,21 +2816,30 @@ for keeping track of items inside the fake dir.</p></div>
         **kwargs : str
             Specific tokens to use for creating the file tree diagram.  The tokens
             use by each builtin style can be seen with sd.get_styleargs().  Valid
-            options are (with the example token for the &#39;lines&#39; style):
-                - extend (&#39;│ &#39;): characters to show the extension of a directory
-                while its children are traversed
-                - space (&#39;  &#39;): character to provide the correct indentation
-                of an item when some of its parent / grandparent directories
-                are completely traversed
-                - split (&#39;├─&#39;): characters to show a folder or file within
-                a directory (with more items following)
-                - final (&#39;└─&#39;): characters to show a folder or file within
-                a directory (with no more items following)
-                - folderstart (&#39;&#39;): characters to append before any folder
-                - filestart (&#39;&#39;): characters to append beffore any file
-            All default style tokens are 2 character strings.  Style tokens
-            from **kwargs are not affected by the indent parameter.  The uniform
-            and anystart parameters can be used to affect multiple style tokens.
+            options are extend (characters to show the extension of a directory
+            while its children are traversed), space (character to provide the
+            correct indentation of an item when some of its parent / grandparent
+            directories are completely traversed), split (characters to show a
+            folder or file within a directory, with more items following),
+            final (characters to show a folder or file within a directory,
+            with no more items following), folderstart (characters to append
+            before any folder), and filestart (characters to append beffore any
+            file).  The following shows the default tokens for the &#39;lines&#39; style:
+
+                &gt;&gt;&gt; import seedir as sd
+                &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
+
+                {&#39;split&#39;: &#39;├─&#39;,
+                 &#39;extend&#39;: &#39;│ &#39;,
+                 &#39;space&#39;: &#39;  &#39;,
+                 &#39;final&#39;: &#39;└─&#39;,
+                 &#39;folderstart&#39;: &#39;&#39;,
+                 &#39;filestart&#39;: &#39;&#39;}
+
+            All default style tokens are 2 character strings, except for
+            folderstart and filestart.  Style tokens from **kwargs are not
+            affected by the indent parameter.  The uniform and anystart
+            parameters can be used to affect multiple style tokens.
 
         Raises
         ------
@@ -2804,7 +2895,8 @@ for keeping track of items inside the fake dir.</p></div>
             return rfs
 
     def set_child_depths(self):
-        &#39;&#39;&#39;Recursively set depths of self and its children.&#39;&#39;&#39;
+        &#39;&#39;&#39;Recursively set depths of self and its children.
+        Called automatically when a new parent is assigned.&#39;&#39;&#39;
         def apply_setdepth(FD):
             FD.set_depth()
         self.walk_apply(apply_setdepth)
@@ -2841,13 +2933,48 @@ for keeping track of items inside the fake dir.</p></div>
 <span>def <span class="ident">create_file</span></span>(<span>self, name)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Insert a new file with name "name".</p></div>
+<div class="desc"><p>Create a new file (FakeFile) as a child.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; x = sd.FakeDir('Test')
+&gt;&gt;&gt; x.create_file("new_file.txt")
+&gt;&gt;&gt; x.seedir()
+
+Test/
+└─new_file.txt
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the new file.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def create_file(self, name):
-    &#39;&#39;&#39;Insert a new file with name &#34;name&#34;.&#39;&#39;&#39;
+    &#34;&#34;&#34;
+    Create a new file (FakeFile) as a child.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
+        &gt;&gt;&gt; x.create_file(&#34;new_file.txt&#34;)
+        &gt;&gt;&gt; x.seedir()
+
+        Test/
+        └─new_file.txt
+
+    Parameters
+    ----------
+    name : str
+        Name of the new file.
+
+    Returns
+    -------
+    None.
+
+    &#34;&#34;&#34;
     if isinstance(name, str):
         FakeFile(name, parent=self)
     else:
@@ -2859,13 +2986,48 @@ for keeping track of items inside the fake dir.</p></div>
 <span>def <span class="ident">create_folder</span></span>(<span>self, name)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Insert a new folder with name "name".</p></div>
+<div class="desc"><p>Create a new folder (FakeDir) as a child.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; x = sd.FakeDir('Test')
+&gt;&gt;&gt; x.create_folder("new_folder")
+&gt;&gt;&gt; x.seedir()
+
+Test/
+└─new_folder/
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the new folder</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def create_folder(self, name):
-    &#39;&#39;&#39;Insert a new folder with name &#34;name&#34;.&#39;&#39;&#39;
+    &#34;&#34;&#34;
+    Create a new folder (FakeDir) as a child.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
+        &gt;&gt;&gt; x.create_folder(&#34;new_folder&#34;)
+        &gt;&gt;&gt; x.seedir()
+
+        Test/
+        └─new_folder/
+
+    Parameters
+    ----------
+    name : str
+        Name of the new folder
+
+    Returns
+    -------
+    None.
+
+    &#34;&#34;&#34;
     if isinstance(name, str):
         FakeDir(name, parent=self)
     else:
@@ -2877,7 +3039,35 @@ for keeping track of items inside the fake dir.</p></div>
 <span>def <span class="ident">delete</span></span>(<span>self, child)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Delete items from a FakeDir</p>
+<div class="desc"><p>Delete items from a FakeDir.</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; r = sd.randomdir(seed=3)
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─Endicott.txt
+└─infusoria/
+  ├─Myra.txt
+  ├─Sherwin.txt
+  ├─pinnacle/
+  ├─sylvan/
+  └─alai/
+    ├─weld.txt
+    ├─penates.txt
+    ├─Marquette/
+    ├─America/
+    └─Stalin/
+
+&gt;&gt;&gt; r['infusoria'].delete(['Myra.txt', 'Sherwin.txt']) # delete with string names
+&gt;&gt;&gt; r['infusoria'].delete(r['infusoria/alai']) # delete with objects
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─Endicott.txt
+└─infusoria/
+  ├─pinnacle/
+  └─sylvan/
+</code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>child</code></strong> :&ensp;<code>str, <a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a>, <a title="seedir.fakedir.FakeFile" href="#seedir.fakedir.FakeFile">FakeFile</a></code> or <code>list-like</code></dt>
@@ -2898,7 +3088,35 @@ FakeDir / FakeFile object, or a collection of names or items.</dd>
 </summary>
 <pre><code class="python">def delete(self, child):
     &#39;&#39;&#39;
-    Delete items from a FakeDir
+    Delete items from a FakeDir.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; r = sd.randomdir(seed=3)
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─Endicott.txt
+        └─infusoria/
+          ├─Myra.txt
+          ├─Sherwin.txt
+          ├─pinnacle/
+          ├─sylvan/
+          └─alai/
+            ├─weld.txt
+            ├─penates.txt
+            ├─Marquette/
+            ├─America/
+            └─Stalin/
+
+        &gt;&gt;&gt; r[&#39;infusoria&#39;].delete([&#39;Myra.txt&#39;, &#39;Sherwin.txt&#39;]) # delete with string names
+        &gt;&gt;&gt; r[&#39;infusoria&#39;].delete(r[&#39;infusoria/alai&#39;]) # delete with objects
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─Endicott.txt
+        └─infusoria/
+          ├─pinnacle/
+          └─sylvan/
 
     Parameters
     ----------
@@ -2948,13 +3166,57 @@ FakeDir / FakeFile object, or a collection of names or items.</dd>
 <span>def <span class="ident">get_child_names</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Return a list of child names.</p></div>
+<div class="desc"><p>Return a list of child names.</p>
+<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; r = sd.randomdir(seed=3)
+&gt;&gt;&gt; r
+</code></pre>
+<pre><code>MyFakeDir/
+├─Endicott.txt
+└─infusoria/
+  ├─Myra.txt
+  ├─Sherwin.txt
+  ├─pinnacle/
+  ├─sylvan/
+  └─alai/
+    ├─weld.txt
+    ├─penates.txt
+    ├─Marquette/
+    ├─America/
+    └─Stalin/
+</code></pre>
+<pre><code class="python-repl">&gt;&gt;&gt; r.get_child_names()
+['Endicott.txt', 'infusoria']
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_child_names(self):
-    &#39;&#39;&#39;Return a list of child names.&#39;&#39;&#39;
+    &#39;&#39;&#39;Return a list of child names.
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; r = sd.randomdir(seed=3)
+        &gt;&gt;&gt; r
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─Myra.txt
+              ├─Sherwin.txt
+              ├─pinnacle/
+              ├─sylvan/
+              └─alai/
+                ├─weld.txt
+                ├─penates.txt
+                ├─Marquette/
+                ├─America/
+                └─Stalin/
+
+        &gt;&gt;&gt; r.get_child_names()
+        [&#39;Endicott.txt&#39;, &#39;infusoria&#39;]
+
+    &#39;&#39;&#39;
     return [c.name for c in self._children]</code></pre>
 </details>
 </dd>
@@ -2963,14 +3225,57 @@ FakeDir / FakeFile object, or a collection of names or items.</dd>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the list of FakeFile and FakeDir objects that
-are children of self (like os.listdir).</p></div>
+are children of self (like os.listdir).</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; r = sd.randomdir(seed=3)
+&gt;&gt;&gt; r
+
+MyFakeDir/
+├─Endicott.txt
+└─infusoria/
+  ├─Myra.txt
+  ├─Sherwin.txt
+  ├─pinnacle/
+  ├─sylvan/
+  └─alai/
+    ├─weld.txt
+    ├─penates.txt
+    ├─Marquette/
+    ├─America/
+    └─Stalin/
+
+&gt;&gt;&gt; print([str(i) for i in r.listdir()])
+['FakeFile(MyFakeDir/Endicott.txt)', 'FakeDir(MyFakeDir/infusoria)']
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def listdir(self):
     &#39;&#39;&#39;Return the list of FakeFile and FakeDir objects that
-    are children of self (like os.listdir).&#39;&#39;&#39;
+    are children of self (like os.listdir).
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; r = sd.randomdir(seed=3)
+        &gt;&gt;&gt; r
+
+        MyFakeDir/
+        ├─Endicott.txt
+        └─infusoria/
+          ├─Myra.txt
+          ├─Sherwin.txt
+          ├─pinnacle/
+          ├─sylvan/
+          └─alai/
+            ├─weld.txt
+            ├─penates.txt
+            ├─Marquette/
+            ├─America/
+            └─Stalin/
+
+        &gt;&gt;&gt; print([str(i) for i in r.listdir()])
+        [&#39;FakeFile(MyFakeDir/Endicott.txt)&#39;, &#39;FakeDir(MyFakeDir/infusoria)&#39;]
+    &#39;&#39;&#39;
     return self._children</code></pre>
 </details>
 </dd>
@@ -3120,28 +3425,38 @@ If 'sep', uses os.sep.
 The
 default is '/'.</dd>
 <dt><strong><code>**kwargs</code></strong> :&ensp;<code>str</code></dt>
-<dd>Specific tokens to use for creating the file tree diagram.
+<dd>
+<p>Specific tokens to use for creating the file tree diagram.
 The tokens
 use by each builtin style can be seen with sd.get_styleargs().
 Valid
-options are (with the example token for the 'lines' style):
-- extend ('│ '): characters to show the extension of a directory
-while its children are traversed
-- space ('
-'): character to provide the correct indentation
-of an item when some of its parent / grandparent directories
-are completely traversed
-- split ('├─'): characters to show a folder or file within
-a directory (with more items following)
-- final ('└─'): characters to show a folder or file within
-a directory (with no more items following)
-- folderstart (''): characters to append before any folder
-- filestart (''): characters to append beffore any file
-All default style tokens are 2 character strings.
-Style tokens
-from **kwargs are not affected by the indent parameter.
-The uniform
-and anystart parameters can be used to affect multiple style tokens.</dd>
+options are extend (characters to show the extension of a directory
+while its children are traversed), space (character to provide the
+correct indentation of an item when some of its parent / grandparent
+directories are completely traversed), split (characters to show a
+folder or file within a directory, with more items following),
+final (characters to show a folder or file within a directory,
+with no more items following), folderstart (characters to append
+before any folder), and filestart (characters to append beffore any
+file).
+The following shows the default tokens for the 'lines' style:</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; sd.get_styleargs('lines')
+
+{'split': '├─',
+ 'extend': '│ ',
+ 'space': '  ',
+ 'final': '└─',
+ 'folderstart': '',
+ 'filestart': ''}
+</code></pre>
+<p>All default style tokens are 2 character strings, except for
+folderstart and filestart.
+Style tokens from **kwargs are not
+affected by the indent parameter.
+The uniform and anystart
+parameters can be used to affect multiple style tokens.</p>
+</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -3240,21 +3555,30 @@ case the tree diagram is printed in the console.</dd>
     **kwargs : str
         Specific tokens to use for creating the file tree diagram.  The tokens
         use by each builtin style can be seen with sd.get_styleargs().  Valid
-        options are (with the example token for the &#39;lines&#39; style):
-            - extend (&#39;│ &#39;): characters to show the extension of a directory
-            while its children are traversed
-            - space (&#39;  &#39;): character to provide the correct indentation
-            of an item when some of its parent / grandparent directories
-            are completely traversed
-            - split (&#39;├─&#39;): characters to show a folder or file within
-            a directory (with more items following)
-            - final (&#39;└─&#39;): characters to show a folder or file within
-            a directory (with no more items following)
-            - folderstart (&#39;&#39;): characters to append before any folder
-            - filestart (&#39;&#39;): characters to append beffore any file
-        All default style tokens are 2 character strings.  Style tokens
-        from **kwargs are not affected by the indent parameter.  The uniform
-        and anystart parameters can be used to affect multiple style tokens.
+        options are extend (characters to show the extension of a directory
+        while its children are traversed), space (character to provide the
+        correct indentation of an item when some of its parent / grandparent
+        directories are completely traversed), split (characters to show a
+        folder or file within a directory, with more items following),
+        final (characters to show a folder or file within a directory,
+        with no more items following), folderstart (characters to append
+        before any folder), and filestart (characters to append beffore any
+        file).  The following shows the default tokens for the &#39;lines&#39; style:
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
+
+            {&#39;split&#39;: &#39;├─&#39;,
+             &#39;extend&#39;: &#39;│ &#39;,
+             &#39;space&#39;: &#39;  &#39;,
+             &#39;final&#39;: &#39;└─&#39;,
+             &#39;folderstart&#39;: &#39;&#39;,
+             &#39;filestart&#39;: &#39;&#39;}
+
+        All default style tokens are 2 character strings, except for
+        folderstart and filestart.  Style tokens from **kwargs are not
+        affected by the indent parameter.  The uniform and anystart
+        parameters can be used to affect multiple style tokens.
 
     Raises
     ------
@@ -3314,13 +3638,15 @@ case the tree diagram is printed in the console.</dd>
 <span>def <span class="ident">set_child_depths</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Recursively set depths of self and its children.</p></div>
+<div class="desc"><p>Recursively set depths of self and its children.
+Called automatically when a new parent is assigned.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_child_depths(self):
-    &#39;&#39;&#39;Recursively set depths of self and its children.&#39;&#39;&#39;
+    &#39;&#39;&#39;Recursively set depths of self and its children.
+    Called automatically when a new parent is assigned.&#39;&#39;&#39;
     def apply_setdepth(FD):
         FD.set_depth()
     self.walk_apply(apply_setdepth)</code></pre>
@@ -3388,6 +3714,29 @@ case the tree diagram is printed in the console.</dd>
 </code></dt>
 <dd>
 <div class="desc"><p>Class to represent files in FakeDir objects.</p>
+<p>Files in FakeDir have this type:</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; f = sd.randomdir(seed=3) # create a random FakeDir
+&gt;&gt;&gt; f
+
+MyFakeDir/
+├─Endicott.txt
+└─infusoria/
+  ├─Myra.txt
+  ├─Sherwin.txt
+  ├─pinnacle/
+  ├─sylvan/
+  └─alai/
+    ├─weld.txt
+    ├─penates.txt
+    ├─Marquette/
+    ├─America/
+    └─Stalin/
+
+&gt;&gt;&gt; f['Endicott.txt']
+
+FakeFile(MyFakeDir/Endicott.txt)
+</code></pre>
 <p>Same as FakeItem initialization, but adds filename and extension
 attributes.</p></div>
 <details class="source">
@@ -3395,7 +3744,32 @@ attributes.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class FakeFile(FakeItem):
-    &#39;&#39;&#39;Class to represent files in FakeDir objects.&#39;&#39;&#39;
+    &#39;&#39;&#39;Class to represent files in FakeDir objects.
+
+    Files in FakeDir have this type:
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; f = sd.randomdir(seed=3) # create a random FakeDir
+        &gt;&gt;&gt; f
+
+        MyFakeDir/
+        ├─Endicott.txt
+        └─infusoria/
+          ├─Myra.txt
+          ├─Sherwin.txt
+          ├─pinnacle/
+          ├─sylvan/
+          └─alai/
+            ├─weld.txt
+            ├─penates.txt
+            ├─Marquette/
+            ├─America/
+            └─Stalin/
+
+        &gt;&gt;&gt; f[&#39;Endicott.txt&#39;]
+
+        FakeFile(MyFakeDir/Endicott.txt)
+    &#39;&#39;&#39;
     def __init__(self, name, parent=None):
         &#39;&#39;&#39;Same as FakeItem initialization, but adds filename and extension
         attributes.
@@ -3529,7 +3903,33 @@ be the "head" of the directory.</dd>
 
     def get_path(self):
         &#39;&#39;&#39;Return a &#34;path&#34; string of self, from the head FakeDir (which has
-        parent == None).&#39;&#39;&#39;
+        parent == None).
+
+        EXAMPLE
+
+            &gt;&gt;&gt; import seedir as sd
+            &gt;&gt;&gt; f = sd.randomdir(seed=3) # create a random FakeDir
+            &gt;&gt;&gt; f
+
+            MyFakeDir/
+            ├─Endicott.txt
+            └─infusoria/
+              ├─Myra.txt
+              ├─Sherwin.txt
+              ├─pinnacle/
+              ├─sylvan/
+              └─alai/
+                ├─weld.txt
+                ├─penates.txt
+                ├─Marquette/
+                ├─America/
+                └─Stalin/
+
+            &gt;&gt;&gt; x = sd.FakeDir(&#39;newfolder&#39;, parent=f[&#39;infusoria/alai&#39;])
+            &gt;&gt;&gt; print(x.get_path())
+
+            &#39;MyFakeDir/infusoria/alai/newfolder&#39;
+        &#39;&#39;&#39;
         parents = [self.name]
         on = self
         while on.parent is not None:
@@ -3538,7 +3938,8 @@ be the "head" of the directory.</dd>
         return &#39;/&#39;.join(parents[::-1])
 
     def set_depth(self):
-        &#39;&#39;&#39;Set the depth attribute of self, based on the depth of parent.&#39;&#39;&#39;
+        &#39;&#39;&#39;Set the depth attribute of self, based on the depth of parent.
+        Automatically called when setting new parents.&#39;&#39;&#39;
         if self.parent is None:
             self.depth = 0
         else:
@@ -3593,14 +3994,64 @@ def parent(self):
 </code></dt>
 <dd>
 <div class="desc"><p>Return a "path" string of self, from the head FakeDir (which has
-parent == None).</p></div>
+parent == None).</p>
+<p>EXAMPLE</p>
+<pre><code>&gt;&gt;&gt; import seedir as sd
+&gt;&gt;&gt; f = sd.randomdir(seed=3) # create a random FakeDir
+&gt;&gt;&gt; f
+
+MyFakeDir/
+├─Endicott.txt
+└─infusoria/
+  ├─Myra.txt
+  ├─Sherwin.txt
+  ├─pinnacle/
+  ├─sylvan/
+  └─alai/
+    ├─weld.txt
+    ├─penates.txt
+    ├─Marquette/
+    ├─America/
+    └─Stalin/
+
+&gt;&gt;&gt; x = sd.FakeDir('newfolder', parent=f['infusoria/alai'])
+&gt;&gt;&gt; print(x.get_path())
+
+'MyFakeDir/infusoria/alai/newfolder'
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_path(self):
     &#39;&#39;&#39;Return a &#34;path&#34; string of self, from the head FakeDir (which has
-    parent == None).&#39;&#39;&#39;
+    parent == None).
+
+    EXAMPLE
+
+        &gt;&gt;&gt; import seedir as sd
+        &gt;&gt;&gt; f = sd.randomdir(seed=3) # create a random FakeDir
+        &gt;&gt;&gt; f
+
+        MyFakeDir/
+        ├─Endicott.txt
+        └─infusoria/
+          ├─Myra.txt
+          ├─Sherwin.txt
+          ├─pinnacle/
+          ├─sylvan/
+          └─alai/
+            ├─weld.txt
+            ├─penates.txt
+            ├─Marquette/
+            ├─America/
+            └─Stalin/
+
+        &gt;&gt;&gt; x = sd.FakeDir(&#39;newfolder&#39;, parent=f[&#39;infusoria/alai&#39;])
+        &gt;&gt;&gt; print(x.get_path())
+
+        &#39;MyFakeDir/infusoria/alai/newfolder&#39;
+    &#39;&#39;&#39;
     parents = [self.name]
     on = self
     while on.parent is not None:
@@ -3641,13 +4092,15 @@ parent == None).</p></div>
 <span>def <span class="ident">set_depth</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Set the depth attribute of self, based on the depth of parent.</p></div>
+<div class="desc"><p>Set the depth attribute of self, based on the depth of parent.
+Automatically called when setting new parents.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_depth(self):
-    &#39;&#39;&#39;Set the depth attribute of self, based on the depth of parent.&#39;&#39;&#39;
+    &#39;&#39;&#39;Set the depth attribute of self, based on the depth of parent.
+    Automatically called when setting new parents.&#39;&#39;&#39;
     if self.parent is None:
         self.depth = 0
     else:
@@ -3674,12 +4127,8 @@ parent == None).</p></div>
 <ul class="">
 <li><code><a title="seedir.fakedir.fakedir" href="#seedir.fakedir.fakedir">fakedir</a></code></li>
 <li><code><a title="seedir.fakedir.fakedir_fromstring" href="#seedir.fakedir.fakedir_fromstring">fakedir_fromstring</a></code></li>
-<li><code><a title="seedir.fakedir.filter_fakeitem_names" href="#seedir.fakedir.filter_fakeitem_names">filter_fakeitem_names</a></code></li>
-<li><code><a title="seedir.fakedir.get_random_int" href="#seedir.fakedir.get_random_int">get_random_int</a></code></li>
 <li><code><a title="seedir.fakedir.populate" href="#seedir.fakedir.populate">populate</a></code></li>
 <li><code><a title="seedir.fakedir.randomdir" href="#seedir.fakedir.randomdir">randomdir</a></code></li>
-<li><code><a title="seedir.fakedir.recursive_add_fakes" href="#seedir.fakedir.recursive_add_fakes">recursive_add_fakes</a></code></li>
-<li><code><a title="seedir.fakedir.recursive_fakedir_structure" href="#seedir.fakedir.recursive_fakedir_structure">recursive_fakedir_structure</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
