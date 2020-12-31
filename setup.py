@@ -19,7 +19,7 @@ long_description = '\n'.join([l for l in long_description.splitlines()
                               if not l.strip().startswith('<')])
 
 setup(name='seedir',
-      version='0.1.2',
+      version='0.1.3',
       description='Package for creating, editing, and reading folder tree diagrams.',
       url='https://github.com/earnestt1234/seedir',
       author='Tom Earnest',
