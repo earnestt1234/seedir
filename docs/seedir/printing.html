@@ -6,7 +6,7 @@
 <meta name="generator" content="pdoc 0.9.1" />
 <title>seedir.printing API documentation</title>
 <meta name="description" content="General module of resources and helpers for printing and making folder trees
-in seedir …" />
+in `seedir` …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -24,7 +24,7 @@ in seedir …" />
 </header>
 <section id="section-intro">
 <p>General module of resources and helpers for printing and making folder trees
-in seedir.</p>
+in <code><a title="seedir" href="index.html">seedir</a></code>.</p>
 <p>@author: Tom Earnest</p>
 <p>GitHub: <a href="https://github.com/earnestt1234/seedir">https://github.com/earnestt1234/seedir</a></p>
 <details class="source">
@@ -34,7 +34,7 @@ in seedir.</p>
 <pre><code class="python"># -*- coding: utf-8 -*-
 &#34;&#34;&#34;
 General module of resources and helpers for printing and making folder trees
-in seedir.
+in `seedir`.
 
 @author: Tom Earnest
 
@@ -101,7 +101,7 @@ filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, &#39;words.txt&#39;)
 wordfile = open(wordpath, &#39;r&#39;)
 words = [line.strip() for line in wordfile.readlines()]
-&#34;&#34;&#34;List of dictionary words for seedir.randomdir()&#34;&#34;&#34;
+&#34;&#34;&#34;List of dictionary words for seedir.fakedir.randomdir()&#34;&#34;&#34;
 
 # functions
 
@@ -116,13 +116,13 @@ def is_match(pattern, string, regex=True):
 def get_styleargs(style):
     &#39;&#39;&#39;
     Return the string tokens associated with different styles for printing
-    folder trees with seedir.seedir().
+    folder trees with `seedir.seedir.seedir()`.
 
     Parameters
     ----------
     style : str
-        Style name.  Current options are &#39;lines&#39;, &#39;spaces&#39;, &#39;arrow&#39;, &#39;plus&#39;,
-        &#39;dash&#39;, or &#39;emoji&#39;.
+        Style name.  Current options are `&#39;lines&#39;`, `&#39;spaces&#39;`, `&#39;arrow&#39;`,
+        `&#39;plus&#39;`, `&#39;dash&#39;`, or `&#39;emoji&#39;`.
 
     Raises
     ------
@@ -202,7 +202,7 @@ def format_indent(style_dict, indent=2):
 </dd>
 <dt id="seedir.printing.words"><code class="name">var <span class="ident">words</span></code></dt>
 <dd>
-<div class="desc"><p>List of dictionary words for seedir.randomdir()</p></div>
+<div class="desc"><p>List of dictionary words for seedir.fakedir.randomdir()</p></div>
 </dd>
 </dl>
 </section>
@@ -214,13 +214,13 @@ def format_indent(style_dict, indent=2):
 </code></dt>
 <dd>
 <div class="desc"><p>Return the string tokens associated with different styles for printing
-folder trees with seedir.seedir().</p>
+folder trees with <code><a title="seedir.seedir.seedir" href="seedir.html#seedir.seedir.seedir">seedir()</a></code>.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>style</code></strong> :&ensp;<code>str</code></dt>
 <dd>Style name.
-Current options are 'lines', 'spaces', 'arrow', 'plus',
-'dash', or 'emoji'.</dd>
+Current options are <code>'lines'</code>, <code>'spaces'</code>, <code>'arrow'</code>,
+<code>'plus'</code>, <code>'dash'</code>, or <code>'emoji'</code>.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
@@ -239,13 +239,13 @@ Current options are 'lines', 'spaces', 'arrow', 'plus',
 <pre><code class="python">def get_styleargs(style):
     &#39;&#39;&#39;
     Return the string tokens associated with different styles for printing
-    folder trees with seedir.seedir().
+    folder trees with `seedir.seedir.seedir()`.
 
     Parameters
     ----------
     style : str
-        Style name.  Current options are &#39;lines&#39;, &#39;spaces&#39;, &#39;arrow&#39;, &#39;plus&#39;,
-        &#39;dash&#39;, or &#39;emoji&#39;.
+        Style name.  Current options are `&#39;lines&#39;`, `&#39;spaces&#39;`, `&#39;arrow&#39;`,
+        `&#39;plus&#39;`, `&#39;dash&#39;`, or `&#39;emoji&#39;`.
 
     Raises
     ------

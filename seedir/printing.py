@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 General module of resources and helpers for printing and making folder trees
-in seedir.
+in `seedir`.
 
 @author: Tom Earnest
 
@@ -68,7 +68,7 @@ filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, 'words.txt')
 wordfile = open(wordpath, 'r')
 words = [line.strip() for line in wordfile.readlines()]
-"""List of dictionary words for seedir.randomdir()"""
+"""List of dictionary words for seedir.fakedir.randomdir()"""
 
 # functions
 
@@ -83,13 +83,13 @@ def is_match(pattern, string, regex=True):
 def get_styleargs(style):
     '''
     Return the string tokens associated with different styles for printing
-    folder trees with seedir.seedir().
+    folder trees with `seedir.seedir.seedir()`.
 
     Parameters
     ----------
     style : str
-        Style name.  Current options are 'lines', 'spaces', 'arrow', 'plus',
-        'dash', or 'emoji'.
+        Style name.  Current options are `'lines'`, `'spaces'`, `'arrow'`,
+        `'plus'`, `'dash'`, or `'emoji'`.
 
     Raises
     ------

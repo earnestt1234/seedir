@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 This module provides code for producing folder structure strings for folders
-of the user's computer.  The main tool here is seedir() (seedir.seedir()),
+of the user's computer.  The main tool here is `seedir()`,
 which takes a file path and produces a folder diagram.   The other functions
-are mostly helpers for seedir().
+are mostly helpers for `seedir()`.
 
 @author: Tom Earnest
 
@@ -504,8 +504,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     '''
 
     Primary function of the seedir package: generate folder trees for
-    computer directories.  seedir() is a convenience function, wrapping
-    seedir.seedir.recursive_folder_structure().
+    computer directories.
 
     EXAMPLES:
 
@@ -591,81 +590,81 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         System path of a directory.  If None, current working directory is
         used.
     style : 'lines', 'dash', 'arrow', 'spaces', 'plus', or 'emoji', optional
-        Style to use. The default is 'lines'.  A style determines the set
+        Style to use. The default is `'lines'`.  A style determines the set
         of characters ("tokens") used to represent the base structure of
         the directory (e.g. which items belong to which folders, when items
         are the last member of a folder, etc.).  The actual tokens being used
-        by each style can be viewed with seedir.get_styleargs().
+        by each style can be viewed with `seedir.printing.get_styleargs()`.
     printout : bool, optional
-        Print the folder structure in the console. The default is True.  When
-        false, the folder diagram is returned as a string.
+        Print the folder structure in the console. The default is `True`.  When
+        `False`, the folder diagram is returned as a string.
     indent : int (>= 0), optional
         Number of spaces separating items from their parent folder.
-        The default is 2.
+        The default is `2`.
     uniform : str or None, optional
         Characters to use for all tokens when creating the tree diagram.
-        The default is None.  When not None, the extend, space, split, and
-        final tokens are replaced with uniform (the 'spaces' style is
-        essentially uniform = '  ').
+        The default is `None`.  When not `None`, the extend, space, split, and
+        final tokens are replaced with `uniform` (the `'spaces'` style is
+        essentially `uniform = '  '`).
     anystart : str or None, optional
         Characters to append before any item (i.e. folder or file).  The
-        default is None.  Specific starts for folders and files can be
-        specified (see **kwargs).
+        default is `None`.  Specific starts for folders and files can be
+        specified (see `**kwargs`).
     depthlimit : int or None, optional
-        Limit the depth of folders to traverse.  Folders at the depthlimit are
+        Limit the depth of folders to traverse.  Folders at the `depthlimit` are
         included, but their contents are not shown (with the exception of the
-        beyond parameter being specified).  The default is None, which can
+        beyond parameter being specified).  The default is `None`, which can
         cause exceptionally long runtimes for deep or extensive directories.
     itemlimit : int or None, optional
         Limit the number of items in a directory to show.  Items beyond the
-        itemlimit can be expressed using the beyond parameter.  The files and
-        folders left out are determined by the sorting parameters of seedir()
-        (sort, sort_reverse, sort_key).  The default is None.
+        `itemlimit` can be expressed using the `beyond` parameter.  The files and
+        folders left out are determined by the sorting parameters
+        (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
     beyond : str ('ellipsis', 'cotent' or a string starting with an underscore) or None, optional
-        String to indicate directory contents beyond the itemlimit or the
-        depthlimit.  The default is None.  Options are: 'ellipsis' ('...'),
-        'content' or 'contents' (the number of files and folders beyond), or
-        a string starting with '_' (everything after the leading underscore
+        String to indicate directory contents beyond the `itemlimit` or the
+        `depthlimit`.  The default is `None`.  Options are: `'ellipsis'` (`'...'`),
+        `'content'` or `'contents'` (the number of files and folders beyond), or
+        a string starting with `'_'` (everything after the leading underscore
         will be returned)
     first : 'files', 'folders', or None, optional
         Sort the directory so that either files or folders appear first.
-        The default is None.
+        The default is `None`.
     sort : bool, optional
         Sort the directory. With no other specifications, the sort will be a
         simple alphabetical sort of the item names, but this can be altered
-        with the first, sort_reverse, and sort_key parameters.
-        The default is False.
+        with the `first`, `sort_reverse`, and `sort_key parameters`.
+        The default is `False`.
     sort_reverse : bool, optional
-        Reverse the sorting determined by sort or sort_key.
-        The default is False.
+        Reverse the sorting determined by `sort` or `sort_key`.
+        The default is `False`.
     sort_key : function, optional
-        Key to use for sorting file or folder names, akin to the key parameter
-        of the builtin sorted() or list.sort(). The function should take a
-        string as an argument. The default is None.
+        Key to use for sorting file or folder names, akin to the `key` parameter
+        of the builtin `sorted()` or `list.sort()`. The function should take a
+        string as an argument. The default is `None`.
     include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
-        Folder / file names to include or exclude. The default is None.
+        Folder / file names to include or exclude. The default is `None`.
     regex : bool, optional
         Interpret the strings of include/exclude file/folder arguments as
-        regular expressions. The default is False.
+        regular expressions. The default is `False`.
     mask : function, optional
         Function for filtering items.  Absolute paths of each individual item
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
+        are passed to the `mask` function.  If `True` is returned, the
+        item is kept.  The default is `None`.
     slash : str, option:
-        Slash character to follow folders.  If 'sep', uses os.sep.  The
-        default is '/'.
+        Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
+        default is `'/'`.
     **kwargs : str
         Specific tokens to use for creating the file tree diagram.  The tokens
-        use by each builtin style can be seen with sd.get_styleargs().  Valid
-        options are extend (characters to show the extension of a directory
-        while its children are traversed), space (character to provide the
+        use by each builtin style can be seen with `seedir.printing.get_styleargs()`.
+        Valid options are `extend` (characters to show the extension of a directory
+        while its children are traversed), `space` (character to provide the
         correct indentation of an item when some of its parent / grandparent
-        directories are completely traversed), split (characters to show a
+        directories are completely traversed), `split` (characters to show a
         folder or file within a directory, with more items following),
-        final (characters to show a folder or file within a directory,
-        with no more items following), folderstart (characters to append
-        before any folder), and filestart (characters to append beffore any
-        file).  The following shows the default tokens for the 'lines' style:
+        `final` (characters to show a folder or file within a directory,
+        with no more items following), `folderstart` (characters to append
+        before any folder), and `filestart` (characters to append beffore any
+        file).  The following shows the default tokens for the `'lines'` style:
 
             >>> import seedir as sd
             >>> sd.get_styleargs('lines')
@@ -678,8 +677,8 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
              'filestart': ''}
 
         All default style tokens are 2 character strings, except for
-        folderstart and filestart.  Style tokens from **kwargs are not
-        affected by the indent parameter.  The uniform and anystart
+        `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
+        affected by the indent parameter.  The `uniform` and `anystart`
         parameters can be used to affect multiple style tokens.
 
     Raises
@@ -689,8 +688,8 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
 
     Returns
     -------
-    rfs (str) or None
-        The tree diagram (as a string) or None if prinout = True, in which
+    s (str) or None
+        The tree diagram (as a string) or `None` if `prinout = True`, in which
         case the tree diagram is printed in the console.
 
     '''
@@ -716,23 +715,23 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         slash = os.sep
     if path is None:
         path = os.getcwd()
-    rfs =  recursive_folder_structure(path,
-                                      depthlimit=depthlimit,
-                                      itemlimit=itemlimit,
-                                      beyond=beyond,
-                                      first=first,
-                                      sort=sort,
-                                      sort_reverse=sort_reverse,
-                                      sort_key=sort_key,
-                                      include_folders=include_folders,
-                                      exclude_folders=exclude_folders,
-                                      include_files=include_files,
-                                      exclude_files=exclude_files,
-                                      regex=regex,
-                                      slash=slash,
-                                      mask=mask,
-                                      **styleargs).strip()
+    s =  recursive_folder_structure(path,
+                                    depthlimit=depthlimit,
+                                    itemlimit=itemlimit,
+                                    beyond=beyond,
+                                    first=first,
+                                    sort=sort,
+                                    sort_reverse=sort_reverse,
+                                    sort_key=sort_key,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex,
+                                    slash=slash,
+                                    mask=mask,
+                                    **styleargs).strip()
     if printout:
-        print(rfs)
+        print(s)
     else:
-        return rfs
+        return s
