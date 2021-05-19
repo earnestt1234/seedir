@@ -37,31 +37,31 @@ class FolderStructure:
 
         # initialize
         output = ''
+
         if incomplete is None:
             incomplete = []
+
         if depth == 0:
             output += (folderstart +
                        self.getname(folder) +
                        slash +
                        '\n')
+
         current_itemlimit = itemlimit
         beyond_added = False
 
-        # stop when too deep
+        # handle when depthlimit is reached
         if depth == depthlimit:
             if beyond is None:
                 return output
             else:
                 current_itemlimit = 0
 
-        fulllistdir = self.listdir(folder)
+        # get all children, add depth to docket
+        listdir = self.listdir(folder)
         incomplete.append(depth)
 
-        # sort and trim the contents of listdir
-        if sort or first is not None:
-            listdir = self.sort(fulllistdir, first=first,
-                                sort_reverse=sort_reverse, sort_key=sort_key)
-
+        # sort and filter the contents of listdir
         filterargs = {
             'include_folders': include_folders,
             'exclude_folders': exclude_folders,
@@ -69,6 +69,10 @@ class FolderStructure:
             'exclude_files': exclude_files,
             'mask': mask
             }
+
+        if sort or first is not None:
+            listdir = self.sort(listdir, first=first,
+                                sort_reverse=sort_reverse, sort_key=sort_key)
 
         if any(arg is not None for arg in filterargs.values()):
             listdir = self.filter(listdir, **filterargs, regex=regex,)
@@ -79,29 +83,36 @@ class FolderStructure:
         else:
             current_itemlimit = min(current_itemlimit, len(listdir))
 
+        # segment output into what can be included
         finalpaths = listdir[:current_itemlimit]
         rem = listdir[current_itemlimit:]
+
+        # append beyond string if being used
         if beyond is not None:
             if rem or (depth == depthlimit):
                 finalpaths += [self.beyondstr(rem, beyond)]
                 beyond_added = True
 
+        # if empty, close the current depth
         if not finalpaths:
             incomplete.remove(depth)
 
         # get output for each item in folder
         for i, f in enumerate(finalpaths):
+
             lastitem = (i == (len(finalpaths) - 1))
             isbeyondstr = lastitem and beyond_added
             name = f if isbeyondstr else self.getname(f)
 
             # create header for the item
             base_header = get_base_header(incomplete, extend, space)
+
             if lastitem:
                 branch = final
                 incomplete.remove(depth)
             else:
                 branch = split
+
             header = base_header + branch
 
             # concat to output and recurse if item is folder
@@ -132,6 +143,7 @@ class FolderStructure:
             # only concat to output if file
             else:
                 output += header + filestart + name + '\n'
+
         return output
 
     def __call__(self, folder, **kwargs):

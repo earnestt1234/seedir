@@ -23,10 +23,10 @@ import os
 import unittest
 
 import seedir as sd
-from seedir.seedir import get_base_header
-from seedir.fakedir import (count_fakedirs,
-                            count_fakefiles,
-                            sort_fakedir)
+from seedir.folderstructurehelpers import (get_base_header,
+                                           count_fakedirs,
+                                           count_fakefiles,
+                                           sort_fakedir)
 
 example = """mypkg/
     __init__.py
@@ -133,8 +133,8 @@ class TestSeedirStringFormatting(unittest.TestCase):
 
     def test_format_indent(self):
         d = sd.get_styleargs('lines')
-        f1 = sd.format_indent(d, indent=4)
-        f2 = sd.format_indent(d, indent=1)
+        f1 = sd.printing.format_indent(d, indent=4)
+        f2 = sd.printing.format_indent(d, indent=1)
         chars = ['extend', 'space', 'split', 'final']
         self.assertTrue(all(len(f1[c])==4 for c in chars))
         self.assertTrue(all(len(f2[c])==1 for c in chars))

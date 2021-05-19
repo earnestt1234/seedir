@@ -20,9 +20,7 @@ GitHub: https://github.com/earnestt1234/seedir
 __pdoc__ = {'command_line' : False}
 
 #imports for package namespace
-from .seedir import seedir, seedir2
-
-from .folderstructure import RealDirStructure, FakeDirStructure
+from .seedir import seedir
 
 from .fakedir import (fakedir,
                       fakedir_fromstring,

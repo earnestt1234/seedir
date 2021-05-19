@@ -28,465 +28,13 @@ import os
 import string
 import re
 
-import natsort
 import random
 
 from seedir.errors import FakedirError
+from seedir.folderstructure import FakeDirStructure
+from seedir.folderstructurehelpers import sort_dir, filter_item_names
 import seedir.printing as printing
 from seedir.printing import words
-from seedir.seedir import sort_dir, filter_item_names
-
-def count_fakefiles(objs):
-    '''
-    Count the number of FakeFile objections in a collection.
-
-    Parameters
-    ----------
-    objs : list-like
-        Collection of objects (typically FakeDir and FakeFile).
-
-    Returns
-    -------
-    files : int
-        Count of FakeFile objects.
-
-    '''
-    files = sum([isinstance(p, FakeFile) for p in objs])
-    return files
-
-def count_fakedirs(objs):
-    '''
-    Count the number of FakeDir objections in a collection.
-
-    Parameters
-    ----------
-    objs : list-like
-        Collection of objects (typically FakeDir and FakeFile).
-
-    Returns
-    -------
-    folders : int
-        Count of FakeDir objects.
-
-    '''
-    folders = sum([isinstance(p, FakeDir) for p in objs])
-    return folders
-
-def beyond_fakedepth_str(beyond, objs=None):
-    '''
-    Generates the text for seedir.FakeDir.seedir() when using the 'beyond'
-    parameter and ther are more items than the itemlimit or contents
-    beyond the depthlimit.
-
-    Parameters
-    ----------
-    beyond : str
-        Style of beyond string to generate.  Options are:
-            - 'ellipsis' ('...')
-            - 'content' or 'contents' (the number of files and folders beyond)
-            - a string starting with '_' (everything after the leading
-              underscore will be returned)
-    objs : collection of FakeDir and FakeFile objects, optional
-        Objects beyond the limit, used when the 'beyond'
-        argeument is 'content' or 'contents'. The default is None.
-
-    Raises
-    ------
-    FakedirError
-        Raised when the 'beyond' argument is not recognized.
-
-    Returns
-    -------
-    str
-        String indicating what lies beyond
-
-    '''
-    if beyond == 'ellipsis':
-        return '...'
-    elif beyond in ['contents','content']:
-        folders = count_fakedirs(objs)
-        files = count_fakefiles(objs)
-        return '{} folder(s), {} file(s)'.format(folders, files)
-    elif beyond and beyond[0] == '_':
-        return beyond[1:]
-    else:
-        s1 = '"beyond" must be "ellipsis", "content", or '
-        s2 = 'a string starting with "_"'
-        raise FakedirError(s1 + s2)
-
-def sort_fakedir(objs, first=None, sort_reverse=False, sort_key=None):
-    '''
-    Sorting function used by seedir.FakeDir.seedir() to sort contents when
-    producing folder diagrams.
-
-    Parameters
-    ----------
-    objs : list-like
-        Collection of FakeDir or FakeFile objects to sort.
-    first : 'files' or 'folders', optional
-        Sort either (fake) files or folders first. The default is None.
-    sort_reverse : bool, optional
-        Reverse the sort applied. The default is False.
-    sort_key : function, optional
-        Function to apply to sort the objs by their name attribute (i.e. the
-        folder or file name).  The function should take a string as a
-        parameter.
-
-    Raises
-    ------
-    SeedirError
-        Fails when the 'first' parameter is used and no root directory
-        is provided.
-
-    Returns
-    -------
-    list
-        Sorted input as a list.
-
-    '''
-    if sort_key is None:
-            sort_key = lambda f : f.name
-    else:
-        y = sort_key
-        sort_key = lambda f : y(f.name)
-    if first in ['folders', 'files']:
-        folders = [o for o in objs if isinstance(o, FakeDir)]
-        files = [o for o in objs if isinstance(o, FakeFile)]
-        folders = natsort.natsorted(folders, reverse=sort_reverse,
-                                    key=sort_key)
-        files = natsort.natsorted(files, reverse=sort_reverse, key=sort_key)
-        return folders + files if first == 'folders' else files + folders
-    else:
-        return natsort.natsorted(objs, reverse=sort_reverse, key=sort_key)
-
-def get_fakebase_header(incomplete, extend, space):
-    '''
-    For seedirFakeDir.seedir(), generate the combination of extend and space
-    tokens to prepend to file names when generating folder diagrams.
-    See the documentation for seedir.seedir() for an
-    explanation of these tokens.
-
-    The string generated here will still be missing the branch token
-    (split or final) as well as any folderstart or filestart tokens.
-    They are added within seedir.seedir().
-
-    For any item included in a folder diagram, the combination of
-    extend and space tokens is based on the depth of the item as well as the
-    parent folders to that item which are not completed.  This information
-    is symbolized with the `incomplete` argument.  The following illustrates
-    the incomplete arguments passed to this function for an example folder
-    tree:
-        doc\
-        ├─_static\                  [0]
-        │ ├─embedded\               [0, 1]
-        │ │ ├─deep_file             [0, 1, 2]
-        │ │ └─very\                 [0, 1, 2]
-        │ │   └─deep\               [0, 1, 3]
-        │ │     └─folder\           [0, 1, 4]
-        │ │       └─very_deep_file  [0, 1, 5]
-        │ └─less_deep_file          [0, 1]
-        └─index.rst                 [0]
-
-    Parameters
-    ----------
-    incomplete : list-like
-        List of integers denoting the depth of incomplete folders at the time
-        of constructing the line for a given item.  Zero represents being
-        inside the main folder, with increasing integers meaing increasing
-        depth.
-    extend : str
-        Characters symbolizing the extension of a folder.
-    space : str
-        Characters providing the gap between items and earlier parents.
-
-    Returns
-    -------
-    str
-        Base header string.
-
-    '''
-    base_header = []
-    max_i = max(incomplete)
-    for p in range(max_i):
-        if p in incomplete:
-            base_header.append(extend)
-        else:
-            base_header.append(space)
-    return "".join(base_header)
-
-def filter_fakeitem_names(listdir, include_folders=None,
-                          exclude_folders=None, include_files=None,
-                          exclude_files=None, regex=False, mask=None):
-    '''
-    Filter for folder and file names in seedir.FakeDir.seedir().  Removes or
-    includes items matching filtering strings.
-
-    Parameters
-    ----------
-    listdir : list-like
-        Collection of FakeDir and FakeFile objects
-    include_folders : str or list-like, optional
-        Folder names to include. The default is None.
-    exclude_folders : str or list-like, optional
-        Folder names to exclude. The default is None.
-    include_files : str or list-like, optional
-        File names to include. The default is None.
-    exclude_files : str or list-like, optional
-        File names to exclude. The default is None.
-    mask : function, optional
-        Function for filtering items.  Each individual item object
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-    regex : bool, optional
-        Interpret strings as regular expressions. The default is False.
-
-    Raises
-    ------
-    SeedirError
-        When the exlcusion or inclusion arguments are not strings or
-        iterables.
-
-    Returns
-    -------
-    keep : list
-        Filtered input.
-
-    '''
-    keep = []
-    for l in listdir:
-        if mask is not None:
-            if mask(l) is not True:
-                continue
-
-        if isinstance(l, FakeDir):
-            if isinstance(include_folders, str):
-                if not printing.is_match(include_folders, l.name, regex):
-                    continue
-            elif include_folders is not None:
-                try:
-                    if not any(printing.is_match(n, l.name, regex)
-                               for n in include_folders):
-                        continue
-                except:
-                    raise FakedirError('Failure when trying to iterate '
-                                       'over "include_folders" and '
-                                       'match strings')
-            if isinstance(exclude_folders, str):
-                if printing.is_match(exclude_folders, l.name, regex):
-                    continue
-            elif exclude_folders is not None:
-                try:
-                    if any(printing.is_match(x, l.name, regex)
-                           for x in exclude_folders):
-                        continue
-                except:
-                    raise FakedirError('Failure when trying to iterate '
-                                      'over "exclude_folders" and '
-                                      'match strings')
-        else:
-            if isinstance(include_files, str):
-                if not printing.is_match(include_files, l.name, regex):
-                    continue
-            elif include_files is not None:
-                try:
-                    if not any(printing.is_match(n, l.name, regex)
-                               for n in include_files):
-                        continue
-                except:
-                    raise FakedirError('Failure when trying to iterate '
-                                      'over "include_files" and '
-                                      'match strings')
-            if isinstance(exclude_files, str):
-                if printing.is_match(exclude_files, l.name, regex):
-                    continue
-            elif exclude_files is not None:
-                try:
-                    if any(printing.is_match(x, l.name, regex)
-                           for x in exclude_files):
-                        continue
-                except:
-                    raise FakedirError('Failure when trying to iterate '
-                                      'over "exclude_files" and '
-                                      'match strings')
-        keep.append(l)
-    return keep
-
-def recursive_fakedir_structure(fakedir, depth=0, incomplete=None, split='├─',
-                                extend='│ ', space='  ', final='└─',
-                                filestart='', folderstart='', depthlimit=None,
-                                itemlimit=None, beyond=None, first=None,
-                                sort=True, sort_reverse=False, sort_key=None,
-                                include_folders=None, exclude_folders=None,
-                                include_files=None, exclude_files=None,
-                                regex=False, mask=None, slash='/'):
-    '''
-    Recursive function for generating folder structures.  Main tool for
-    building output generated by seedir.FakeDir.seedir()
-
-    Parameters
-    ----------
-    fakedir : seedir.FakeDir
-        Fake directory from seedir package
-    depth : int, optional
-        Integer denoting the current folder depth. Starts at 0.
-    incomplete : list-like, optional
-        List of incomplete folder depths, passed to seedir.get_base_header().
-        The default is None.
-    extend : str, optional
-        Token to denote a folder has more children below. The default is '│ '.
-    space : str, optional
-        Token to space items out to the correct depth. The default is '  '.
-    split : str, optional
-        Token before file/folder when there are more items in the directory
-        below it. The default is '├─'.
-    final : str, optional
-        Token before the last file/folder in a directory. The default is '└─'.
-    filestart : str, optional
-        String to prepend to file names. The default is ''.
-    folderstart : TYPE, optional
-        String to prepend to folder names. The default is ''.
-    depthlimit : int, optional
-        Limit on how many folders deep to traverse. The default is None.
-    itemlimit : int, optional
-        Limit on how many items to show for a directory. The default is None.
-    beyond : str, optional
-        Method to denote items beyond the depthlimit or itemlimit.
-        The default is None.  Options are:
-            - 'ellipsis' ('...')
-            - 'content' or 'contents' (the number of files and folders beyond)
-            - a string starting with '_' (everything after the leading
-              underscore will be returned)
-    first : 'folders' or 'files', optional
-        Show folders first for files first. The default is None.
-    sort : bool, optional
-        Sort directories being diagrammed. The default is True.
-    sort_reverse : bool, optional
-        Reverse the sort. The default is False.
-    sort_key : function, optional
-        Key function used for sorting item names. The default is None.
-    include_folders, exclude_folders, include_files, exclude_files : str or list-like, optional
-        Folder / file names to include or exclude. The default is None.
-    regex : bool, optional
-        Interpret include/exclude file/folder arguments as
-        regular expressions. The default is False.
-    mask : function, optional
-        Function for filtering items.  Each individual item object
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-    slash : str, option:
-        Slash character to follow folders.  If 'sep', uses os.sep.  The
-        default is '/'.
-
-    Returns
-    -------
-    output : str
-        Folder tree diagram.
-
-    '''
-    # initialize
-    output = ''
-    if incomplete is None:
-        incomplete = []
-    if depth == 0:
-        output += folderstart + fakedir.name + slash +'\n'
-
-    # stop when too deep
-    if depth == depthlimit and beyond is None:
-        return output
-
-    # enter folder, increase depth
-    listdir = fakedir._children.copy()
-    incomplete.append(depth)
-    depth += 1
-
-    # if depth passed limit, return with "beyond" added
-    if depthlimit and depth > depthlimit:
-        extra = beyond_fakedepth_str(beyond, listdir)
-        if beyond is not None and extra:
-            base_header = get_fakebase_header(incomplete, extend, space)
-            output += base_header + final + extra + '\n'
-        if depth - 1 in incomplete:
-            incomplete.remove(depth-1)
-        incomplete = [n for n in incomplete if n < depth]
-        return output
-
-    # sort and trim the contents of listdir
-    if sort or first is not None:
-        pass
-        listdir = sort_fakedir(listdir, first=first,
-                               sort_reverse=sort_reverse, sort_key=sort_key)
-    if any(arg is not None for arg in [
-            include_folders,
-            exclude_folders,
-            include_files,
-            exclude_files,
-            mask]):
-        listdir = filter_fakeitem_names(listdir,
-                                        include_folders=include_folders,
-                                        exclude_folders=exclude_folders,
-                                        include_files=include_files,
-                                        exclude_files=exclude_files,
-                                        regex=regex, mask=mask)
-    if not listdir:
-        if depth - 1 in incomplete:
-            incomplete.remove(depth-1) # remove from incomplete if empty
-
-    # get output for each item in folder
-    for i, f in enumerate(listdir):
-
-        # if passed itemlimit, return with "beyond" added
-        if i == itemlimit:
-            remaining = [rem for rem in listdir[i:]]
-            if beyond is not None:
-                extra = beyond_fakedepth_str(beyond, remaining)
-                output += base_header + final + extra + '\n'
-            return output
-
-        # create header for the item
-        base_header = get_fakebase_header(incomplete, extend, space)
-        if i == len(listdir) - 1 or (itemlimit is not None and
-                                     i == itemlimit - 1 and
-                                     beyond is None):
-            incomplete.remove(depth-1)
-            incomplete = [n for n in incomplete if n < depth]
-        if itemlimit and i == itemlimit - 1 and beyond is None:
-            branch = final
-        elif i == len(listdir) - 1:
-            branch = final
-        else:
-            branch = split
-        header = base_header + branch
-
-        # concat to output and recurse if item is folder
-        if isinstance(f, FakeDir):
-            output += header + folderstart + f.name + slash +'\n'
-            output += recursive_fakedir_structure(f, depth=depth,
-                                                 incomplete=incomplete,
-                                                 split=split,
-                                                 extend=extend,
-                                                 space=space,
-                                                 final=final,
-                                                 filestart=filestart,
-                                                 folderstart=folderstart,
-                                                 depthlimit=depthlimit,
-                                                 itemlimit=itemlimit,
-                                                 beyond=beyond,
-                                                 first=first,
-                                                 sort=sort,
-                                                 sort_reverse=sort_reverse,
-                                                 sort_key=sort_key,
-                                                 include_folders=include_folders,
-                                                 exclude_folders=exclude_folders,
-                                                 include_files=include_files,
-                                                 exclude_files=exclude_files,
-                                                 regex=regex,
-                                                 mask=mask,
-                                                 slash=slash)
-
-        # only concat to output if file
-        else:
-            output += header + filestart + f.name + '\n'
-    return output
 
 class FakeItem:
     '''Parent class for representing fake folders and files.'''
@@ -1110,42 +658,53 @@ class FakeDir(FakeItem):
             case the tree diagram is printed in the console.
 
         '''
+
         accept_kwargs = ['extend', 'split', 'space', 'final',
                          'folderstart', 'filestart']
+
         if any(i not in accept_kwargs for i in kwargs.keys()):
             raise FakedirError('kwargs must be any of {}'.format(accept_kwargs))
+
         if style:
             styleargs = printing.get_styleargs(style)
+
         styleargs = printing.format_indent(styleargs, indent=indent)
+
         if uniform is not None:
             for arg in ['extend', 'split', 'final', 'space']:
                 styleargs[arg] = uniform
+
         if anystart is not None:
             styleargs['folderstart'] = anystart
             styleargs['filestart'] = anystart
+
         for k in kwargs:
             if k in styleargs:
                 styleargs[k] = kwargs[k]
+
         if sort_key is not None or sort_reverse == True:
             sort = True
+
         if slash.lower() in ['sep', 'os.sep']:
             slash = os.sep
-        s =  recursive_fakedir_structure(self,
-                                         depthlimit=depthlimit,
-                                         itemlimit=itemlimit,
-                                         beyond=beyond,
-                                         first=first,
-                                         sort=sort,
-                                         sort_reverse=sort_reverse,
-                                         sort_key=sort_key,
-                                         include_folders=include_folders,
-                                         exclude_folders=exclude_folders,
-                                         include_files=include_files,
-                                         exclude_files=exclude_files,
-                                         regex=regex,
-                                         slash=slash,
-                                         mask=mask,
-                                         **styleargs).strip()
+
+        s = FakeDirStructure(self,
+                             depthlimit=depthlimit,
+                             itemlimit=itemlimit,
+                             beyond=beyond,
+                             first=first,
+                             sort=sort,
+                             sort_reverse=sort_reverse,
+                             sort_key=sort_key,
+                             include_folders=include_folders,
+                             exclude_folders=exclude_folders,
+                             include_files=include_files,
+                             exclude_files=exclude_files,
+                             regex=regex,
+                             slash=slash,
+                             mask=mask,
+                             **styleargs).strip()
+
         if printout:
             print(s)
         else:
@@ -1489,7 +1048,7 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
     depth +=1
     listdir = os.listdir(path)
     if sort or first is not None:
-        listdir = sort_dir(path, listdir, first=first,
+        listdir = sort_dir(listdir, first=first,
                            sort_reverse=sort_reverse, sort_key=sort_key)
     if any(arg is not None for arg in [
             include_folders,
@@ -1497,7 +1056,7 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
             include_files,
             exclude_files,
             mask]):
-        listdir = filter_item_names(path, listdir,
+        listdir = filter_item_names(listdir,
                                     include_folders=include_folders,
                                     exclude_folders=exclude_folders,
                                     include_files=include_files,
