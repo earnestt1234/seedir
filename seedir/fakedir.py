@@ -1250,6 +1250,9 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
         Fake directory corresponding to the input string.
 
     '''
+    slashes = ['/', '\\', os.sep]
+    joinedslashes = ''.join(slashes)
+
     byline = s.split('\n')
     keyboard_chars = (string.ascii_letters + string.digits
                       + string.punctuation)
@@ -1276,7 +1279,7 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
             header = header.group()
         depth = len(header)
         if name_regex is None:
-            name = re.match('[{}]*'.format(name_chars), line[depth:])
+            name = re.match('[{}]*[/\\\\]*'.format(name_chars), line[depth:])
         else:
             name = re.match(name_regex, line)
         if name is None:
@@ -1303,17 +1306,19 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
 
     for i, name in enumerate(names):
         is_folder = False
-        if name.strip()[-1] in ['/', '\\', os.sep]:
+        if name.strip()[-1] in slashes:
             is_folder = True
         if i < len(names) - 1:
             if depths[i + 1] > depths[i]:
                 is_folder = True
 
+        fmt_name = name.rstrip(joinedslashes)
+
         if depths[i] == min_depth:
             if is_folder:
-                fakeitems.append(FakeDir(name, parent=superparent))
+                fakeitems.append(FakeDir(fmt_name, parent=superparent))
             else:
-                fakeitems.append(FakeFile(name, parent=superparent))
+                fakeitems.append(FakeFile(fmt_name, parent=superparent))
         else:
             shallower = [d for d in depths[:i] if d < depths[i]]
             if shallower:
@@ -1324,9 +1329,9 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
             else:
                 parent = superparent
             if is_folder:
-                fakeitems.append(FakeDir(name, parent=parent))
+                fakeitems.append(FakeDir(fmt_name, parent=parent))
             else:
-                fakeitems.append(FakeFile(name, parent=parent))
+                fakeitems.append(FakeFile(fmt_name, parent=parent))
 
     if superparent is not None:
         return superparent

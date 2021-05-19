@@ -53,6 +53,78 @@ example_with_comments="""mypkg/
         test_app.py
         test_view.py"""
 
+# sd.randomdir(seed=456)
+large_example = """MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ ├─light.txt
+│ ├─reliquary.txt
+│ ├─sandal/
+│ ├─paycheck/
+│ │ ├─electrophoresis.txt
+│ │ └─Pyongyang/
+│ └─patrimonial/
+├─Uganda/
+└─pedantic/
+  └─cataclysmic.txt"""
+
+limit0_nobeyond = 'MyFakeDir/'
+
+limit0_beyond_content = """MyFakeDir/
+└─3 folder(s), 3 file(s)"""
+
+depthlimit1 = '''MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+├─Uganda/
+└─pedantic/'''
+
+depthlimit1_beyond_content = '''MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ └─3 folder(s), 2 file(s)
+├─Uganda/
+│ └─0 folder(s), 0 file(s)
+└─pedantic/
+  └─0 folder(s), 1 file(s)'''
+
+depthlimit1_beyond_content_exclude = '''MyFakeDir/
+├─scrooge/
+│ └─3 folder(s), 0 file(s)
+├─Uganda/
+│ └─0 folder(s), 0 file(s)
+└─pedantic/
+  └─0 folder(s), 0 file(s)'''
+
+complex_sort = '''MyFakeDir/
+├─monkish.txt
+├─Vogel.txt
+├─jowly.txt
+├─pedantic/
+│ └─cataclysmic.txt
+├─scrooge/
+│ ├─reliquary.txt
+│ ├─light.txt
+│ ├─patrimonial/
+│ ├─paycheck/
+│ │ ├─electrophoresis.txt
+│ │ └─Pyongyang/
+│ └─sandal/
+└─Uganda/'''
+
+complex_inclusion = '''MyFakeDir/
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ └─light.txt
+└─pedantic/'''
+
 try:
     testdir = os.path.join(os.environ['USERPROFILE'], 'Desktop')
 except:
@@ -254,6 +326,73 @@ class TestMask(unittest.TestCase):
                 return False
         f = sd.fakedir(testdir, mask=foo)
         self.assertEqual(len(f.listdir()), 0)
+
+class TestFolderStructure(unittest.TestCase):
+
+    def test_many_randomdirs(self):
+        seeds = range(1000)
+        for i in seeds:
+            r = sd.randomdir(seed=i)
+            s = r.seedir(printout=False)
+            f = sd.fakedir_fromstring(s)
+            self.assertEqual(s, f.seedir(printout=False))
+
+    def test_limit0_nobeyond(self):
+        ans = limit0_nobeyond
+        f = sd.fakedir_fromstring(large_example)
+        s1 = f.seedir(printout=False, itemlimit=0)
+        s2 = f.seedir(printout=False, depthlimit=0)
+        self.assertEqual(ans, s1)
+        self.assertEqual(ans, s2)
+
+    def test_limit0_beyond_content(self):
+        ans = limit0_beyond_content
+        f = sd.fakedir_fromstring(large_example)
+        s1 = f.seedir(printout=False, itemlimit=0, beyond='content')
+        s2 = f.seedir(printout=False, depthlimit=0, beyond='content')
+        self.assertEqual(ans, s1)
+        self.assertEqual(ans, s2)
+
+    def test_depthlimit1(self):
+        ans = depthlimit1
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(printout=False, depthlimit=1)
+        self.assertEqual(ans, s)
+
+    def test_depthlimit1_beyond_content(self):
+        ans = depthlimit1_beyond_content
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(printout=False, depthlimit=1, beyond='content')
+        self.assertEqual(ans, s)
+
+    def test_depthlimit1_beyond_content_exclude(self):
+        ans = depthlimit1_beyond_content_exclude
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(printout=False,
+                     depthlimit=1,
+                     beyond='content',
+                     exclude_files='.*\.txt',
+                     regex=True)
+        self.assertEqual(ans, s)
+
+    def test_complex_sort(self):
+        ans = complex_sort
+        params = dict(sort=True, sort_reverse=True,
+                      sort_key = lambda x: len(x), first='files')
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(printout=False,**params)
+        self.assertEqual(ans, s)
+
+    def test_complex_inclusion(self):
+        ans = complex_inclusion
+        params = dict(include_folders=['sandal', 'scrooge', 'pedantic'],
+                      exclude_folders='sandal',
+                      exclude_files='^Vogel',
+                      include_files='^.[oi]',
+                      regex=True)
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(printout=False,**params)
+        self.assertEqual(ans, s)
 
 if __name__ == '__main__':
     unittest.main()

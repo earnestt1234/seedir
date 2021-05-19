@@ -134,7 +134,7 @@ def sort_fakedir(objs, first=None, sort_reverse=False, sort_key=None):
 
     '''
     if sort_key is None:
-            sort_key = lambda f : f.name
+        sort_key = lambda f : f.name
     else:
         y = sort_key
         sort_key = lambda f : y(f.name)
