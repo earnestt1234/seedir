@@ -22,6 +22,8 @@ __pdoc__ = {'command_line' : False}
 #imports for package namespace
 from .seedir import seedir, seedir2
 
+from .folderstructure import RealDirStructure, FakeDirStructure
+
 from .fakedir import (fakedir,
                       fakedir_fromstring,
                       populate,
