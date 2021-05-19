@@ -516,6 +516,8 @@ def rfs2(path, depth=0, incomplete=None, extend='│ ',
                    '\n')
     current_itemlimit = itemlimit
 
+    print(path, depth, incomplete)
+
     # stop when too deep
     if depth == depthlimit:
         if beyond is None:
@@ -544,12 +546,9 @@ def rfs2(path, depth=0, incomplete=None, extend='│ ',
                                     exclude_files=exclude_files,
                                     regex=regex,
                                     mask=mask)
-    if not listdir:
-        if depth in incomplete:
-            incomplete.remove(depth) # remove from incomplete if empty
-
-    # enter folder, increase depth
-    depth += 1
+    # if not listdir:
+    #     if depth in incomplete:
+    #         incomplete.remove(depth) # remove from incomplete if empty
 
     # set current_itemlimit based on listdir size
     if current_itemlimit is None:
@@ -557,24 +556,25 @@ def rfs2(path, depth=0, incomplete=None, extend='│ ',
     else:
         current_itemlimit = min(current_itemlimit, len(listdir))
 
+    finalpaths = listdir[:current_itemlimit]
+    if beyond is not None:
+        rem = [os.path.join(path, name) for name in listdir[current_itemlimit:]]
+        if rem or len(listdir) == 0:
+            finalpaths += [beyond_depth_str(beyond, rem)]
+
+    if not finalpaths:
+        incomplete.remove(depth)
+
+    # enter folder, increase depth
+    depth += 1
+
     # get output for each item in folder
-    for i, f in enumerate(listdir):
-
-        #if passed itemlimit, return with "beyond" added
-        if i == current_itemlimit:
-            if beyond is not None:
-                paths = [os.path.join(path, rem) for rem in listdir[i:]]
-                base_header = get_base_header(incomplete, extend, space)
-                extra = beyond_depth_str(beyond, paths)
-                output += base_header + final + extra + '\n'
-            if (depth - 1) in incomplete:
-                incomplete.remove(depth-1)
-            return output
-
+    for i, f in enumerate(finalpaths):
         # create header for the item
         sub = os.path.join(path, f)
         base_header = get_base_header(incomplete, extend, space)
-        if (i == (current_itemlimit - 1)) and beyond is None:
+        if (i == (len(finalpaths) - 1)):
+            incomplete.remove(depth-1)
             branch = final
         else:
             branch = split
