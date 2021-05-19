@@ -496,6 +496,120 @@ def recursive_folder_structure(path, depth=0, incomplete=None, extend='│ ',
             output += header + filestart + f + '\n'
     return output
 
+def rfs2(path, depth=0, incomplete=None, extend='│ ',
+         space='  ', split='├─', final='└─',
+         filestart='', folderstart='', depthlimit=None,
+         itemlimit=None, beyond=None, first=None,
+         sort=True, sort_reverse=False, sort_key=None,
+         include_folders=None, exclude_folders=None,
+         include_files=None, exclude_files=None,
+         regex=False, mask=None, slash='/'):
+
+    # initialize
+    output = ''
+    if incomplete is None:
+        incomplete = []
+    if depth == 0:
+        output += (folderstart +
+                   os.path.basename(path).rstrip(os.sep) +
+                   slash +
+                   '\n')
+    current_itemlimit = itemlimit
+
+    # stop when too deep
+    if depth == depthlimit:
+        if beyond is None:
+            return output
+        else:
+            current_itemlimit = 0
+
+
+    listdir = os.listdir(path)
+    incomplete.append(depth)
+
+    # sort and trim the contents of listdir
+    if sort or first is not None:
+        listdir = sort_dir(names=listdir, root=path, first=first,
+                           sort_reverse=sort_reverse, sort_key=sort_key)
+    if any(arg is not None for arg in [
+            include_folders,
+            exclude_folders,
+            include_files,
+            exclude_files,
+            mask]):
+        listdir = filter_item_names(path, listdir,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex,
+                                    mask=mask)
+    if not listdir:
+        if depth in incomplete:
+            incomplete.remove(depth) # remove from incomplete if empty
+
+    # enter folder, increase depth
+    depth += 1
+
+    # set current_itemlimit based on listdir size
+    if current_itemlimit is None:
+        current_itemlimit = len(listdir)
+    else:
+        current_itemlimit = min(current_itemlimit, len(listdir))
+
+    # get output for each item in folder
+    for i, f in enumerate(listdir):
+
+        #if passed itemlimit, return with "beyond" added
+        if i == current_itemlimit:
+            if beyond is not None:
+                paths = [os.path.join(path, rem) for rem in listdir[i:]]
+                base_header = get_base_header(incomplete, extend, space)
+                extra = beyond_depth_str(beyond, paths)
+                output += base_header + final + extra + '\n'
+            if (depth - 1) in incomplete:
+                incomplete.remove(depth-1)
+            return output
+
+        # create header for the item
+        sub = os.path.join(path, f)
+        base_header = get_base_header(incomplete, extend, space)
+        if (i == (current_itemlimit - 1)) and beyond is None:
+            branch = final
+        else:
+            branch = split
+        header = base_header + branch
+
+        # concat to output and recurse if item is folder
+        if os.path.isdir(sub):
+            output += header + folderstart + f + slash +'\n'
+            output += rfs2(sub, depth=depth,
+                                                 incomplete=incomplete,
+                                                 split=split, extend=extend,
+                                                 space=space,
+                                                 final=final,
+                                                 filestart=filestart,
+                                                 folderstart=folderstart,
+                                                 depthlimit=depthlimit,
+                                                 itemlimit=itemlimit,
+                                                 beyond=beyond,
+                                                 first=first,
+                                                 sort=sort,
+                                                 sort_reverse=sort_reverse,
+                                                 sort_key=sort_key,
+                                                 include_folders=include_folders,
+                                                 exclude_folders=exclude_folders,
+                                                 include_files=include_files,
+                                                 exclude_files=exclude_files,
+                                                 regex=regex,
+                                                 mask=mask,
+                                                 slash=slash)
+
+        # only concat to output if file
+        else:
+            output += header + filestart + f + '\n'
+    return output
+
 def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
@@ -716,6 +830,246 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     if path is None:
         path = os.getcwd()
     s =  recursive_folder_structure(path,
+                                    depthlimit=depthlimit,
+                                    itemlimit=itemlimit,
+                                    beyond=beyond,
+                                    first=first,
+                                    sort=sort,
+                                    sort_reverse=sort_reverse,
+                                    sort_key=sort_key,
+                                    include_folders=include_folders,
+                                    exclude_folders=exclude_folders,
+                                    include_files=include_files,
+                                    exclude_files=exclude_files,
+                                    regex=regex,
+                                    slash=slash,
+                                    mask=mask,
+                                    **styleargs).strip()
+    if printout:
+        print(s)
+    else:
+        return s
+
+def seedir2(path=None, style='lines', printout=True, indent=2, uniform=None,
+           anystart=None, depthlimit=None, itemlimit=None, beyond=None,
+           first=None, sort=False, sort_reverse=False, sort_key=None,
+           include_folders=None, exclude_folders=None, include_files=None,
+           exclude_files=None, regex=False, mask=None, slash='/', **kwargs):
+    '''
+
+    Primary function of the seedir package: generate folder trees for
+    computer directories.
+
+    EXAMPLES:
+
+        >>> import seedir as sd
+
+    Make a basic tree diagram:
+
+        >>> c = 'example/folder/path'
+        >>> sd.seedir(c)
+
+        doc/
+        ├─_static/
+        │ ├─embedded/
+        │ │ ├─deep_file
+        │ │ └─very/
+        │ │   └─deep/
+        │ │     └─folder/
+        │ │       └─very_deep_file
+        │ └─less_deep_file
+        ├─about.rst
+        ├─conf.py
+        └─index.rst
+
+    Select different styles for the tree:
+
+        >>> sd.seedir(c, style='dash')
+
+        doc/
+        |-_static/
+        | |-embedded/
+        | | |-deep_file
+        | | |-very/
+        | |   |-deep/
+        | |     |-folder/
+        | |       |-very_deep_file
+        | |-less_deep_file
+        |-about.rst
+        |-conf.py
+        |-index.rst
+
+    Sort the folder contents, separting folders and files:
+
+        >>> sd.seedir(c, sort=True, first='files')
+
+        doc/
+        ├─about.rst
+        ├─conf.py
+        ├─index.rst
+        └─_static/
+          ├─less_deep_file
+          └─embedded/
+            ├─deep_file
+            └─very/
+              └─deep/
+                └─folder/
+                  └─very_deep_file
+
+    Limit the folder depth or items included:
+
+        >>> sd.seedir(c, depthlimit=2, itemlimit=1)
+
+        doc/
+        ├─_static/
+        │ ├─embedded/
+        │ └─less_deep_file
+        └─about.rst
+
+    Include or exclude specific items (with or without regular expressions):
+
+        >>> sd.seedir(c, exclude_folders='_static')
+
+        doc/
+        ├─about.rst
+        ├─conf.py
+        └─index.rst
+
+    See more examples on the notebook on GitHub!
+    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
+
+    Parameters
+    ----------
+    path : str or None, optional
+        System path of a directory.  If None, current working directory is
+        used.
+    style : 'lines', 'dash', 'arrow', 'spaces', 'plus', or 'emoji', optional
+        Style to use. The default is `'lines'`.  A style determines the set
+        of characters ("tokens") used to represent the base structure of
+        the directory (e.g. which items belong to which folders, when items
+        are the last member of a folder, etc.).  The actual tokens being used
+        by each style can be viewed with `seedir.printing.get_styleargs()`.
+    printout : bool, optional
+        Print the folder structure in the console. The default is `True`.  When
+        `False`, the folder diagram is returned as a string.
+    indent : int (>= 0), optional
+        Number of spaces separating items from their parent folder.
+        The default is `2`.
+    uniform : str or None, optional
+        Characters to use for all tokens when creating the tree diagram.
+        The default is `None`.  When not `None`, the extend, space, split, and
+        final tokens are replaced with `uniform` (the `'spaces'` style is
+        essentially `uniform = '  '`).
+    anystart : str or None, optional
+        Characters to append before any item (i.e. folder or file).  The
+        default is `None`.  Specific starts for folders and files can be
+        specified (see `**kwargs`).
+    depthlimit : int or None, optional
+        Limit the depth of folders to traverse.  Folders at the `depthlimit` are
+        included, but their contents are not shown (with the exception of the
+        beyond parameter being specified).  The default is `None`, which can
+        cause exceptionally long runtimes for deep or extensive directories.
+    itemlimit : int or None, optional
+        Limit the number of items in a directory to show.  Items beyond the
+        `itemlimit` can be expressed using the `beyond` parameter.  The files and
+        folders left out are determined by the sorting parameters
+        (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
+    beyond : str ('ellipsis', 'cotent' or a string starting with an underscore) or None, optional
+        String to indicate directory contents beyond the `itemlimit` or the
+        `depthlimit`.  The default is `None`.  Options are: `'ellipsis'` (`'...'`),
+        `'content'` or `'contents'` (the number of files and folders beyond), or
+        a string starting with `'_'` (everything after the leading underscore
+        will be returned)
+    first : 'files', 'folders', or None, optional
+        Sort the directory so that either files or folders appear first.
+        The default is `None`.
+    sort : bool, optional
+        Sort the directory. With no other specifications, the sort will be a
+        simple alphabetical sort of the item names, but this can be altered
+        with the `first`, `sort_reverse`, and `sort_key parameters`.
+        The default is `False`.
+    sort_reverse : bool, optional
+        Reverse the sorting determined by `sort` or `sort_key`.
+        The default is `False`.
+    sort_key : function, optional
+        Key to use for sorting file or folder names, akin to the `key` parameter
+        of the builtin `sorted()` or `list.sort()`. The function should take a
+        string as an argument. The default is `None`.
+    include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
+        Folder / file names to include or exclude. The default is `None`.
+    regex : bool, optional
+        Interpret the strings of include/exclude file/folder arguments as
+        regular expressions. The default is `False`.
+    mask : function, optional
+        Function for filtering items.  Absolute paths of each individual item
+        are passed to the `mask` function.  If `True` is returned, the
+        item is kept.  The default is `None`.
+    slash : str, option:
+        Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
+        default is `'/'`.
+    **kwargs : str
+        Specific tokens to use for creating the file tree diagram.  The tokens
+        use by each builtin style can be seen with `seedir.printing.get_styleargs()`.
+        Valid options are `extend` (characters to show the extension of a directory
+        while its children are traversed), `space` (character to provide the
+        correct indentation of an item when some of its parent / grandparent
+        directories are completely traversed), `split` (characters to show a
+        folder or file within a directory, with more items following),
+        `final` (characters to show a folder or file within a directory,
+        with no more items following), `folderstart` (characters to append
+        before any folder), and `filestart` (characters to append beffore any
+        file).  The following shows the default tokens for the `'lines'` style:
+
+            >>> import seedir as sd
+            >>> sd.get_styleargs('lines')
+
+            {'split': '├─',
+             'extend': '│ ',
+             'space': '  ',
+             'final': '└─',
+             'folderstart': '',
+             'filestart': ''}
+
+        All default style tokens are 2 character strings, except for
+        `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
+        affected by the indent parameter.  The `uniform` and `anystart`
+        parameters can be used to affect multiple style tokens.
+
+    Raises
+    ------
+    SeedirError
+        Improperly formatted arguments.
+
+    Returns
+    -------
+    s (str) or None
+        The tree diagram (as a string) or `None` if `prinout = True`, in which
+        case the tree diagram is printed in the console.
+
+    '''
+    accept_kwargs = ['extend', 'split', 'space', 'final',
+                     'folderstart', 'filestart']
+    if any(i not in accept_kwargs for i in kwargs.keys()):
+        raise SeedirError('kwargs must be any of {}'.format(accept_kwargs))
+    if style:
+        styleargs = printing.get_styleargs(style)
+    styleargs = printing.format_indent(styleargs, indent=indent)
+    if uniform is not None:
+        for arg in ['extend', 'split', 'final', 'space']:
+            styleargs[arg] = uniform
+    if anystart is not None:
+        styleargs['folderstart'] = anystart
+        styleargs['filestart'] = anystart
+    for k in kwargs:
+        if k in styleargs:
+            styleargs[k] = kwargs[k]
+    if sort_key is not None or sort_reverse == True:
+        sort = True
+    if slash.lower() in ['sep', 'os.sep']:
+        slash = os.sep
+    if path is None:
+        path = os.getcwd()
+    s =  rfs2(path,
                                     depthlimit=depthlimit,
                                     itemlimit=itemlimit,
                                     beyond=beyond,

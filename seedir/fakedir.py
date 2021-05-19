@@ -1367,14 +1367,14 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
     for f in fakedir._children:
         if isinstance(f, FakeDir):
             if f.depth <= depth and random.uniform(0, 1) > stopchance:
-                if seed:
-                    seed += random.randint(1,100)
+                if seed is not None:
+                    seed += random.random()
                 populate(f, depth=depth, folders=folders, files=files,
                          seed=seed, stopchance=stopchance,
                          extensions=extensions)
 
 def randomdir(depth=2, files=range(1,4), folders=range(0,4),
-              stopchance=.5, seed=None, extensions=['txt']):
+              stopchance=.5, seed=None, name='MyFakeDir', extensions=['txt']):
     '''
     Create a randomized `seedir.fakedir.FakeDir`, initialized with random
     dictionary words.
@@ -1427,7 +1427,7 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
         Fake directory.
 
     '''
-    top = FakeDir('MyFakeDir')
+    top = FakeDir(name)
     new_ex = []
     for x in extensions:
         if x[0] != '.':
