@@ -515,8 +515,7 @@ def rfs2(path, depth=0, incomplete=None, extend='│ ',
                    slash +
                    '\n')
     current_itemlimit = itemlimit
-
-    print(path, depth, incomplete)
+    beyond_added = False
 
     # stop when too deep
     if depth == depthlimit:
@@ -546,9 +545,6 @@ def rfs2(path, depth=0, incomplete=None, extend='│ ',
                                     exclude_files=exclude_files,
                                     regex=regex,
                                     mask=mask)
-    # if not listdir:
-    #     if depth in incomplete:
-    #         incomplete.remove(depth) # remove from incomplete if empty
 
     # set current_itemlimit based on listdir size
     if current_itemlimit is None:
@@ -559,31 +555,31 @@ def rfs2(path, depth=0, incomplete=None, extend='│ ',
     finalpaths = listdir[:current_itemlimit]
     if beyond is not None:
         rem = [os.path.join(path, name) for name in listdir[current_itemlimit:]]
-        if rem or len(listdir) == 0:
+        if rem or (depth == depthlimit):
             finalpaths += [beyond_depth_str(beyond, rem)]
+            beyond_added = True
 
     if not finalpaths:
         incomplete.remove(depth)
 
-    # enter folder, increase depth
-    depth += 1
-
     # get output for each item in folder
     for i, f in enumerate(finalpaths):
+        lastitem = (i == (len(finalpaths) - 1))
+
         # create header for the item
         sub = os.path.join(path, f)
         base_header = get_base_header(incomplete, extend, space)
-        if (i == (len(finalpaths) - 1)):
-            incomplete.remove(depth-1)
+        if lastitem:
             branch = final
+            incomplete.remove(depth)
         else:
             branch = split
         header = base_header + branch
 
         # concat to output and recurse if item is folder
-        if os.path.isdir(sub):
+        if not (lastitem and beyond_added) and os.path.isdir(sub):
             output += header + folderstart + f + slash +'\n'
-            output += rfs2(sub, depth=depth,
+            output += rfs2(sub, depth=depth + 1,
                                                  incomplete=incomplete,
                                                  split=split, extend=extend,
                                                  space=space,
