@@ -41,7 +41,7 @@ class FolderStructure:
             incomplete = []
         if depth == 0:
             output += (folderstart +
-                       self.getname(folder).rstrip(os.sep) +
+                       self.getname(folder) +
                        slash +
                        '\n')
         current_itemlimit = itemlimit
@@ -137,11 +137,13 @@ class FolderStructure:
     def __call__(self, folder, **kwargs):
         return self._folderstructure(folder, **kwargs).strip()
 
+slashes = os.sep + '/' + '//'
+
 realdir_params = dict(listdir_func = listdir_fullpath,
                       sort_func = sort_dir,
                       filter_func = filter_item_names,
                       isdir_func = lambda x: os.path.isdir(x),
-                      getname_func = lambda x: os.path.basename(x),
+                      getname_func = lambda x: os.path.basename(x.rstrip(slashes)),
                       beyondstr_func = beyond_depth_str)
 
 fakedir_params = dict(listdir_func = lambda x: x.listdir(),
