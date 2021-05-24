@@ -32,7 +32,7 @@ import random
 
 from seedir.errors import FakedirError
 from seedir.folderstructure import FakeDirStructure
-from seedir.folderstructurehelpers import sort_dir, filter_item_names
+from seedir.folderstructurehelpers import sort_dir, filter_item_names, listdir_fullpath
 import seedir.printing as printing
 from seedir.printing import words
 
@@ -1046,7 +1046,7 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
     if depthlimit is not None and depth >= depthlimit:
         return
     depth +=1
-    listdir = os.listdir(path)
+    listdir = listdir_fullpath(path)
     if sort or first is not None:
         listdir = sort_dir(listdir, first=first,
                            sort_reverse=sort_reverse, sort_key=sort_key)
@@ -1064,12 +1064,12 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
                                     regex=regex,
                                     mask=mask)
     for i, f in enumerate(listdir):
+        name = os.path.basename(f)
         if i == itemlimit:
             break
-        sub = os.path.join(path, f)
-        if os.path.isdir(sub):
-            new = FakeDir(f, parent=parent)
-            recursive_add_fakes(path=sub, parent=new, depth=depth,
+        if os.path.isdir(f):
+            new = FakeDir(name=name, parent=parent)
+            recursive_add_fakes(path=f, parent=new, depth=depth,
                                 depthlimit=depthlimit,
                                 itemlimit=itemlimit,
                                 include_folders=include_folders,
@@ -1078,7 +1078,7 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
                                 exclude_files=exclude_files,
                                 mask=mask, regex=regex)
         else:
-            new = FakeFile(f, parent=parent)
+            new = FakeFile(name=name, parent=parent)
 
 def fakedir(path, depthlimit=None, itemlimit=None, first=None,
             sort=False, sort_reverse=False, sort_key=None,

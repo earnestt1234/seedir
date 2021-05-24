@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
-<title>seedir.seedir API documentation</title>
+<title>seedir.realdir API documentation</title>
 <meta name="description" content="This module provides code for producing folder structure strings for folders
 of the user&#39;s computer.
-The main tool here is `seedir()`,
-which takes a …" />
+Currently, the only tool here is `seedir()`,
+…" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,15 +22,18 @@ which takes a …" />
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>seedir.seedir</code></h1>
+<h1 class="title">Module <code>seedir.realdir</code></h1>
 </header>
 <section id="section-intro">
 <p>This module provides code for producing folder structure strings for folders
 of the user's computer.
-The main tool here is <code><a title="seedir.seedir.seedir" href="#seedir.seedir.seedir">seedir()</a></code>,
-which takes a file path and produces a folder diagram.
-The other functions
-are mostly helpers for <code><a title="seedir.seedir.seedir" href="#seedir.seedir.seedir">seedir()</a></code>.</p>
+Currently, the only tool here is <code><a title="seedir.realdir.seedir" href="#seedir.realdir.seedir">seedir()</a></code>, the
+primary function of the package <code><a title="seedir.realdir.seedir" href="#seedir.realdir.seedir">seedir()</a></code>.
+This returns or prints the folder
+structure for a given path.
+The main algorithm for determining the folder
+structure string is within the <code><a title="seedir.folderstructure.FolderStructure" href="folderstructure.html#seedir.folderstructure.FolderStructure">FolderStructure</a></code>
+class.</p>
 <p>@author: Tom Earnest</p>
 <p>GitHub: <a href="https://github.com/earnestt1234/seedir">https://github.com/earnestt1234/seedir</a></p>
 <details class="source">
@@ -40,500 +43,23 @@ are mostly helpers for <code><a title="seedir.seedir.seedir" href="#seedir.seedi
 <pre><code class="python"># -*- coding: utf-8 -*-
 &#34;&#34;&#34;
 This module provides code for producing folder structure strings for folders
-of the user&#39;s computer.  The main tool here is `seedir()`,
-which takes a file path and produces a folder diagram.   The other functions
-are mostly helpers for `seedir()`.
+of the user&#39;s computer.  Currently, the only tool here is `seedir()`, the
+primary function of the package `seedir`.  This returns or prints the folder
+structure for a given path.  The main algorithm for determining the folder
+structure string is within the `seedir.folderstructure.FolderStructure`
+class.
 
 @author: Tom Earnest
 
 GitHub: https://github.com/earnestt1234/seedir
 &#34;&#34;&#34;
-__pdoc__ = {}
-
-for key in [&#39;count_files&#39;,
-            &#39;count_folders&#39;,
-            &#39;sort_dir&#39;,
-            &#39;beyond_depth_str&#39;,
-            &#39;get_base_header&#39;,
-            &#39;filter_item_names&#39;,
-            &#39;recursive_folder_structure&#39;]:
-    __pdoc__[key] = False
 
 import os
 
-import natsort
-
+from seedir.folderstructure import RealDirStructure
 from seedir.errors import SeedirError
 import seedir.printing as printing
 
-def count_files(paths):
-    &#39;&#39;&#39;
-    Count the number of files in a collection of paths.
-
-    Parameters
-    ----------
-    paths : list-like
-        Collection of system paths.
-
-    Returns
-    -------
-    files : int
-        Count of files.
-
-    &#39;&#39;&#39;
-    files = sum([os.path.isfile(p) for p in paths])
-    return files
-
-def count_folders(paths):
-    &#39;&#39;&#39;
-    Count the number of folders in a collection of paths.
-
-    Parameters
-    ----------
-    paths : list-like
-        Collection of system paths.
-
-    Returns
-    -------
-    files : int
-        Count of folders.
-
-    &#39;&#39;&#39;
-    folders = sum([os.path.isdir(p) for p in paths])
-    return folders
-
-def sort_dir(names, root=&#39;&#39;, first=None, sort_reverse=False, sort_key=None):
-    &#39;&#39;&#39;
-    Sorting function used by seedir.seedir() to sort contents when
-    producing folder diagrams.
-
-    Parameters
-    ----------
-    names : list-like
-        Collection of file or folder names (without the root).
-    root : str, optional
-        Full path of the parent directory of the elements of names.
-        The default is &#39;&#39;, which allows sorting without checking if
-        names passed correspond to files or folders.
-    first : &#39;files&#39; or &#39;folders&#39;, optional
-        Sort either files or folders first. The default is None.
-    sort_reverse : bool, optional
-        Reverse the sort applied. The default is False.
-    sort_key : function, optional
-        Function to apply to sort the names passed. The function should
-        take a string as an argument.  The default is None.
-
-    Raises
-    ------
-    SeedirError
-        Fails when the &#39;first&#39; parameter is used and no root directory
-        is provided.
-
-    Returns
-    -------
-    list
-        Sorted input as a list.
-
-    &#39;&#39;&#39;
-    if root == &#39;&#39; and first is not None:
-        raise SeedirError(&#39;must pass a root when including first&#39;)
-    if first in [&#39;folders&#39;, &#39;files&#39;]:
-        folders = [p for p in names if
-                   os.path.isdir(os.path.join(root, p))]
-        files = [p for p in names if not
-                 os.path.isdir(os.path.join(root, p))]
-        folders = natsort.natsorted(folders, reverse=sort_reverse,
-                                    key=sort_key)
-        files = natsort.natsorted(files, reverse=sort_reverse, key=sort_key)
-        return folders + files if first == &#39;folders&#39; else files + folders
-    else:
-        return list(natsort.natsorted(names,
-                                      reverse=sort_reverse,
-                                      key=sort_key))
-
-def beyond_depth_str(beyond, paths=None):
-    &#39;&#39;&#39;
-    Generates the text for seedir.seedir() when using the &#39;beyond&#39;
-    parameter and ther are more items than the itemlimit or contents
-    beyond the depthlimit.
-
-    Parameters
-    ----------
-    beyond : str
-        Style of beyond string to generate.  Options are:
-            - &#39;ellipsis&#39; (&#39;...&#39;)
-            - &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond)
-            - a string starting with &#39;_&#39; (everything after the leading
-              underscore will be returned)
-    paths : collection of file paths, optional
-        System paths of the items beyond the limit, used when the &#39;beyond&#39;
-        argeument is &#39;content&#39; or &#39;contents&#39;. The default is None.
-
-    Raises
-    ------
-    SeedirError
-        Raised when the &#39;beyond&#39; argument is not recognized.
-
-    Returns
-    -------
-    str
-        String indicating what lies beyond
-
-    &#39;&#39;&#39;
-    if beyond.lower() == &#39;ellipsis&#39;:
-        return &#39;...&#39;
-    elif beyond.lower() in [&#39;contents&#39;,&#39;content&#39;]:
-        folders = count_folders(paths)
-        files = count_files(paths)
-        return &#39;{} folder(s), {} file(s)&#39;.format(folders, files)
-    elif beyond and beyond[0] == &#39;_&#39;:
-        return beyond[1:]
-    else:
-        s1 = &#39;&#34;beyond&#34; must be &#34;ellipsis&#34;, &#34;content&#34;, or &#39;
-        s2 = &#39;a string starting with &#34;_&#34;&#39;
-        raise SeedirError(s1 + s2)
-
-def get_base_header(incomplete, extend, space):
-    &#39;&#39;&#39;
-    For seedir.seedir(), generate the combination of extend and space
-    tokens to prepend to file names when generating folder diagrams.
-    See the documentation for seedir.seedir() for an
-    explanation of these tokens.
-
-    The string generated here will still be missing the branch token
-    (split or final) as well as any folderstart or filestart tokens.
-    They are added within seedir.seedir().
-
-    For any item included in a folder diagram, the combination of
-    extend and space tokens is based on the depth of the item as well as the
-    parent folders to that item which are not completed.  This information
-    is symbolized with the `incomplete` argument.  The following illustrates
-    the incomplete arguments passed to this function for an example folder
-    tree:
-
-        &gt;&gt;&gt; #
-
-        doc/
-        ├─_static/                  [0]
-        │ ├─embedded/               [0, 1]
-        │ │ ├─deep_file             [0, 1, 2]
-        │ │ └─very/                 [0, 1, 2]
-        │ │   └─deep/               [0, 1, 3]
-        │ │     └─folder/           [0, 1, 4]
-        │ │       └─very_deep_file  [0, 1, 5]
-        │ └─less_deep_file          [0, 1]
-        └─index.rst                 [0]
-
-    Parameters
-    ----------
-    incomplete : list-like
-        List of integers denoting the depth of incomplete folders at the time
-        of constructing the line for a given item.  Zero represents being
-        inside the main folder, with increasing integers meaing increasing
-        depth.
-    extend : str
-        Characters symbolizing the extension of a folder.
-    space : str
-        Characters providing the gap between items and earlier parents.
-
-    Returns
-    -------
-    str
-        Base header string.
-
-    &#39;&#39;&#39;
-    base_header = []
-    max_i = max(incomplete)
-    for p in range(max_i):
-        if p in incomplete:
-            base_header.append(extend)
-        else:
-            base_header.append(space)
-    return &#34;&#34;.join(base_header)
-
-def filter_item_names(root, listdir, include_folders=None,
-                      exclude_folders=None, include_files=None,
-                      exclude_files=None, regex=False,
-                      mask=None):
-    &#39;&#39;&#39;
-    Filter for folder and file names in seedir.seedir().  Removes or includes
-    items matching filtering strings.
-
-    Parameters
-    ----------
-    root : str
-        The root path of the items in the listdir arguemnt.
-    listdir : list-like
-        Collection of file or folder names, under the directory named in the
-        root argument.
-    include_folders : str or list-like, optional
-        Folder names to include. The default is None.
-    exclude_folders : str or list-like, optional
-        Folder names to exclude. The default is None.
-    include_files : str or list-like, optional
-        File names to include. The default is None.
-    exclude_files : str or list-like, optional
-        File names to exclude. The default is None.
-    regex : bool, optional
-        Interpret strings as regular expressions. The default is False.
-    mask : function, optional
-        Function for filtering items.  Absolute paths of each individual item
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-
-    Raises
-    ------
-    SeedirError
-        When the exlcusion or inclusion arguments are not strings or
-        iterables.
-
-    Returns
-    -------
-    keep : list
-        Filtered input.
-
-    &#39;&#39;&#39;
-    keep = []
-    for l in listdir:
-        sub = os.path.join(root, l)
-
-        if mask is not None:
-            if mask(sub) is not True:
-                continue
-
-        if os.path.isdir(sub):
-            if isinstance(include_folders, str):
-                if not printing.is_match(include_folders, l, regex):
-                    continue
-            elif include_folders is not None:
-                try:
-                    if not any(printing.is_match(n, l, regex)
-                               for n in include_folders):
-                        continue
-                except:
-                    raise SeedirError(&#39;Failure when trying to iterate &#39;
-                                      &#39;over &#34;include_folders&#34; and &#39;
-                                      &#39;match strings&#39;)
-            if isinstance(exclude_folders, str):
-                if printing.is_match(exclude_folders, l, regex):
-                    continue
-            elif exclude_folders is not None:
-                try:
-                    if any(printing.is_match(x, l, regex)
-                           for x in exclude_folders):
-                        continue
-                except:
-                    raise SeedirError(&#39;Failure when trying to iterate &#39;
-                                      &#39;over &#34;exclude_folders&#34; and &#39;
-                                      &#39;match strings&#39;)
-
-        else:
-            if isinstance(include_files, str):
-                if not printing.is_match(include_files, l, regex):
-                    continue
-            elif include_files is not None:
-                try:
-                    if not any(printing.is_match(n, l, regex)
-                               for n in include_files):
-                        continue
-                except:
-                    raise SeedirError(&#39;Failure when trying to iterate &#39;
-                                      &#39;over &#34;include_files&#34; and &#39;
-                                      &#39;match strings&#39;)
-            if isinstance(exclude_files, str):
-                if printing.is_match(exclude_files, l, regex):
-                    continue
-            elif exclude_files is not None:
-                try:
-                    if any(printing.is_match(x, l, regex)
-                           for x in exclude_files):
-                        continue
-                except:
-                    raise SeedirError(&#39;Failure when trying to iterate &#39;
-                                      &#39;over &#34;exclude_files&#34; and &#39;
-                                      &#39;match strings&#39;)
-        keep.append(l)
-    return keep
-
-def recursive_folder_structure(path, depth=0, incomplete=None, extend=&#39;│ &#39;,
-                               space=&#39;  &#39;, split=&#39;├─&#39;, final=&#39;└─&#39;,
-                               filestart=&#39;&#39;, folderstart=&#39;&#39;, depthlimit=None,
-                               itemlimit=None, beyond=None, first=None,
-                               sort=True, sort_reverse=False, sort_key=None,
-                               include_folders=None, exclude_folders=None,
-                               include_files=None, exclude_files=None,
-                               regex=False, mask=None, slash=&#39;/&#39;):
-    &#39;&#39;&#39;
-    Recursive function for generating folder structures.  Main tool for
-    building output generated by seedir.seedir().
-
-    Parameters
-    ----------
-    path : str
-        File path.
-    depth : int, optional
-        Integer denoting the current folder depth. Starts at 0.
-    incomplete : list-like, optional
-        List of incomplete folder depths, passed to seedir.get_base_header().
-        The default is None.
-    extend : str, optional
-        Token to denote a folder has more children below. The default is &#39;│ &#39;.
-    space : str, optional
-        Token to space items out to the correct depth. The default is &#39;  &#39;.
-    split : str, optional
-        Token before file/folder when there are more items in the directory
-        below it. The default is &#39;├─&#39;.
-    final : str, optional
-        Token before the last file/folder in a directory. The default is &#39;└─&#39;.
-    filestart : str, optional
-        String to prepend to file names. The default is &#39;&#39;.
-    folderstart : TYPE, optional
-        String to prepend to folder names. The default is &#39;&#39;.
-    depthlimit : int, optional
-        Limit on how many folders deep to traverse. The default is None.
-    itemlimit : int, optional
-        Limit on how many items to show for a directory. The default is None.
-    beyond : str, optional
-        Method to denote items beyond the depthlimit or itemlimit.
-        The default is None.  Options are:
-            - &#39;ellipsis&#39; (&#39;...&#39;)
-            - &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond)
-            - a string starting with &#39;_&#39; (everything after the leading
-              underscore will be returned)
-    first : &#39;folders&#39; or &#39;files&#39;, optional
-        Show folders first for files first. The default is None.
-    sort : bool, optional
-        Sort directories being diagrammed. The default is True.
-    sort_reverse : bool, optional
-        Reverse the sort. The default is False.
-    sort_key : function, optional
-        Key function used for sorting item names. The default is None.
-    include_folders, exclude_folders, include_files, exclude_files : str or list-like, optional
-        Folder / file names to include or exclude. The default is None.
-    regex : bool, optional
-        Interpret include/exclude file/folder arguments as
-        regular expressions. The default is False.
-    mask : function, optional
-        Function for filtering items.  Absolute paths of each individual item
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-    slash : str, option:
-        Slash character to follow folders.  If &#39;sep&#39;, uses os.sep.  The
-        default is &#39;/&#39;.
-
-    Returns
-    -------
-    output : str
-        Folder tree diagram.
-
-    &#39;&#39;&#39;
-    # initialize
-    output = &#39;&#39;
-    if incomplete is None:
-        incomplete = []
-    if depth == 0:
-        output += folderstart + os.path.basename(path) + slash +&#39;\n&#39;
-
-    # stop when too deep
-    if depth == depthlimit and beyond is None:
-        return output
-
-    # enter folder, increase depth
-    listdir = os.listdir(path)
-    incomplete.append(depth)
-    depth += 1
-
-    # if depth passed limit, return with &#34;beyond&#34; added
-    if depthlimit and depth &gt; depthlimit:
-        paths = [os.path.join(path, item) for item in listdir]
-        extra = beyond_depth_str(beyond, paths)
-        if beyond is not None and extra:
-            base_header = get_base_header(incomplete, extend, space)
-            output += base_header + final + extra + &#39;\n&#39;
-        if depth - 1 in incomplete:
-            incomplete.remove(depth-1)
-        incomplete = [n for n in incomplete if n &lt; depth]
-        return output
-
-    # sort and trim the contents of listdir
-    if sort or first is not None:
-        listdir = sort_dir(names=listdir, root=path, first=first,
-                           sort_reverse=sort_reverse, sort_key=sort_key)
-    if any(arg is not None for arg in [
-            include_folders,
-            exclude_folders,
-            include_files,
-            exclude_files,
-            mask]):
-        listdir = filter_item_names(path, listdir,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex,
-                                    mask=mask)
-    if not listdir:
-        if depth - 1 in incomplete:
-            incomplete.remove(depth-1) # remove from incomplete if empty
-
-    # get output for each item in folder
-    for i, f in enumerate(listdir):
-
-        #if passed itemlimit, return with &#34;beyond&#34; added
-        if i == itemlimit:
-            paths = [os.path.join(path, rem) for rem in listdir[i:]]
-            if beyond is not None:
-                extra = beyond_depth_str(beyond, paths)
-                output += base_header + final + extra + &#39;\n&#39;
-            if depth - 1 in incomplete:
-                incomplete.remove(depth-1)
-            return output
-
-        # create header for the item
-        sub = os.path.join(path, f)
-        base_header = get_base_header(incomplete, extend, space)
-        if i == len(listdir) - 1 or (itemlimit is not None and
-                                     i == itemlimit - 1 and
-                                     beyond is None):
-            incomplete.remove(depth-1)
-            incomplete = [n for n in incomplete if n &lt; depth]
-        if itemlimit and i == itemlimit - 1 and beyond is None:
-            branch = final
-        elif i == len(listdir) - 1:
-            branch = final
-        else:
-            branch = split
-        header = base_header + branch
-
-        # concat to output and recurse if item is folder
-        if os.path.isdir(sub):
-            output += header + folderstart + f + slash +&#39;\n&#39;
-            output += recursive_folder_structure(sub, depth=depth,
-                                                 incomplete=incomplete,
-                                                 split=split, extend=extend,
-                                                 space=space,
-                                                 final=final,
-                                                 filestart=filestart,
-                                                 folderstart=folderstart,
-                                                 depthlimit=depthlimit,
-                                                 itemlimit=itemlimit,
-                                                 beyond=beyond,
-                                                 first=first,
-                                                 sort=sort,
-                                                 sort_reverse=sort_reverse,
-                                                 sort_key=sort_key,
-                                                 include_folders=include_folders,
-                                                 exclude_folders=exclude_folders,
-                                                 include_files=include_files,
-                                                 exclude_files=exclude_files,
-                                                 regex=regex,
-                                                 mask=mask,
-                                                 slash=slash)
-
-        # only concat to output if file
-        else:
-            output += header + filestart + f + &#39;\n&#39;
-    return output
 
 def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
@@ -732,44 +258,56 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         case the tree diagram is printed in the console.
 
     &#39;&#39;&#39;
+
     accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
                      &#39;folderstart&#39;, &#39;filestart&#39;]
+
     if any(i not in accept_kwargs for i in kwargs.keys()):
         raise SeedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
+
     if style:
         styleargs = printing.get_styleargs(style)
+
     styleargs = printing.format_indent(styleargs, indent=indent)
+
     if uniform is not None:
         for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
             styleargs[arg] = uniform
+
     if anystart is not None:
         styleargs[&#39;folderstart&#39;] = anystart
         styleargs[&#39;filestart&#39;] = anystart
+
     for k in kwargs:
         if k in styleargs:
             styleargs[k] = kwargs[k]
+
     if sort_key is not None or sort_reverse == True:
         sort = True
+
     if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
         slash = os.sep
+
     if path is None:
         path = os.getcwd()
-    s =  recursive_folder_structure(path,
-                                    depthlimit=depthlimit,
-                                    itemlimit=itemlimit,
-                                    beyond=beyond,
-                                    first=first,
-                                    sort=sort,
-                                    sort_reverse=sort_reverse,
-                                    sort_key=sort_key,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex,
-                                    slash=slash,
-                                    mask=mask,
-                                    **styleargs).strip()
+
+    s = RealDirStructure(path,
+                         depthlimit=depthlimit,
+                         itemlimit=itemlimit,
+                         beyond=beyond,
+                         first=first,
+                         sort=sort,
+                         sort_reverse=sort_reverse,
+                         sort_key=sort_key,
+                         include_folders=include_folders,
+                         exclude_folders=exclude_folders,
+                         include_files=include_files,
+                         exclude_files=exclude_files,
+                         regex=regex,
+                         slash=slash,
+                         mask=mask,
+                         **styleargs)
+
     if printout:
         print(s)
     else:
@@ -783,7 +321,7 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="seedir.seedir.seedir"><code class="name flex">
+<dt id="seedir.realdir.seedir"><code class="name flex">
 <span>def <span class="ident">seedir</span></span>(<span>path=None, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None, slash='/', **kwargs)</span>
 </code></dt>
 <dd>
@@ -1194,44 +732,56 @@ case the tree diagram is printed in the console.</dd>
         case the tree diagram is printed in the console.
 
     &#39;&#39;&#39;
+
     accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
                      &#39;folderstart&#39;, &#39;filestart&#39;]
+
     if any(i not in accept_kwargs for i in kwargs.keys()):
         raise SeedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
+
     if style:
         styleargs = printing.get_styleargs(style)
+
     styleargs = printing.format_indent(styleargs, indent=indent)
+
     if uniform is not None:
         for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
             styleargs[arg] = uniform
+
     if anystart is not None:
         styleargs[&#39;folderstart&#39;] = anystart
         styleargs[&#39;filestart&#39;] = anystart
+
     for k in kwargs:
         if k in styleargs:
             styleargs[k] = kwargs[k]
+
     if sort_key is not None or sort_reverse == True:
         sort = True
+
     if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
         slash = os.sep
+
     if path is None:
         path = os.getcwd()
-    s =  recursive_folder_structure(path,
-                                    depthlimit=depthlimit,
-                                    itemlimit=itemlimit,
-                                    beyond=beyond,
-                                    first=first,
-                                    sort=sort,
-                                    sort_reverse=sort_reverse,
-                                    sort_key=sort_key,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex,
-                                    slash=slash,
-                                    mask=mask,
-                                    **styleargs).strip()
+
+    s = RealDirStructure(path,
+                         depthlimit=depthlimit,
+                         itemlimit=itemlimit,
+                         beyond=beyond,
+                         first=first,
+                         sort=sort,
+                         sort_reverse=sort_reverse,
+                         sort_key=sort_key,
+                         include_folders=include_folders,
+                         exclude_folders=exclude_folders,
+                         include_files=include_files,
+                         exclude_files=exclude_files,
+                         regex=regex,
+                         slash=slash,
+                         mask=mask,
+                         **styleargs)
+
     if printout:
         print(s)
     else:
@@ -1256,14 +806,14 @@ case the tree diagram is printed in the console.</dd>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="seedir.seedir.seedir" href="#seedir.seedir.seedir">seedir</a></code></li>
+<li><code><a title="seedir.realdir.seedir" href="#seedir.realdir.seedir">seedir</a></code></li>
 </ul>
 </li>
 </ul>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.9.1</a>.</p>
 </footer>
 </body>
 </html>

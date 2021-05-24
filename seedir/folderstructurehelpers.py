@@ -88,20 +88,20 @@ def listdir_fullpath(path):
 
 def sort_dir(items, first=None, sort_reverse=False, sort_key=None):
     if sort_key is None:
-        sort_key = lambda x : os.path.basename(x)
+        key = lambda x : os.path.basename(x)
     else:
-        sort_key = lambda x: sort_key(os.path.basename(x))
+        key = lambda x: sort_key(os.path.basename(x))
 
     if first in ['folders', 'files']:
         folders = [p for p in items if os.path.isdir(p)]
         files = [p for p in items if not os.path.isdir(p)]
-        folders = natsort.natsorted(folders, reverse=sort_reverse, key=sort_key)
-        files = natsort.natsorted(files, reverse=sort_reverse, key=sort_key)
+        folders = natsort.natsorted(folders, reverse=sort_reverse, key=key)
+        files = natsort.natsorted(files, reverse=sort_reverse, key=key)
         return folders + files if first == 'folders' else files + folders
     else:
         return list(natsort.natsorted(items,
                                       reverse=sort_reverse,
-                                      key=sort_key))
+                                      key=key))
 
 def sort_fakedir(objs, first=None, sort_reverse=False, sort_key=None):
     '''
@@ -134,19 +134,18 @@ def sort_fakedir(objs, first=None, sort_reverse=False, sort_key=None):
 
     '''
     if sort_key is None:
-        sort_key = lambda f : f.name
+        key = lambda f : f.name
     else:
-        y = sort_key
-        sort_key = lambda f : y(f.name)
+        key = lambda f : sort_key(f.name)
     if first in ['folders', 'files']:
         folders = [o for o in objs if o.isdir()]
         files = [o for o in objs if o.isfile()]
         folders = natsort.natsorted(folders, reverse=sort_reverse,
-                                    key=sort_key)
-        files = natsort.natsorted(files, reverse=sort_reverse, key=sort_key)
+                                    key=key)
+        files = natsort.natsorted(files, reverse=sort_reverse, key=key)
         return folders + files if first == 'folders' else files + folders
     else:
-        return natsort.natsorted(objs, reverse=sort_reverse, key=sort_key)
+        return natsort.natsorted(objs, reverse=sort_reverse, key=key)
 
 def beyond_depth_str(paths, beyond):
     '''

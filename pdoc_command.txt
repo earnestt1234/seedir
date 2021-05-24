@@ -1,1 +1,1 @@
-pdoc --html -o docs seedir --force
+pdoc --html -o docs --template-dir docs/templates seedir --force

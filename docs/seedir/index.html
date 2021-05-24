@@ -26,14 +26,560 @@ diagrams …" />
 <p>seedir is a Python package for creating, editing, and reading folder tree
 diagrams.</p>
 <p>The general logic of seedir is based on representing directories in 3
-different forms:</p>
-<pre><code>1. Real directories on a computer
-2. Text diagrams of directories
-3. Coded, editable representations of folder trees (or "fake directories")
+different forms: real directories on a computer, text diagrams of directories,
+and "fake directories" (manipulable Python folder objects). seedir provides
+tools for going in between these formats.</p>
+<h1 id="getting-started">Getting started</h1>
+<p>The following examples will cover what you can do with seedir.
+We can start by importing the package with the <code>sd</code> alias:</p>
+<pre><code class="python">&gt;&gt;&gt; import seedir as sd
+
 </code></pre>
-<p>seedir provides tools for going in between these formats.</p>
-<p>@author: Tom Earnest</p>
-<p>GitHub: <a href="https://github.com/earnestt1234/seedir">https://github.com/earnestt1234/seedir</a></p>
+<h2 id="displaying-folder-trees">Displaying folder trees</h2>
+<p>The primary function of seedir is to create plain text diagrams of folders, for use in blogs, examples, Q&amp;As, etc.
+The GitHub repo for seedir includes an example folder (<code>seedir/seedir/exampledir</code>) which will be used here.</p>
+<p>To printout out the structure of this folder, you can use the primary <code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code> function:</p>
+<pre><code class="python">&gt;&gt;&gt; path = 'exampledir'
+&gt;&gt;&gt; sd.seedir(path)
+exampledir/
+├─scrooge/
+│ ├─patrimonial/
+│ ├─sandal/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ ├─electrophoresis.txt
+│ │ └─Pyongyang/
+│ └─reliquary.pdf
+├─jowly.pdf
+├─monkish.txt
+├─Uganda/
+├─pedantic/
+│ └─cataclysmic.txt
+└─Vogel.txt
+
+</code></pre>
+<p>By default, <strong>the output is printed</strong>.
+To return a string instead, use the <code>printout</code> argument:</p>
+<pre><code class="python">&gt;&gt;&gt; s = sd.seedir(path, printout=False)
+&gt;&gt;&gt; print(type(s))
+&lt;class 'str'&gt;
+
+</code></pre>
+<h2 id="trimming-folder-trees">Trimming folder trees</h2>
+<p>Sometimes a directory is too large, is private, or contains certain irrelevant files.
+To handle this, there are a few arguments which allow you to edit the items included in the output.
+</p>
+<h3 id="including-excluding-folders-files">Including &amp; excluding folders &amp; files</h3>
+<p>One way is to call out specific folders of files to include or exclude:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, include_folders=['scrooge','paycheck'], exclude_files='reliquary.txt')
+exampledir/
+├─scrooge/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ └─electrophoresis.txt
+│ └─reliquary.pdf
+├─jowly.pdf
+├─monkish.txt
+└─Vogel.txt
+
+</code></pre>
+<p>These "include" and "exclude" arguments also support regular expressions:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, include_files='.*\.pdf$', regex=True) # all PDFs
+exampledir/
+├─scrooge/
+│ ├─patrimonial/
+│ ├─sandal/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ └─Pyongyang/
+│ └─reliquary.pdf
+├─jowly.pdf
+├─Uganda/
+└─pedantic/
+
+</code></pre>
+<h3 id="masking">Masking</h3>
+<p>You can also use the <code>mask</code> parameter to functionally filter out items in the folder. Pathnames are passed to the mask function, and items are kept if <code>True</code> is returned:</p>
+<pre><code class="python">&gt;&gt;&gt; import os
+
+&gt;&gt;&gt; def foo(x): # omits folders with more than 2 items
+...     if os.path.isdir(x) and len(os.listdir(x)) &gt; 2:
+...         return False
+...     return True
+
+&gt;&gt;&gt; sd.seedir(path, mask=foo)
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─Uganda/
+├─pedantic/
+│ └─cataclysmic.txt
+└─Vogel.txt
+
+</code></pre>
+<h3 id="limiting-the-depth-or-number-of-items">Limiting the depth or number of items</h3>
+<p>You can also wholly limit the output by providing the <code>depthlimit</code> or <code>itemlimit</code> arguments. Respectively, these arguments limit the depth of folders to enter and the number of items to include per folder.
+</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, depthlimit=1)
+exampledir/
+├─scrooge/
+├─jowly.pdf
+├─monkish.txt
+├─Uganda/
+├─pedantic/
+└─Vogel.txt
+
+&gt;&gt;&gt; sd.seedir(path, itemlimit=3)
+exampledir/
+├─scrooge/
+│ ├─patrimonial/
+│ ├─sandal/
+│ └─light.pdf
+├─jowly.pdf
+└─monkish.txt
+
+</code></pre>
+<p>As <code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code>, uses recursion, these arguments can hedge the traversal of deep, complicated folders.</p>
+<p>When limiting the tree, using the <code>beyond</code> argument can be helpful to show what is being cut. The special value <code>'content'</code> shows the number of folders and files:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, depthlimit=1, beyond='content')
+exampledir/
+├─scrooge/
+│ └─3 folder(s), 2 file(s)
+├─jowly.pdf
+├─monkish.txt
+├─Uganda/
+│ └─0 folder(s), 0 file(s)
+├─pedantic/
+│ └─0 folder(s), 1 file(s)
+└─Vogel.txt
+
+</code></pre>
+<h3 id="sorting">Sorting</h3>
+<p>Especially when using the <code>itemlimit</code>, but also generally, you may want to sort the output to determine which items appear first. You can apply a general sort using <code>sort=True</code>:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, itemlimit=5, sort=True)
+exampledir/
+├─Uganda/
+├─Vogel.txt
+├─jowly.pdf
+├─monkish.txt
+└─pedantic/
+  └─cataclysmic.txt
+
+</code></pre>
+<p>There are additional reverse and key arguments (akin to <code>sorted()</code> or <code>list.sort()</code>) which allow you to customize the sorting:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, itemlimit=5, sort=True, sort_reverse=True, sort_key=lambda s : len(s))
+exampledir/
+├─monkish.txt
+├─jowly.pdf
+├─Vogel.txt
+├─pedantic/
+│ └─cataclysmic.txt
+└─scrooge/
+  ├─reliquary.pdf
+  ├─patrimonial/
+  ├─light.pdf
+  ├─paycheck/
+  │ ├─electrophoresis.txt
+  │ └─Pyongyang/
+  └─sandal/
+
+</code></pre>
+<p>The <code>first</code> additionally argument allows you to select whether files or folders appear first:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, itemlimit=5, first='files')
+exampledir/
+├─Vogel.txt
+├─jowly.pdf
+├─monkish.txt
+├─Uganda/
+└─pedantic/
+  └─cataclysmic.txt
+
+</code></pre>
+<h2 id="styles">Styles 💅</h2>
+<p><code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code> has a few builtin styles for formatting the output of the folder tree:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, itemlimit=3, style='emoji')
+📁 exampledir/
+├─📁 scrooge/
+│ ├─📁 patrimonial/
+│ ├─📁 sandal/
+│ └─📄 light.pdf
+├─📄 jowly.pdf
+└─📄 monkish.txt
+
+</code></pre>
+<p>For any builtin style, you can customize the indent size:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, itemlimit=3, style='spaces', indent=4)
+exampledir/
+    scrooge/
+        patrimonial/
+        sandal/
+        light.pdf
+    jowly.pdf
+    monkish.txt
+
+&gt;&gt;&gt; sd.seedir(path, itemlimit=3, style='plus', indent=6)
+exampledir/
++-----scrooge/
+|     +-----patrimonial/
+|     +-----sandal/
+|     +-----light.pdf
++-----jowly.pdf
++-----monkish.txt
+
+</code></pre>
+<p>Each style is basically a collection of string "tokens" which are combined to form the header of each printed line (based on the depth and folder structure). You can see these tokens using <code>seedir.get_styleargs()</code>:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.get_styleargs('emoji')
+{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '📁 ', 'filestart': '📄 '}
+
+</code></pre>
+<p>You can pass any of these tokens as <code>**kwargs</code> to explicitly customize styles with new symbols (note that passed tokens will not be affected by the <code>indent</code> parameter; it assumes you know how long you want them to be):</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, itemlimit=3, space='  ', extend='||', split='-}', final='\\\\', folderstart=' ', filestart=' ')
+exampledir/
+-} scrooge/
+||-} patrimonial/
+||-} sandal/
+||\\ light.pdf
+-} jowly.pdf
+\\ monkish.txt
+
+</code></pre>
+<p>There are also <code>uniform</code> and <code>anystart</code> arguments for customizing multiple tokens at once:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.seedir(path, itemlimit=3, uniform='----', anystart='&gt;')
+&gt;exampledir/
+----&gt;scrooge/
+--------&gt;patrimonial/
+--------&gt;sandal/
+--------&gt;light.pdf
+----&gt;jowly.pdf
+----&gt;monkish.txt
+
+</code></pre>
+<h2 id="fake-directories">Fake directories</h2>
+<p>You can also create or edit directory examples by using "fake directories" in <code><a title="seedir" href="#seedir">seedir</a></code>. These are Python representations of folders and files, which can be manipulated in ways similar to real directories.</p>
+<h3 id="making-from-scratch">Making from scratch</h3>
+<p><code><a title="seedir.fakedir.FakeDir" href="fakedir.html#seedir.fakedir.FakeDir">FakeDir</a></code> is a folder class; you can be used to initialize an example folder tree.
+<code>FakeDir</code> objects have a <code><a title="seedir.fakedir.FakeDir.seedir" href="fakedir.html#seedir.fakedir.FakeDir.seedir">FakeDir.seedir()</a></code> method, which is fundamentally similar to <code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code> for real system paths:</p>
+<pre><code class="python">&gt;&gt;&gt; x = sd.FakeDir('myfakedir')
+&gt;&gt;&gt; x.seedir()
+myfakedir/
+
+</code></pre>
+<p>To add items to <code>x</code>, you can create subitems, initialize new directories, or move existing ones:</p>
+<pre><code class="python">&gt;&gt;&gt; x.create_file(['__init__.py', 'main.py', 'styles.txt'])
+&gt;&gt;&gt; x.create_folder('docs')
+
+&gt;&gt;&gt; y = sd.FakeDir('resources', parent=x)
+
+&gt;&gt;&gt; z = sd.FakeDir('images')
+&gt;&gt;&gt; z.parent = y
+
+&gt;&gt;&gt; for n in ['a', 'b', 'c']:
+...     z.create_file(n + '.png')
+
+&gt;&gt;&gt; x.seedir(sort=True, first='folders')
+myfakedir/
+├─docs/
+├─resources/
+│ └─images/
+│   ├─a.png
+│   ├─b.png
+│   └─c.png
+├─__init__.py
+├─main.py
+└─styles.txt
+
+</code></pre>
+<p>You can use path-like strings to index fake directories:</p>
+<pre><code class="python">&gt;&gt;&gt; x['resources/images/a.png']
+FakeFile(myfakedir/resources/images/a.png)
+
+</code></pre>
+<p>You can also use the <code>listdir</code> or <code>get_child_names</code> methods to get the children of a folder (or their names):</p>
+<pre><code class="python">&gt;&gt;&gt; x['resources/images'].listdir()
+[FakeFile(myfakedir/resources/images/a.png), FakeFile(myfakedir/resources/images/b.png), FakeFile(myfakedir/resources/images/c.png)]
+
+&gt;&gt;&gt; x['resources/images'].get_child_names()
+['a.png', 'b.png', 'c.png']
+
+</code></pre>
+<p>You can use the <code>delete</code> method to remove items by name or by object:</p>
+<pre><code class="python">&gt;&gt;&gt; x['resources/images'].delete([x['resources/images/a.png'], 'b.png'])
+&gt;&gt;&gt; x.seedir()
+myfakedir/
+├─__init__.py
+├─main.py
+├─styles.txt
+├─docs/
+└─resources/
+  └─images/
+    └─c.png
+
+</code></pre>
+<p>You can also move items within the tree:</p>
+<pre><code class="python">&gt;&gt;&gt; x['styles.txt'].parent = x['resources']
+&gt;&gt;&gt; x.seedir()
+myfakedir/
+├─__init__.py
+├─main.py
+├─docs/
+└─resources/
+  ├─images/
+  │ └─c.png
+  └─styles.txt
+
+</code></pre>
+<h3 id="turn-existing-directories-into-fakes">Turn existing directories into fakes</h3>
+<p>The <code><a title="seedir.fakedir.fakedir" href="fakedir.html#seedir.fakedir.fakedir">fakedir()</a></code> function allows you to convert real directories into <code><a title="seedir.fakedir.FakeDir" href="fakedir.html#seedir.fakedir.FakeDir">FakeDir</a></code> objects:</p>
+<pre><code class="python">&gt;&gt;&gt; f = sd.fakedir(path) # using path from above
+&gt;&gt;&gt; f.seedir()
+exampledir/
+├─scrooge/
+│ ├─patrimonial/
+│ ├─sandal/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ ├─electrophoresis.txt
+│ │ └─Pyongyang/
+│ └─reliquary.pdf
+├─jowly.pdf
+├─monkish.txt
+├─Uganda/
+├─pedantic/
+│ └─cataclysmic.txt
+└─Vogel.txt
+
+&gt;&gt;&gt; type(f)
+&lt;class 'seedir.fakedir.FakeDir'&gt;
+
+</code></pre>
+<p>Similar to <code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code>, <code><a title="seedir.fakedir.fakedir" href="fakedir.html#seedir.fakedir.fakedir">fakedir()</a></code> has options to limit the incoming folders and files:</p>
+<pre><code class="python">&gt;&gt;&gt; f = sd.fakedir(path, exclude_folders='scrooge', exclude_files='Vogel.txt')
+&gt;&gt;&gt; f.seedir()
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─Uganda/
+└─pedantic/
+  └─cataclysmic.txt
+
+</code></pre>
+<p>Fake directories created from your system directories can be combined with other ones created from scratch:</p>
+<pre><code class="python">&gt;&gt;&gt; f.parent = x
+&gt;&gt;&gt; x.seedir()
+myfakedir/
+├─__init__.py
+├─main.py
+├─docs/
+├─resources/
+│ ├─images/
+│ │ └─c.png
+│ └─styles.txt
+└─exampledir/
+  ├─jowly.pdf
+  ├─monkish.txt
+  ├─Uganda/
+  └─pedantic/
+    └─cataclysmic.txt
+
+</code></pre>
+<h3 id="creating-folder-trees-from-text">Creating folder trees from text</h3>
+<p>The <code><a title="seedir.fakedir.fakedir_fromstring" href="fakedir.html#seedir.fakedir.fakedir_fromstring">fakedir_fromstring()</a></code> method allows you to read in existing folder tree diagrams. Given this:</p>
+<pre><code class="python">somedir/
+  - folder1
+  - folder2
+  - folder3
+    - file1
+    - file2
+    - subfolder
+      - subfolder
+        - deepfile
+  - folder4
+</code></pre>
+<p>You can do:</p>
+<pre><code class="python">&gt;&gt;&gt; s = '''somedir/
+...   - folder1
+...   - folder2
+...   - folder3
+...     - file1
+...     - file2
+...     - subfolder
+...       - subfolder
+...         - deepfile
+...   - folder4'''
+
+&gt;&gt;&gt; g = sd.fakedir_fromstring(s)
+&gt;&gt;&gt; g.seedir()
+somedir/
+├─folder1
+├─folder2
+├─folder3/
+│ ├─file1
+│ ├─file2
+│ └─subfolder/
+│   └─subfolder/
+│     └─deepfile
+└─folder4
+
+</code></pre>
+<p>This can be used to read in examples found online.
+<a href="https://chrisyeh96.github.io/2017/08/08/definitive-guide-python-imports.html">For instance</a>:</p>
+<pre><code class="python">&gt;&gt;&gt; s = '''test/                      # root folder
+...     packA/                 # package packA
+...         subA/              # subpackage subA
+...             __init__.py
+...             sa1.py
+...             sa2.py
+...         __init__.py
+...         a1.py
+...         a2.py
+...     packB/                 # package packB (implicit namespace package)
+...         b1.py
+...         b2.py
+...     math.py
+...     random.py
+...     other.py
+...     start.py'''
+
+&gt;&gt;&gt; h = sd.fakedir_fromstring(s, parse_comments=True) # handling the added comments
+&gt;&gt;&gt; h.seedir(style='emoji')
+📁 test/
+├─📁 packA/
+│ ├─📁 subA/
+│ │ ├─📄 __init__.py
+│ │ ├─📄 sa1.py
+│ │ └─📄 sa2.py
+│ ├─📄 __init__.py
+│ ├─📄 a1.py
+│ └─📄 a2.py
+├─📁 packB/
+│ ├─📄 b1.py
+│ └─📄 b2.py
+├─📄 math.py
+├─📄 random.py
+├─📄 other.py
+└─📄 start.py
+
+</code></pre>
+<p>This function has not been extensively tested, so expect failures/misreadings!</p>
+<h3 id="creating-random-directories">Creating random directories</h3>
+<p>You can also use seedir to create randomly generated directories.</p>
+<pre><code class="python">&gt;&gt;&gt; r = sd.randomdir(seed=4.21, extensions=['png', 'jpg', 'pdf'], name='sorandom')
+&gt;&gt;&gt; r.seedir()
+sorandom/
+├─plethora.pdf
+├─randy.jpg
+├─giddap.pdf
+├─adage/
+└─Gobi/
+  ├─inventive.pdf
+  ├─Noel.jpg
+  ├─archaic/
+  │ └─bream.pdf
+  ├─salve/
+  └─NY/
+    └─Bahrein.jpg
+
+</code></pre>
+<p>Additional parameters dictate the size of the tree created:</p>
+<pre><code class="python">&gt;&gt;&gt; sd.randomdir(files=range(5), # making an unnecessarily large tree
+...              folders=[1,2],
+...              stopchance=.3,
+...              depth=5,
+...              extensions=['png', 'jpg', 'pdf'],
+...              seed=4.21).seedir()
+MyFakeDir/
+├─plethora.pdf
+├─randy.jpg
+├─giddap.pdf
+├─adage.jpg
+├─oint/
+│ ├─inventive.pdf
+│ ├─Noel.jpg
+│ ├─archaic.pdf
+│ ├─NY/
+│ │ ├─neonatal.png
+│ │ ├─pyknotic.png
+│ │ ├─wife.png
+│ │ ├─Mickelson/
+│ │ │ └─Caruso/
+│ │ │   ├─royal.pdf
+│ │ │   ├─aurora.pdf
+│ │ │   ├─stampede.pdf
+│ │ │   ├─divan.pdf
+│ │ │   └─Coffey/
+│ │ │     ├─sad.pdf
+│ │ │     ├─cob.pdf
+│ │ │     ├─natural.jpg
+│ │ │     ├─skinflint.pdf
+│ │ │     └─exploration/
+│ │ └─Westchester/
+│ │   ├─metamorphism.jpg
+│ │   ├─Pulitzer.jpg
+│ │   ├─permissive.png
+│ │   ├─wakerobin/
+│ │   │ ├─talon.jpg
+│ │   │ ├─peace.pdf
+│ │   │ ├─drowse.jpg
+│ │   │ ├─rutabaga/
+│ │   │ └─silage/
+│ │   │   ├─pert.png
+│ │   │   ├─defensible.png
+│ │   │   ├─lexicon.png
+│ │   │   ├─eureka.pdf
+│ │   │   └─impasse/
+│ │   └─calve/
+│ │     ├─superstitious.png
+│ │     └─embroider/
+│ │       ├─safekeeping.pdf
+│ │       ├─brig.png
+│ │       ├─systemic.pdf
+│ │       ├─caddis.png
+│ │       └─borosilicate/
+│ └─Pentecost/
+│   ├─visceral.pdf
+│   ├─replica.png
+│   ├─rockaway.jpg
+│   ├─luxe.jpg
+│   └─breath/
+│     ├─contain.jpg
+│     └─homophobia/
+│       ├─crewman.jpg
+│       └─restroom/
+└─joss/
+  ├─Technion.jpg
+  ├─Mynheer.png
+  ├─begonia/
+  └─Djakarta/
+    ├─Lionel.png
+    ├─Cantonese.pdf
+    ├─drafty.jpg
+    ├─half/
+    │ └─builtin/
+    │   ├─ermine.jpg
+    │   └─Cretan/
+    │     ├─happenstance.pdf
+    │     ├─insoluble.jpg
+    │     ├─Audrey/
+    │     └─octennial/
+    └─recipient/
+      ├─splintery.jpg
+      ├─bottom.png
+      ├─stunk.png
+      ├─Polyhymnia/
+      └─Holocene/
+        ├─plaque.pdf
+        ├─westerly.png
+        ├─glassine.jpg
+        ├─titanium.pdf
+        └─square/
+
+</code></pre>
+<h3 id="turning-fake-directories-into-real-ones">Turning fake directories into real ones</h3>
+<p>Finally, there is a <code><a title="seedir.fakedir.FakeDir.realize" href="fakedir.html#seedir.fakedir.FakeDir.realize">FakeDir.realize()</a></code> method which can covert fake directories into real folders on your computer.</p>
+<pre><code>x = sd.randomdir()
+x.realize(path='where/to/create/it/')
+</code></pre>
+<p>All files created will be empty.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -44,23 +590,17 @@ seedir is a Python package for creating, editing, and reading folder tree
 diagrams.
 
 The general logic of seedir is based on representing directories in 3
-different forms:
+different forms: real directories on a computer, text diagrams of directories,
+and &#34;fake directories&#34; (manipulable Python folder objects). seedir provides
+tools for going in between these formats.
 
-    1. Real directories on a computer
-    2. Text diagrams of directories
-    3. Coded, editable representations of folder trees (or &#34;fake directories&#34;)
-
-seedir provides tools for going in between these formats.
-
-@author: Tom Earnest
-
-GitHub: https://github.com/earnestt1234/seedir
+.. include:: gettingstarted.md
 &#34;&#34;&#34;
 
 __pdoc__ = {&#39;command_line&#39; : False}
 
 #imports for package namespace
-from .seedir import seedir
+from .realdir import seedir
 
 from .fakedir import (fakedir,
                       fakedir_fromstring,
@@ -83,26 +623,34 @@ from .printing import (get_styleargs,
 <dl>
 <dt><code class="name"><a title="seedir.errors" href="errors.html">seedir.errors</a></code></dt>
 <dd>
-<div class="desc"><p>Custom exceptions for <code><a title="seedir.seedir" href="seedir.html">seedir.seedir</a></code> …</p></div>
+<div class="desc"><p>Custom exceptions for <code><a title="seedir" href="#seedir">seedir</a></code> …</p></div>
 </dd>
 <dt><code class="name"><a title="seedir.fakedir" href="fakedir.html">seedir.fakedir</a></code></dt>
 <dd>
-<div class="desc"><p>Code for creating and editing "fake directories" within the <code><a title="seedir.seedir" href="seedir.html">seedir.seedir</a></code> package;
+<div class="desc"><p>Code for creating and editing "fake directories" within the <code><a title="seedir" href="#seedir">seedir</a></code> package;
 i.e. coded representations of file trees.
 This module can be used
 to …</p></div>
 </dd>
+<dt><code class="name"><a title="seedir.folderstructure" href="folderstructure.html">seedir.folderstructure</a></code></dt>
+<dd>
+<div class="desc"><p>Created on Wed May 19 10:23:38 2021 …</p></div>
+</dd>
+<dt><code class="name"><a title="seedir.folderstructurehelpers" href="folderstructurehelpers.html">seedir.folderstructurehelpers</a></code></dt>
+<dd>
+<div class="desc"><p>Created on Wed May 19 10:29:16 2021 …</p></div>
+</dd>
 <dt><code class="name"><a title="seedir.printing" href="printing.html">seedir.printing</a></code></dt>
 <dd>
 <div class="desc"><p>General module of resources and helpers for printing and making folder trees
-in <code><a title="seedir.seedir" href="seedir.html">seedir.seedir</a></code> …</p></div>
+in <code><a title="seedir" href="#seedir">seedir</a></code> …</p></div>
 </dd>
-<dt><code class="name"><a title="seedir.seedir" href="seedir.html">seedir.seedir</a></code></dt>
+<dt><code class="name"><a title="seedir.realdir" href="realdir.html">seedir.realdir</a></code></dt>
 <dd>
 <div class="desc"><p>This module provides code for producing folder structure strings for folders
 of the user's computer.
-The main tool here is <code><a title="seedir.seedir" href="seedir.html">seedir.seedir</a></code>,
-which takes a …</p></div>
+Currently, the only tool here is <code><a title="seedir" href="#seedir">seedir</a></code>,
+…</p></div>
 </dd>
 </dl>
 </section>
@@ -116,22 +664,45 @@ which takes a …</p></div>
 <nav id="sidebar">
 <h1>Index</h1>
 <div class="toc">
-<ul></ul>
+<ul>
+<li><a href="#getting-started">Getting started</a><ul>
+<li><a href="#displaying-folder-trees">Displaying folder trees</a></li>
+<li><a href="#trimming-folder-trees">Trimming folder trees</a><ul>
+<li><a href="#including-excluding-folders-files">Including &amp; excluding folders &amp; files</a></li>
+<li><a href="#masking">Masking</a></li>
+<li><a href="#limiting-the-depth-or-number-of-items">Limiting the depth or number of items</a></li>
+<li><a href="#sorting">Sorting</a></li>
+</ul>
+</li>
+<li><a href="#styles">Styles 💅</a></li>
+<li><a href="#fake-directories">Fake directories</a><ul>
+<li><a href="#making-from-scratch">Making from scratch</a></li>
+<li><a href="#turn-existing-directories-into-fakes">Turn existing directories into fakes</a></li>
+<li><a href="#creating-folder-trees-from-text">Creating folder trees from text</a></li>
+<li><a href="#creating-random-directories">Creating random directories</a></li>
+<li><a href="#turning-fake-directories-into-real-ones">Turning fake directories into real ones</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 </div>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
 <li><code><a title="seedir.errors" href="errors.html">seedir.errors</a></code></li>
 <li><code><a title="seedir.fakedir" href="fakedir.html">seedir.fakedir</a></code></li>
+<li><code><a title="seedir.folderstructure" href="folderstructure.html">seedir.folderstructure</a></code></li>
+<li><code><a title="seedir.folderstructurehelpers" href="folderstructurehelpers.html">seedir.folderstructurehelpers</a></code></li>
 <li><code><a title="seedir.printing" href="printing.html">seedir.printing</a></code></li>
-<li><code><a title="seedir.seedir" href="seedir.html">seedir.seedir</a></code></li>
+<li><code><a title="seedir.realdir" href="realdir.html">seedir.realdir</a></code></li>
 </ul>
 </li>
 </ul>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.9.1</a>.</p>
 </footer>
 </body>
 </html>
