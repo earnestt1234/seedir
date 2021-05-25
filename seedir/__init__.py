@@ -12,7 +12,7 @@ tools for going in between these formats.
 
 ## Cheatsheet
 
-.. image:: ../img/seedir_diagram.png
+.. image:: ../../img/seedir_diagram.png
 
 """
 
