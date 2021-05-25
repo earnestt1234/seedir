@@ -5,10 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
 <title>seedir.realdir API documentation</title>
-<meta name="description" content="This module provides code for producing folder structure strings for folders
-of the user&#39;s computer.
-Currently, the only tool here is `seedir()`,
-…" />
+<meta name="description" content="This module provides code for producing folder structure strings for directories.
+Currently, the only tool here is `seedir()`, the primary function of …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github-gist.min.css" crossorigin>
@@ -25,33 +23,26 @@ Currently, the only tool here is `seedir()`,
 <h1 class="title">Module <code>seedir.realdir</code></h1>
 </header>
 <section id="section-intro">
-<p>This module provides code for producing folder structure strings for folders
-of the user's computer.
-Currently, the only tool here is <code><a title="seedir.realdir.seedir" href="#seedir.realdir.seedir">seedir()</a></code>, the
-primary function of the package <code><a title="seedir.realdir.seedir" href="#seedir.realdir.seedir">seedir()</a></code>.
-This returns or prints the folder
-structure for a given path.
-The main algorithm for determining the folder
-structure string is within the <code>seedir.folderstructure.FolderStructure</code>
-class.</p>
-<p>@author: Tom Earnest</p>
-<p>GitHub: <a href="https://github.com/earnestt1234/seedir">https://github.com/earnestt1234/seedir</a></p>
+<p>This module provides code for producing folder structure strings for directories.
+Currently, the only tool here is <code><a title="seedir.realdir.seedir" href="#seedir.realdir.seedir">seedir()</a></code>, the primary function of the
+package <code><a title="seedir.realdir.seedir" href="#seedir.realdir.seedir">seedir()</a></code>.
+This returns or prints the folder structure for a given path.
+The main algorithm for determining the folder structure string is within the
+<code>seedir.folderstructure.FolderStructure</code> class.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python"># -*- coding: utf-8 -*-
+
+# Note: this module fails doctesting
+
 &#34;&#34;&#34;
-This module provides code for producing folder structure strings for folders
-of the user&#39;s computer.  Currently, the only tool here is `seedir()`, the
-primary function of the package `seedir`.  This returns or prints the folder
-structure for a given path.  The main algorithm for determining the folder
-structure string is within the `seedir.folderstructure.FolderStructure`
-class.
-
-@author: Tom Earnest
-
-GitHub: https://github.com/earnestt1234/seedir
+This module provides code for producing folder structure strings for directories.
+Currently, the only tool here is `seedir()`, the primary function of the
+package `seedir`.  This returns or prints the folder structure for a given path.
+The main algorithm for determining the folder structure string is within the
+`seedir.folderstructure.FolderStructure` class.
 &#34;&#34;&#34;
 
 import os
@@ -71,76 +62,71 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
     Primary function of the seedir package: generate folder trees for
     computer directories.
 
-    EXAMPLES:
+    ## EXAMPLES
 
-        &gt;&gt;&gt; import seedir as sd
+    &gt;&gt;&gt; import seedir as sd
 
     Make a basic tree diagram:
 
-        &gt;&gt;&gt; c = &#39;example/folder/path&#39;
-        &gt;&gt;&gt; sd.seedir(c)
-
-        doc/
-        ├─_static/
-        │ ├─embedded/
-        │ │ ├─deep_file
-        │ │ └─very/
-        │ │   └─deep/
-        │ │     └─folder/
-        │ │       └─very_deep_file
-        │ └─less_deep_file
-        ├─about.rst
-        ├─conf.py
-        └─index.rst
+    &gt;&gt;&gt; c = &#39;example/folder/path&#39;
+    &gt;&gt;&gt; sd.seedir(c)
+    doc/
+    ├─_static/
+    │ ├─embedded/
+    │ │ ├─deep_file
+    │ │ └─very/
+    │ │   └─deep/
+    │ │     └─folder/
+    │ │       └─very_deep_file
+    │ └─less_deep_file
+    ├─about.rst
+    ├─conf.py
+    └─index.rst
 
     Select different styles for the tree:
 
-        &gt;&gt;&gt; sd.seedir(c, style=&#39;dash&#39;)
-
-        doc/
-        |-_static/
-        | |-embedded/
-        | | |-deep_file
-        | | |-very/
-        | |   |-deep/
-        | |     |-folder/
-        | |       |-very_deep_file
-        | |-less_deep_file
-        |-about.rst
-        |-conf.py
-        |-index.rst
+    &gt;&gt;&gt; sd.seedir(c, style=&#39;dash&#39;)
+    doc/
+    |-_static/
+    | |-embedded/
+    | | |-deep_file
+    | | |-very/
+    | |   |-deep/
+    | |     |-folder/
+    | |       |-very_deep_file
+    | |-less_deep_file
+    |-about.rst
+    |-conf.py
+    |-index.rst
 
     Sort the folder contents, separting folders and files:
 
-        &gt;&gt;&gt; sd.seedir(c, sort=True, first=&#39;files&#39;)
-
-        doc/
-        ├─about.rst
-        ├─conf.py
-        ├─index.rst
-        └─_static/
-          ├─less_deep_file
-          └─embedded/
-            ├─deep_file
-            └─very/
-              └─deep/
-                └─folder/
-                  └─very_deep_file
+    &gt;&gt;&gt; sd.seedir(c, sort=True, first=&#39;files&#39;)
+    doc/
+    ├─about.rst
+    ├─conf.py
+    ├─index.rst
+    └─_static/
+      ├─less_deep_file
+      └─embedded/
+        ├─deep_file
+        └─very/
+          └─deep/
+            └─folder/
+              └─very_deep_file
 
     Limit the folder depth or items included:
 
-        &gt;&gt;&gt; sd.seedir(c, depthlimit=2, itemlimit=1)
-
-        doc/
-        ├─_static/
-        │ ├─embedded/
-        │ └─less_deep_file
-        └─about.rst
+    &gt;&gt;&gt; sd.seedir(c, depthlimit=2, itemlimit=1)
+    doc/
+    ├─_static/
+    │ ├─embedded/
+    │ └─less_deep_file
+    └─about.rst
 
     Include or exclude specific items (with or without regular expressions):
 
         &gt;&gt;&gt; sd.seedir(c, exclude_folders=&#39;_static&#39;)
-
         doc/
         ├─about.rst
         ├─conf.py
@@ -233,7 +219,6 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 
             &gt;&gt;&gt; import seedir as sd
             &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
-
             {&#39;split&#39;: &#39;├─&#39;,
              &#39;extend&#39;: &#39;│ &#39;,
              &#39;space&#39;: &#39;  &#39;,
@@ -327,13 +312,12 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 <dd>
 <div class="desc"><p>Primary function of the seedir package: generate folder trees for
 computer directories.</p>
-<h2 id="examples">Examples</h2>
+<h2 id="examples">EXAMPLES</h2>
 <pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
 </code></pre>
 <p>Make a basic tree diagram:</p>
-<pre><code>&gt;&gt;&gt; c = 'example/folder/path'
+<pre><code class="python-repl">&gt;&gt;&gt; c = 'example/folder/path'
 &gt;&gt;&gt; sd.seedir(c)
-
 doc/
 ├─_static/
 │ ├─embedded/
@@ -348,8 +332,7 @@ doc/
 └─index.rst
 </code></pre>
 <p>Select different styles for the tree:</p>
-<pre><code>&gt;&gt;&gt; sd.seedir(c, style='dash')
-
+<pre><code class="python-repl">&gt;&gt;&gt; sd.seedir(c, style='dash')
 doc/
 |-_static/
 | |-embedded/
@@ -364,8 +347,7 @@ doc/
 |-index.rst
 </code></pre>
 <p>Sort the folder contents, separting folders and files:</p>
-<pre><code>&gt;&gt;&gt; sd.seedir(c, sort=True, first='files')
-
+<pre><code class="python-repl">&gt;&gt;&gt; sd.seedir(c, sort=True, first='files')
 doc/
 ├─about.rst
 ├─conf.py
@@ -380,8 +362,7 @@ doc/
           └─very_deep_file
 </code></pre>
 <p>Limit the folder depth or items included:</p>
-<pre><code>&gt;&gt;&gt; sd.seedir(c, depthlimit=2, itemlimit=1)
-
+<pre><code class="python-repl">&gt;&gt;&gt; sd.seedir(c, depthlimit=2, itemlimit=1)
 doc/
 ├─_static/
 │ ├─embedded/
@@ -390,7 +371,6 @@ doc/
 </code></pre>
 <p>Include or exclude specific items (with or without regular expressions):</p>
 <pre><code>&gt;&gt;&gt; sd.seedir(c, exclude_folders='_static')
-
 doc/
 ├─about.rst
 ├─conf.py
@@ -504,7 +484,6 @@ file).
 The following shows the default tokens for the <code>'lines'</code> style:</p>
 <pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; sd.get_styleargs('lines')
-
 {'split': '├─',
  'extend': '│ ',
  'space': '  ',
@@ -545,76 +524,71 @@ case the tree diagram is printed in the console.</dd>
     Primary function of the seedir package: generate folder trees for
     computer directories.
 
-    EXAMPLES:
+    ## EXAMPLES
 
-        &gt;&gt;&gt; import seedir as sd
+    &gt;&gt;&gt; import seedir as sd
 
     Make a basic tree diagram:
 
-        &gt;&gt;&gt; c = &#39;example/folder/path&#39;
-        &gt;&gt;&gt; sd.seedir(c)
-
-        doc/
-        ├─_static/
-        │ ├─embedded/
-        │ │ ├─deep_file
-        │ │ └─very/
-        │ │   └─deep/
-        │ │     └─folder/
-        │ │       └─very_deep_file
-        │ └─less_deep_file
-        ├─about.rst
-        ├─conf.py
-        └─index.rst
+    &gt;&gt;&gt; c = &#39;example/folder/path&#39;
+    &gt;&gt;&gt; sd.seedir(c)
+    doc/
+    ├─_static/
+    │ ├─embedded/
+    │ │ ├─deep_file
+    │ │ └─very/
+    │ │   └─deep/
+    │ │     └─folder/
+    │ │       └─very_deep_file
+    │ └─less_deep_file
+    ├─about.rst
+    ├─conf.py
+    └─index.rst
 
     Select different styles for the tree:
 
-        &gt;&gt;&gt; sd.seedir(c, style=&#39;dash&#39;)
-
-        doc/
-        |-_static/
-        | |-embedded/
-        | | |-deep_file
-        | | |-very/
-        | |   |-deep/
-        | |     |-folder/
-        | |       |-very_deep_file
-        | |-less_deep_file
-        |-about.rst
-        |-conf.py
-        |-index.rst
+    &gt;&gt;&gt; sd.seedir(c, style=&#39;dash&#39;)
+    doc/
+    |-_static/
+    | |-embedded/
+    | | |-deep_file
+    | | |-very/
+    | |   |-deep/
+    | |     |-folder/
+    | |       |-very_deep_file
+    | |-less_deep_file
+    |-about.rst
+    |-conf.py
+    |-index.rst
 
     Sort the folder contents, separting folders and files:
 
-        &gt;&gt;&gt; sd.seedir(c, sort=True, first=&#39;files&#39;)
-
-        doc/
-        ├─about.rst
-        ├─conf.py
-        ├─index.rst
-        └─_static/
-          ├─less_deep_file
-          └─embedded/
-            ├─deep_file
-            └─very/
-              └─deep/
-                └─folder/
-                  └─very_deep_file
+    &gt;&gt;&gt; sd.seedir(c, sort=True, first=&#39;files&#39;)
+    doc/
+    ├─about.rst
+    ├─conf.py
+    ├─index.rst
+    └─_static/
+      ├─less_deep_file
+      └─embedded/
+        ├─deep_file
+        └─very/
+          └─deep/
+            └─folder/
+              └─very_deep_file
 
     Limit the folder depth or items included:
 
-        &gt;&gt;&gt; sd.seedir(c, depthlimit=2, itemlimit=1)
-
-        doc/
-        ├─_static/
-        │ ├─embedded/
-        │ └─less_deep_file
-        └─about.rst
+    &gt;&gt;&gt; sd.seedir(c, depthlimit=2, itemlimit=1)
+    doc/
+    ├─_static/
+    │ ├─embedded/
+    │ └─less_deep_file
+    └─about.rst
 
     Include or exclude specific items (with or without regular expressions):
 
         &gt;&gt;&gt; sd.seedir(c, exclude_folders=&#39;_static&#39;)
-
         doc/
         ├─about.rst
         ├─conf.py
@@ -707,7 +681,6 @@ case the tree diagram is printed in the console.</dd>
 
             &gt;&gt;&gt; import seedir as sd
             &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
-
             {&#39;split&#39;: &#39;├─&#39;,
              &#39;extend&#39;: &#39;│ &#39;,
              &#39;space&#39;: &#39;  &#39;,

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
 <title>seedir API documentation</title>
-<meta name="description" content="seedir is a Python package for creating, editing, and reading folder tree
-diagrams …" />
+<meta name="description" content="[seedir](https://github.com/earnestt1234/seedir) is a Python package for
+creating, editing, and reading folder tree diagrams …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github-gist.min.css" crossorigin>
@@ -23,8 +23,8 @@ diagrams …" />
 <h1 class="title">Package <code>seedir</code></h1>
 </header>
 <section id="section-intro">
-<p>seedir is a Python package for creating, editing, and reading folder tree
-diagrams.</p>
+<p><a href="https://github.com/earnestt1234/seedir">seedir</a> is a Python package for
+creating, editing, and reading folder tree diagrams.</p>
 <p>The general logic of seedir is based on representing directories in 3
 different forms: real directories on a computer, text diagrams of directories,
 and "fake directories" (manipulable Python folder objects). seedir provides
@@ -580,21 +580,30 @@ MyFakeDir/
 x.realize(path='where/to/create/it/')
 </code></pre>
 <p>All files created will be empty.</p>
+<h2 id="cheatsheet">Cheatsheet</h2>
+<p><img alt=":scale: 50" src="../../img/seedir_diagram.png"></p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python"># -*- coding: utf-8 -*-
 &#34;&#34;&#34;
-seedir is a Python package for creating, editing, and reading folder tree
-diagrams.
+[seedir](https://github.com/earnestt1234/seedir) is a Python package for
+creating, editing, and reading folder tree diagrams.
 
 The general logic of seedir is based on representing directories in 3
 different forms: real directories on a computer, text diagrams of directories,
 and &#34;fake directories&#34; (manipulable Python folder objects). seedir provides
 tools for going in between these formats.
 
-.. include:: gettingstarted.md
+.. include:: ../docs/gettingstarted.md
+
+## Cheatsheet
+
+.. image:: ../../img/seedir_diagram.png
+    :scale: 50
+
+
 &#34;&#34;&#34;
 
 __pdoc__ = {&#39;command_line&#39; : False,
@@ -639,10 +648,8 @@ in seedir …</p></div>
 </dd>
 <dt><code class="name"><a title="seedir.realdir" href="realdir.html">seedir.realdir</a></code></dt>
 <dd>
-<div class="desc"><p>This module provides code for producing folder structure strings for folders
-of the user's computer.
-Currently, the only tool here is <code><a title="seedir" href="#seedir">seedir</a></code>,
-…</p></div>
+<div class="desc"><p>This module provides code for producing folder structure strings for directories.
+Currently, the only tool here is <code><a title="seedir" href="#seedir">seedir</a></code>, the primary function of …</p></div>
 </dd>
 </dl>
 </section>
@@ -675,6 +682,7 @@ Currently, the only tool here is <code><a title="seedir" href="#seedir">seedir</
 <li><a href="#turning-fake-directories-into-real-ones">Turning fake directories into real ones</a></li>
 </ul>
 </li>
+<li><a href="#cheatsheet">Cheatsheet</a></li>
 </ul>
 </li>
 </ul>

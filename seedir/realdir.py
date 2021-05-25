@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
+
+# Note: this module fails doctesting
+
 """
-This module provides code for producing folder structure strings for folders
-of the user's computer.  Currently, the only tool here is `seedir()`, the
-primary function of the package `seedir`.  This returns or prints the folder
-structure for a given path.  The main algorithm for determining the folder
-structure string is within the `seedir.folderstructure.FolderStructure`
-class.
-
-@author: Tom Earnest
-
-GitHub: https://github.com/earnestt1234/seedir
+This module provides code for producing folder structure strings for directories.
+Currently, the only tool here is `seedir()`, the primary function of the
+package `seedir`.  This returns or prints the folder structure for a given path.
+The main algorithm for determining the folder structure string is within the
+`seedir.folderstructure.FolderStructure` class.
 """
 
 import os
 
 from seedir.folderstructure import RealDirStructure
+
 from seedir.errors import SeedirError
+
 import seedir.printing as printing
 
 
@@ -29,76 +29,71 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     Primary function of the seedir package: generate folder trees for
     computer directories.
 
-    EXAMPLES:
+    ## EXAMPLES
 
-        >>> import seedir as sd
+    >>> import seedir as sd
 
     Make a basic tree diagram:
 
-        >>> c = 'example/folder/path'
-        >>> sd.seedir(c)
-
-        doc/
-        ├─_static/
-        │ ├─embedded/
-        │ │ ├─deep_file
-        │ │ └─very/
-        │ │   └─deep/
-        │ │     └─folder/
-        │ │       └─very_deep_file
-        │ └─less_deep_file
-        ├─about.rst
-        ├─conf.py
-        └─index.rst
+    >>> c = 'example/folder/path'
+    >>> sd.seedir(c)
+    doc/
+    ├─_static/
+    │ ├─embedded/
+    │ │ ├─deep_file
+    │ │ └─very/
+    │ │   └─deep/
+    │ │     └─folder/
+    │ │       └─very_deep_file
+    │ └─less_deep_file
+    ├─about.rst
+    ├─conf.py
+    └─index.rst
 
     Select different styles for the tree:
 
-        >>> sd.seedir(c, style='dash')
-
-        doc/
-        |-_static/
-        | |-embedded/
-        | | |-deep_file
-        | | |-very/
-        | |   |-deep/
-        | |     |-folder/
-        | |       |-very_deep_file
-        | |-less_deep_file
-        |-about.rst
-        |-conf.py
-        |-index.rst
+    >>> sd.seedir(c, style='dash')
+    doc/
+    |-_static/
+    | |-embedded/
+    | | |-deep_file
+    | | |-very/
+    | |   |-deep/
+    | |     |-folder/
+    | |       |-very_deep_file
+    | |-less_deep_file
+    |-about.rst
+    |-conf.py
+    |-index.rst
 
     Sort the folder contents, separting folders and files:
 
-        >>> sd.seedir(c, sort=True, first='files')
-
-        doc/
-        ├─about.rst
-        ├─conf.py
-        ├─index.rst
-        └─_static/
-          ├─less_deep_file
-          └─embedded/
-            ├─deep_file
-            └─very/
-              └─deep/
-                └─folder/
-                  └─very_deep_file
+    >>> sd.seedir(c, sort=True, first='files')
+    doc/
+    ├─about.rst
+    ├─conf.py
+    ├─index.rst
+    └─_static/
+      ├─less_deep_file
+      └─embedded/
+        ├─deep_file
+        └─very/
+          └─deep/
+            └─folder/
+              └─very_deep_file
 
     Limit the folder depth or items included:
 
-        >>> sd.seedir(c, depthlimit=2, itemlimit=1)
-
-        doc/
-        ├─_static/
-        │ ├─embedded/
-        │ └─less_deep_file
-        └─about.rst
+    >>> sd.seedir(c, depthlimit=2, itemlimit=1)
+    doc/
+    ├─_static/
+    │ ├─embedded/
+    │ └─less_deep_file
+    └─about.rst
 
     Include or exclude specific items (with or without regular expressions):
 
         >>> sd.seedir(c, exclude_folders='_static')
-
         doc/
         ├─about.rst
         ├─conf.py
@@ -191,13 +186,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
 
             >>> import seedir as sd
             >>> sd.get_styleargs('lines')
-
-            {'split': '├─',
-             'extend': '│ ',
-             'space': '  ',
-             'final': '└─',
-             'folderstart': '',
-             'filestart': ''}
+            {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': ''}
 
         All default style tokens are 2 character strings, except for
         `folderstart` and `filestart`.  Style tokens from `**kwargs` are not

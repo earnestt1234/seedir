@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Code for creating and editing "fake directories" within the `seedir` package;
-i.e. coded representations of file trees.  This module can be used
+i.e. Python folder tree objects.  This module can be used
 to make example folder tree diagrams, read folder tree strings, or convert
-abstract folder trees into real directories on a computer.  Many functions
-and methods here repesent parallels to counterparts (for real directories)
-in the `seedir.realdir` module.
-
-@author: Tom Earnest
-
-GitHub: https://github.com/earnestt1234/seedir
+abstract folder trees into real directories on a computer.
 """
 __pdoc__ = {}
 
@@ -24,9 +18,15 @@ import re
 import random
 
 from seedir.errors import FakedirError
+
 from seedir.folderstructure import FakeDirStructure
-from seedir.folderstructurehelpers import sort_dir, filter_item_names, listdir_fullpath
+
+from seedir.folderstructurehelpers import (sort_dir,
+                                           filter_item_names,
+                                           listdir_fullpath)
+
 import seedir.printing as printing
+
 from seedir.printing import words
 
 class FakeItem:
@@ -113,30 +113,33 @@ class FakeItem:
         '''Return a "path" string of self, from the head `seedir.fakedir.FakeDir`
         (which has `parent == None`).
 
-        EXAMPLE
+        >>> import seedir as sd
+        >>> f = sd.randomdir(seed=5) # create a random FakeDir
+        >>> f
+        MyFakeDir/
+        ├─senor.txt
+        ├─verb.txt
+        ├─takeoff.txt
+        ├─monastic/
+        │ ├─paddy.txt
+        │ ├─ewe.txt
+        │ ├─advantage.txt
+        │ ├─hooves/
+        │ └─registrar/
+        └─zag/
+          ├─thematic.txt
+          ├─inelastic.txt
+          ├─fierce.txt
+          ├─gout/
+          └─stein/
+            ├─vector.txt
+            ├─sora.txt
+            └─proviso.txt
 
-            >>> import seedir as sd
-            >>> f = sd.randomdir(seed=3) # create a random FakeDir
-            >>> f
+        >>> x = sd.FakeDir('newfolder', parent=f['zag/stein'])
+        >>> x.get_path()
+        'MyFakeDir/zag/stein/newfolder'
 
-            MyFakeDir/
-            ├─Endicott.txt
-            └─infusoria/
-              ├─Myra.txt
-              ├─Sherwin.txt
-              ├─pinnacle/
-              ├─sylvan/
-              └─alai/
-                ├─weld.txt
-                ├─penates.txt
-                ├─Marquette/
-                ├─America/
-                └─Stalin/
-
-            >>> x = sd.FakeDir('newfolder', parent=f['infusoria/alai'])
-            >>> print(x.get_path())
-
-            'MyFakeDir/infusoria/alai/newfolder'
         '''
         parents = [self.name]
         on = self
@@ -164,29 +167,34 @@ class FakeItem:
 class FakeFile(FakeItem):
     '''Class to represent files in `seedir.fakedir.FakeDir` objects.
 
-    Files in a `seedir.fakedir.FakeDir` have this type:
+    Files in a `seedir.fakedir.FakeDir` have this type.
 
-        >>> import seedir as sd
-        >>> f = sd.randomdir(seed=3) # create a random FakeDir
-        >>> f
+    >>> import seedir as sd
+    >>> f = sd.randomdir(seed=5) # create a random FakeDir
+    >>> f
+    MyFakeDir/
+    ├─senor.txt
+    ├─verb.txt
+    ├─takeoff.txt
+    ├─monastic/
+    │ ├─paddy.txt
+    │ ├─ewe.txt
+    │ ├─advantage.txt
+    │ ├─hooves/
+    │ └─registrar/
+    └─zag/
+      ├─thematic.txt
+      ├─inelastic.txt
+      ├─fierce.txt
+      ├─gout/
+      └─stein/
+        ├─vector.txt
+        ├─sora.txt
+        └─proviso.txt
 
-        MyFakeDir/
-        ├─Endicott.txt
-        └─infusoria/
-          ├─Myra.txt
-          ├─Sherwin.txt
-          ├─pinnacle/
-          ├─sylvan/
-          └─alai/
-            ├─weld.txt
-            ├─penates.txt
-            ├─Marquette/
-            ├─America/
-            └─Stalin/
+    >>> f['senor.txt']
+    FakeFile(MyFakeDir/senor.txt)
 
-        >>> f['Endicott.txt']
-
-        FakeFile(MyFakeDir/Endicott.txt)
     '''
     def __init__(self, name, parent=None):
         '''Same as `seedir.fakedir.FakeItem` initialization, but adds
@@ -210,50 +218,43 @@ class FakeDir(FakeItem):
 
     To make a `FakeDir` from scratch, use this class:
 
-        >>> import seedir as sd
-        >>> x = sd.FakeDir('myfakedir')
-        >>> x.seedir()
-
-        myfakedir/
+    >>> import seedir as sd
+    >>> x = sd.FakeDir('myfakedir')
+    >>> x.seedir()
+    myfakedir/
 
     There are various ways to add to it:
 
-        # using methods
-        >>> x.create_file(['__init__.py', 'main.py', 'styles.txt'])
-        >>> x.create_folder('docs')
+    # using methods
+    >>> x.create_file(['__init__.py', 'main.py', 'styles.txt'])
+    >>> x.create_folder('docs')
 
-        # initializing new objects and setting the parent
-        >>> y = sd.FakeDir('resources', parent=x)
+    # initializing new objects and setting the parent
+    >>> y = sd.FakeDir('resources', parent=x)
 
-        # changing the parent of existing objects
-        >>> z = sd.FakeDir('images')
-        >>> z.parent = y
+    # changing the parent of existing objects
+    >>> z = sd.FakeDir('images')
+    >>> z.parent = y
 
-        >>> for n in ['a', 'b', 'c']:
-        >>>     z.create_file(n + '.png')
+    >>> for n in ['a', 'b', 'c']:
+    ...     z.create_file(n + '.png')
 
-        >>> x.seedir(sort=True, first='folders')
-
-        myfakedir/
-        ├─docs/
-        ├─resources/
-        │ └─images/
-        │   ├─a.png
-        │   ├─b.png
-        │   └─c.png
-        ├─__init__.py
-        ├─main.py
-        └─styles.txt
+    >>> x.seedir(sort=True, first='folders')
+    myfakedir/
+    ├─docs/
+    ├─resources/
+    │ └─images/
+    │   ├─a.png
+    │   ├─b.png
+    │   └─c.png
+    ├─__init__.py
+    ├─main.py
+    └─styles.txt
 
     You can index with path-like strings:
 
-        >>> x['resources/images/a.png']
-
-        FakeFile(myfakedir/resources/images/a.png)
-
-    See the examples notebook on GitHub for more uses,
-    or the docstrings in the methods of FakeDir.
-    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
+    >>> x['resources/images/a.png']
+    FakeFile(myfakedir/resources/images/a.png)
 
     '''
     def __init__(self, name, parent=None):
@@ -292,13 +293,12 @@ class FakeDir(FakeItem):
         """
         Create a new folder (`seedir.fakedir.FakeDir`) as a child.
 
-            >>> import seedir as sd
-            >>> x = sd.FakeDir('Test')
-            >>> x.create_folder("new_folder")
-            >>> x.seedir()
-
-            Test/
-            └─new_folder/
+        >>> import seedir as sd
+        >>> x = sd.FakeDir('Test')
+        >>> x.create_folder("new_folder")
+        >>> x.seedir()
+        Test/
+        └─new_folder/
 
         Parameters
         ----------
@@ -320,13 +320,12 @@ class FakeDir(FakeItem):
         """
         Create a new file (`seedir.fakedir.FakeFile`) as a child.
 
-            >>> import seedir as sd
-            >>> x = sd.FakeDir('Test')
-            >>> x.create_file("new_file.txt")
-            >>> x.seedir()
-
-            Test/
-            └─new_file.txt
+        >>> import seedir as sd
+        >>> x = sd.FakeDir('Test')
+        >>> x.create_file("new_file.txt")
+        >>> x.seedir()
+        Test/
+        └─new_file.txt
 
         Parameters
         ----------
@@ -348,33 +347,43 @@ class FakeDir(FakeItem):
         '''
         Delete items from a `seedir.fakedir.FakeDir`.
 
-            >>> import seedir as sd
-            >>> r = sd.randomdir(seed=3)
-            >>> r
+        >>> import seedir as sd
+        >>> r = sd.randomdir(seed=5)
+        >>> r
+        MyFakeDir/
+        ├─senor.txt
+        ├─verb.txt
+        ├─takeoff.txt
+        ├─monastic/
+        │ ├─paddy.txt
+        │ ├─ewe.txt
+        │ ├─advantage.txt
+        │ ├─hooves/
+        │ └─registrar/
+        └─zag/
+          ├─thematic.txt
+          ├─inelastic.txt
+          ├─fierce.txt
+          ├─gout/
+          └─stein/
+            ├─vector.txt
+            ├─sora.txt
+            └─proviso.txt
 
-            MyFakeDir/
-            ├─Endicott.txt
-            └─infusoria/
-              ├─Myra.txt
-              ├─Sherwin.txt
-              ├─pinnacle/
-              ├─sylvan/
-              └─alai/
-                ├─weld.txt
-                ├─penates.txt
-                ├─Marquette/
-                ├─America/
-                └─Stalin/
-
-            >>> r['infusoria'].delete(['Myra.txt', 'Sherwin.txt']) # delete with string names
-            >>> r['infusoria'].delete(r['infusoria/alai']) # delete with objects
-            >>> r
-
-            MyFakeDir/
-            ├─Endicott.txt
-            └─infusoria/
-              ├─pinnacle/
-              └─sylvan/
+        >>> r['zag'].delete(['thematic.txt', 'inelastic.txt']) # delete with string names
+        >>> r.delete(r['monastic']) # delete with objects
+        >>> r
+        MyFakeDir/
+        ├─senor.txt
+        ├─verb.txt
+        ├─takeoff.txt
+        └─zag/
+          ├─fierce.txt
+          ├─gout/
+          └─stein/
+            ├─vector.txt
+            ├─sora.txt
+            └─proviso.txt
 
         Parameters
         ----------
@@ -423,26 +432,31 @@ class FakeDir(FakeItem):
     def get_child_names(self):
         '''Return a list of child names.
 
-            >>> import seedir as sd
-            >>> r = sd.randomdir(seed=3)
-            >>> r
+        >>> import seedir as sd
+        >>> r = sd.randomdir(seed=5)
+        >>> r
+        MyFakeDir/
+        ├─senor.txt
+        ├─verb.txt
+        ├─takeoff.txt
+        ├─monastic/
+        │ ├─paddy.txt
+        │ ├─ewe.txt
+        │ ├─advantage.txt
+        │ ├─hooves/
+        │ └─registrar/
+        └─zag/
+          ├─thematic.txt
+          ├─inelastic.txt
+          ├─fierce.txt
+          ├─gout/
+          └─stein/
+            ├─vector.txt
+            ├─sora.txt
+            └─proviso.txt
 
-                MyFakeDir/
-                ├─Endicott.txt
-                └─infusoria/
-                  ├─Myra.txt
-                  ├─Sherwin.txt
-                  ├─pinnacle/
-                  ├─sylvan/
-                  └─alai/
-                    ├─weld.txt
-                    ├─penates.txt
-                    ├─Marquette/
-                    ├─America/
-                    └─Stalin/
-
-            >>> r.get_child_names()
-            ['Endicott.txt', 'infusoria']
+        >>> r.get_child_names()
+        ['senor.txt', 'verb.txt', 'takeoff.txt', 'monastic', 'zag']
 
         '''
         return [c.name for c in self._children]
@@ -451,26 +465,15 @@ class FakeDir(FakeItem):
         '''Return the list of `seedir.fakedir.FakeFile` and `seedir.fakedir.FakeDir`
         objects that are children of `self` (like `os.listdir`).
 
-            >>> import seedir as sd
-            >>> r = sd.randomdir(seed=3)
-            >>> r
+        >>> import seedir as sd
+        >>> r = sd.randomdir(seed=1)
+        >>> r
+        MyFakeDir/
+        ├─churchmen.txt
+        └─exposure/
 
-            MyFakeDir/
-            ├─Endicott.txt
-            └─infusoria/
-              ├─Myra.txt
-              ├─Sherwin.txt
-              ├─pinnacle/
-              ├─sylvan/
-              └─alai/
-                ├─weld.txt
-                ├─penates.txt
-                ├─Marquette/
-                ├─America/
-                └─Stalin/
-
-            >>> print([str(i) for i in r.listdir()])
-            ['FakeFile(MyFakeDir/Endicott.txt)', 'FakeDir(MyFakeDir/infusoria)']
+        >>> print([str(i) for i in r.listdir()])
+        ['FakeFile(MyFakeDir/churchmen.txt)', 'FakeDir(MyFakeDir/exposure)']
         '''
         return self._children
 
@@ -481,34 +484,20 @@ class FakeDir(FakeItem):
 
         All files will be empty.
 
-            >>> import seedir as sd
-            >>> r = sd.randomdir(seed=456)
-            >>> r
+        ```
+        import os
 
-            MyFakeDir/
-            ├─Vogel.txt
-            ├─monkish.txt
-            ├─jowly.txt
-            ├─scrooge/
-            │ ├─Neptune.txt
-            │ ├─Savoyard.txt
-            │ ├─eventual/
-            │ ├─influential/
-            │ └─irrecoverable/
-            │   ├─vagabond.txt
-            │   ├─Casanova.txt
-            │   ├─Benjamin.txt
-            │   ├─dichloride/
-            │   └─sedition/
-            ├─Uganda/
-            └─pedantic/
-              └─Bertrand.txt
+        import seedir as sd
 
-            >>> r.realize()
+        r = sd.randomdir(seed=1)
+        # MyFakeDir/
+        # ├─churchmen.txt
+        # └─exposure/
 
-            >>> import os
-            >>> os.path.isdir('MyFakeDir/scrooge')
-            True
+        r.realize()
+        os.path.isdir('MyFakeDir/scrooge')
+        # True
+        ```
 
         Parameters
         ----------
@@ -624,15 +613,9 @@ class FakeDir(FakeItem):
             before any folder), and `filestart` (characters to append beffore any
             file).  The following shows the default tokens for the `'lines'` style:
 
-                >>> import seedir as sd
-                >>> sd.get_styleargs('lines')
-
-                {'split': '├─',
-                 'extend': '│ ',
-                 'space': '  ',
-                 'final': '└─',
-                 'folderstart': '',
-                 'filestart': ''}
+            >>> import seedir as sd
+            >>> sd.get_styleargs('lines')
+            {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': ''}
 
             All default style tokens are 2 character strings, except for
             `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
@@ -714,39 +697,34 @@ class FakeDir(FakeItem):
         """
         Remove items beyond the `depthlimit`.
 
-            >>> import seedir as sd
-            >>> r = sd.randomdir(seed=456)
-            >>> r
+        >>> import seedir as sd
+        >>> r = sd.randomdir(seed=456)
+        >>> r
+        MyFakeDir/
+        ├─Vogel.txt
+        ├─monkish.txt
+        ├─jowly.txt
+        ├─scrooge/
+        │ ├─light.txt
+        │ ├─reliquary.txt
+        │ ├─sandal/
+        │ ├─paycheck/
+        │ │ ├─electrophoresis.txt
+        │ │ └─Pyongyang/
+        │ └─patrimonial/
+        ├─Uganda/
+        └─pedantic/
+          └─cataclysmic.txt
 
-            MyFakeDir/
-            ├─Vogel.txt
-            ├─monkish.txt
-            ├─jowly.txt
-            ├─scrooge/
-            │ ├─Neptune.txt
-            │ ├─Savoyard.txt
-            │ ├─eventual/
-            │ ├─influential/
-            │ └─irrecoverable/
-            │   ├─vagabond.txt
-            │   ├─Casanova.txt
-            │   ├─Benjamin.txt
-            │   ├─dichloride/
-            │   └─sedition/
-            ├─Uganda/
-            └─pedantic/
-              └─Bertrand.txt
-
-            >>> r.trim(1)
-            >>> r
-
-            MyFakeDir/
-            ├─Vogel.txt
-            ├─monkish.txt
-            ├─jowly.txt
-            ├─scrooge/
-            ├─Uganda/
-            └─pedantic/
+        >>> r.trim(1)
+        >>> r
+        MyFakeDir/
+        ├─Vogel.txt
+        ├─monkish.txt
+        ├─jowly.txt
+        ├─scrooge/
+        ├─Uganda/
+        └─pedantic/
 
 
         Parameters
@@ -781,31 +759,53 @@ class FakeDir(FakeItem):
         """
         Recursively apply a function the children of self (and so on)
 
-            >>> import seedir as sd
-            >>> r = sd.randomdir(seed=1234)
-            >>> r
+        >>> import seedir as sd
+        >>> r = sd.randomdir(seed=5)
+        >>> r
+        MyFakeDir/
+        ├─senor.txt
+        ├─verb.txt
+        ├─takeoff.txt
+        ├─monastic/
+        │ ├─paddy.txt
+        │ ├─ewe.txt
+        │ ├─advantage.txt
+        │ ├─hooves/
+        │ └─registrar/
+        └─zag/
+          ├─thematic.txt
+          ├─inelastic.txt
+          ├─fierce.txt
+          ├─gout/
+          └─stein/
+            ├─vector.txt
+            ├─sora.txt
+            └─proviso.txt
 
-            MyFakeDir/
-            ├─market.txt
-            ├─acuity.txt
-            ├─redwood/
-            │ └─yeomanry.txt
-            ├─apoplexy/
-            └─storytelling/
+        >>> def replace_txt(f):
+        ...    f.name = f.name.replace('txt', 'pdf')
 
-            >>> def replace_txt(f):
-            ...    f.name = f.name.replace('txt', 'pdf')
-
-            >>> r.walk_apply(replace_txt)
-            >>> r
-
-            MyFakeDir/
-            ├─market.pdf
-            ├─acuity.pdf
-            ├─redwood/
-            │ └─yeomanry.pdf
-            ├─apoplexy/
-            └─storytelling/
+        >>> r.walk_apply(replace_txt)
+        >>> r
+        MyFakeDir/
+        ├─senor.pdf
+        ├─verb.pdf
+        ├─takeoff.pdf
+        ├─monastic/
+        │ ├─paddy.pdf
+        │ ├─ewe.pdf
+        │ ├─advantage.pdf
+        │ ├─hooves/
+        │ └─registrar/
+        └─zag/
+          ├─thematic.pdf
+          ├─inelastic.pdf
+          ├─fierce.pdf
+          ├─gout/
+          └─stein/
+            ├─vector.pdf
+            ├─sora.pdf
+            └─proviso.pdf
 
         Parameters
         ----------
@@ -931,27 +931,31 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
     Create a randomized `seedir.fakedir.FakeDir`, initialized with random
     dictionary words.
 
-        >>> import seedir as sd
-        >>> sd.randomdir(seed=456)
-
-        MyFakeDir/
-        ├─Vogel.txt
-        ├─monkish.txt
-        ├─jowly.txt
-        ├─scrooge/
-        │ ├─Neptune.txt
-        │ ├─Savoyard.txt
-        │ ├─eventual/
-        │ ├─influential/
-        │ └─irrecoverable/
-        │   ├─vagabond.txt
-        │   ├─Casanova.txt
-        │   ├─Benjamin.txt
-        │   ├─dichloride/
-        │   └─sedition/
-        ├─Uganda/
-        └─pedantic/
-          └─Bertrand.txt
+    >>> import seedir as sd
+    >>> sd.randomdir(seed=7)
+    MyFakeDir/
+    ├─Hardin.txt
+    ├─Kathleen.txt
+    ├─berserk/
+    └─pineapple/
+      ├─visceral.txt
+      ├─gestural.txt
+      ├─plenty.txt
+      ├─discoid/
+      │ ├─eclat.txt
+      │ └─milord/
+      ├─Offenbach/
+      │ ├─Trianon.txt
+      │ ├─Monday.txt
+      │ ├─ditty.txt
+      │ ├─peddle/
+      │ ├─delta/
+      │ └─irredentism/
+      └─Perseus/
+        ├─hothouse.txt
+        ├─clock.txt
+        ├─covetous/
+        └─Ekstrom/
 
     Parameters
     ----------
@@ -1084,25 +1088,11 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
     to create an editable representation of the directory, or to join one or
     more directories.
 
-        >>> import seedir as sd
-        >>> f = sd.fakedir('/path/to/some/folder')
-        >>> f
 
-        doc/
-        ├─_static/
-        │ ├─embedded/
-        │ │ ├─deep_file
-        │ │ └─very/
-        │ │   └─deep/
-        │ │     └─folder/
-        │ │       └─very_deep_file
-        │ └─less_deep_file
-        ├─about.rst
-        ├─conf.py
-        └─index.rst
-
-        >>> type(f)
-        seedir.fakedir.FakeDir
+    >>> import seedir as sd
+    >>> f = sd.fakedir('.', depthlimit=0)
+    >>> type(f)
+    <class 'seedir.fakedir.FakeDir'>
 
     Parameters
     ----------
@@ -1174,35 +1164,34 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     and other Python learning sites (as well as output from `seedir.realdir.seedir()`).
     There are surely cases which will causes errors or unexpected results.
 
-        >>> import seedir as sd
-        >>> s = """doc/
-        ├─_static/
-        │ ├─embedded/
-        │ │ ├─deep_file
-        │ │ └─very/
-        │ │   └─deep/
-        │ │     └─folder/
-        │ │       └─very_deep_file
-        │ └─less_deep_file
-        ├─about.rst
-        ├─conf.py
-        └─index.rst"""
+    >>> import seedir as sd
+    >>> s = """doc/
+    ... ├─_static/
+    ... │ ├─embedded/
+    ... │ │ ├─deep_file
+    ... │ │ └─very/
+    ... │ │   └─deep/
+    ... │ │     └─folder/
+    ... │ │       └─very_deep_file
+    ... │ └─less_deep_file
+    ... ├─about.rst
+    ... ├─conf.py
+    ... └─index.rst"""
 
-        >>> f = sd.fakedir_fromstring(s) # now can be edited or restyled
-        >>> f.seedir(style='spaces')
-
-        doc/
-          _static/
-            embedded/
-              deep_file
-              very/
-                deep/
-                  folder/
-                    very_deep_file
-            less_deep_file
-          about.rst
-          conf.py
-          index.rst
+    >>> f = sd.fakedir_fromstring(s) # now can be edited or restyled
+    >>> f.seedir(style='spaces')
+    doc/
+      _static/
+        embedded/
+          deep_file
+          very/
+            deep/
+              folder/
+                very_deep_file
+        less_deep_file
+      about.rst
+      conf.py
+      index.rst
 
 
     Parameters
