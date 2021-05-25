@@ -1,10 +1,10 @@
 # seedir
 A Python package for creating, editing, and reading folder tree diagrams.
 
-<div align='center'><i>Photo by <a href="https://unsplash.com/@adamkring">Adam Kring</a></i></div>
-<p align="center">
-	<img src="img/pun.jpg" width="500">
-</p>
+![](https://raw.githubusercontent.com/earnestt1234/seedir/master/img/pun.jpg)
+
+*Photo by [Adam Kring](https://unsplash.com/@adamkring).*
+
 
 ```python
 >>> import seedir as sd
@@ -38,7 +38,7 @@ pip install seedir
 
 ## Usage
 
-See the [example usage Notebook](https://nbviewer.jupyter.org/github/earnestt1234/seedir/blob/master/examples.ipynb) for guided examples or the [API documentation](https://earnestt1234.github.io/seedir/seedir/index.html).
+See the [API documentation](https://earnestt1234.github.io/seedir/seedir/index.html) (generated with [pdoc3](https://pdoc3.github.io/pdoc/)).
 
 ## License
 

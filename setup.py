@@ -15,9 +15,6 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-long_description = '\n'.join([l for l in long_description.splitlines()
-                              if not l.strip().startswith('<')])
-
 setup(name='seedir',
       version='0.2.0',
       description='Package for creating, editing, and reading folder tree diagrams.',
