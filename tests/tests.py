@@ -212,8 +212,8 @@ class TestSeedirStringFormatting(unittest.TestCase):
         self.assertTrue(all(len(f2[c])==1 for c in chars))
 
     def test_words_list(self):
-        self.assertTrue(sd.words[0] == 'a')
-        self.assertTrue(len(sd.words) == 25487)
+        self.assertTrue(sd.printing.words[0] == 'a')
+        self.assertTrue(len(sd.printing.words) == 25487)
 
 class TestFakeDirReading(unittest.TestCase):
     def test_read_string(self):
