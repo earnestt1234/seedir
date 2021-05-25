@@ -70,15 +70,15 @@ def main(argv=None):
        elif opt in ("-y", "--style"):
            style = arg
        elif opt in ("-d", "--depthlimit"):
-           depthlimit = arg
+           depthlimit = int(arg)
        elif opt in ("-i", "--itemlimit"):
-           itemlimit = arg
+           itemlimit = int(arg)
        elif opt in ("-b", "--beyond"):
            beyond= arg
        elif opt in ("-s", "--sort"):
-           sort = arg
+           sort = bool(arg)
        elif opt in ("-r", "--sort_reverse"):
-           sort_reverse = arg
+           sort_reverse = bool(arg)
 
     s = sd.seedir(path=path,
                   style=style,

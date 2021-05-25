@@ -3,9 +3,6 @@
 General module of resources and helpers for printing and making folder trees
 in seedir.
 
-@author: Tom Earnest
-
-GitHub: https://github.com/earnestt1234/seedir
 """
 __pdoc__ = {}
 

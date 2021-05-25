@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 19 10:23:38 2021
+The primary algorithm for determining the folder structure returned by
+`seedir.realdir.seedir()` and `seedir.fakedir.FakeDir.seedir()`.
 
-@author: earne
 """
 
 import os
@@ -17,8 +17,38 @@ from seedir.folderstructurehelpers import (listdir_fullpath,
                                            get_base_header)
 
 class FolderStructure:
+    '''General class for determining folder strctures.'''
     def __init__(self, listdir_func, sort_func, filter_func, isdir_func,
                  getname_func, beyondstr_func):
+        '''
+        Defines the functions used by `self` for generating folder structures.
+
+        Parameters
+        ----------
+        listdir_func : function
+            Function for returning the children of an object, given it is a
+            "folder" as determined by `isdir_func`.  The child objects returned
+            should be of similar type to `self`, such that the functions can
+            be recursively applied.
+        sort_func : function
+            Function for sorting the output of `listdir_func`.  Should handle
+            the `first`, `sort_key`, and `sort_reverse` parameters.
+        filter_func : function
+            Function for filtering the output of `listdir_func`.  Should handle
+            the include/exclude folder/file paramters, as well as `mask`.
+        isdir_func : function
+            Returns boolean of whether child object is a folder.
+        getname_func : function
+            Returns the name of the object.
+        beyondstr_func : function
+            Determines the "beyond" string based on a list of objects.
+            See `seedir.folderstructurehelpers.py` for example.
+
+        Returns
+        -------
+        None.
+
+        '''
         self.listdir = listdir_func
         self.sort = sort_func
         self.filter = filter_func
@@ -34,6 +64,12 @@ class FolderStructure:
                          include_folders=None, exclude_folders=None,
                          include_files=None, exclude_files=None,
                          regex=False, mask=None, slash='/'):
+        '''
+        Main algorithm for creating folder structure string.  See
+        `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
+        for a description of the parameters.
+
+        '''
 
         # initialize
         output = ''
@@ -62,6 +98,11 @@ class FolderStructure:
         incomplete.append(depth)
 
         # sort and filter the contents of listdir
+        sortargs = {
+            'first': first,
+            'sort_reverse': sort_reverse,
+            'sort_key': sort_key}
+
         filterargs = {
             'include_folders': include_folders,
             'exclude_folders': exclude_folders,
@@ -71,8 +112,7 @@ class FolderStructure:
             }
 
         if sort or first is not None:
-            listdir = self.sort(listdir, first=first,
-                                sort_reverse=sort_reverse, sort_key=sort_key)
+            listdir = self.sort(listdir, **sortargs)
 
         if any(arg is not None for arg in filterargs.values()):
             listdir = self.filter(listdir, **filterargs, regex=regex,)
@@ -166,4 +206,7 @@ fakedir_params = dict(listdir_func = lambda x: x.listdir(),
                       beyondstr_func = beyond_fakedepth_str)
 
 RealDirStructure = FolderStructure(**realdir_params)
+"""Object for making real folder structures."""
+
 FakeDirStructure = FolderStructure(**fakedir_params)
+"""Object for making fake folder structures."""

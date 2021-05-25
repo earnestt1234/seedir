@@ -48,7 +48,9 @@ The main algorithm for determining the folder structure string is within the
 import os
 
 from seedir.folderstructure import RealDirStructure
+
 from seedir.errors import SeedirError
+
 import seedir.printing as printing
 
 
@@ -126,14 +128,12 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 
     Include or exclude specific items (with or without regular expressions):
 
-        &gt;&gt;&gt; sd.seedir(c, exclude_folders=&#39;_static&#39;)
-        doc/
-        ├─about.rst
-        ├─conf.py
-        └─index.rst
+    &gt;&gt;&gt; sd.seedir(c, exclude_folders=&#39;_static&#39;)
+    doc/
+    ├─about.rst
+    ├─conf.py
+    └─index.rst
 
-    See more examples on the notebook on GitHub!
-    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
 
     Parameters
     ----------
@@ -219,12 +219,7 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 
             &gt;&gt;&gt; import seedir as sd
             &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
-            {&#39;split&#39;: &#39;├─&#39;,
-             &#39;extend&#39;: &#39;│ &#39;,
-             &#39;space&#39;: &#39;  &#39;,
-             &#39;final&#39;: &#39;└─&#39;,
-             &#39;folderstart&#39;: &#39;&#39;,
-             &#39;filestart&#39;: &#39;&#39;}
+            {&#39;split&#39;: &#39;├─&#39;, &#39;extend&#39;: &#39;│ &#39;, &#39;space&#39;: &#39;  &#39;, &#39;final&#39;: &#39;└─&#39;, &#39;folderstart&#39;: &#39;&#39;, &#39;filestart&#39;: &#39;&#39;}
 
         All default style tokens are 2 character strings, except for
         `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
@@ -370,14 +365,12 @@ doc/
 └─about.rst
 </code></pre>
 <p>Include or exclude specific items (with or without regular expressions):</p>
-<pre><code>&gt;&gt;&gt; sd.seedir(c, exclude_folders='_static')
+<pre><code class="python-repl">&gt;&gt;&gt; sd.seedir(c, exclude_folders='_static')
 doc/
 ├─about.rst
 ├─conf.py
 └─index.rst
 </code></pre>
-<p>See more examples on the notebook on GitHub!
-<a href="https://github.com/earnestt1234/seedir/blob/master/examples.ipynb">https://github.com/earnestt1234/seedir/blob/master/examples.ipynb</a></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>path</code></strong> :&ensp;<code>str</code> or <code>None</code>, optional</dt>
@@ -484,12 +477,7 @@ file).
 The following shows the default tokens for the <code>'lines'</code> style:</p>
 <pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; sd.get_styleargs('lines')
-{'split': '├─',
- 'extend': '│ ',
- 'space': '  ',
- 'final': '└─',
- 'folderstart': '',
- 'filestart': ''}
+{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': ''}
 </code></pre>
 <p>All default style tokens are 2 character strings, except for
 <code>folderstart</code> and <code>filestart</code>.
@@ -588,14 +576,12 @@ case the tree diagram is printed in the console.</dd>
 
     Include or exclude specific items (with or without regular expressions):
 
-        &gt;&gt;&gt; sd.seedir(c, exclude_folders=&#39;_static&#39;)
-        doc/
-        ├─about.rst
-        ├─conf.py
-        └─index.rst
+    &gt;&gt;&gt; sd.seedir(c, exclude_folders=&#39;_static&#39;)
+    doc/
+    ├─about.rst
+    ├─conf.py
+    └─index.rst
 
-    See more examples on the notebook on GitHub!
-    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
 
     Parameters
     ----------
@@ -681,12 +667,7 @@ case the tree diagram is printed in the console.</dd>
 
             &gt;&gt;&gt; import seedir as sd
             &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
-            {&#39;split&#39;: &#39;├─&#39;,
-             &#39;extend&#39;: &#39;│ &#39;,
-             &#39;space&#39;: &#39;  &#39;,
-             &#39;final&#39;: &#39;└─&#39;,
-             &#39;folderstart&#39;: &#39;&#39;,
-             &#39;filestart&#39;: &#39;&#39;}
+            {&#39;split&#39;: &#39;├─&#39;, &#39;extend&#39;: &#39;│ &#39;, &#39;space&#39;: &#39;  &#39;, &#39;final&#39;: &#39;└─&#39;, &#39;folderstart&#39;: &#39;&#39;, &#39;filestart&#39;: &#39;&#39;}
 
         All default style tokens are 2 character strings, except for
         `folderstart` and `filestart`.  Style tokens from `**kwargs` are not

@@ -544,7 +544,7 @@ class FakeDir(FakeItem):
             by each style can be viewed with `seedir.printing.get_styleargs()`.
         printout : bool, optional
             Print the folder structure in the console. The default is `True`.  When
-        `False`, the folder diagram is returned as a string.
+            `False`, the folder diagram is returned as a string.
         indent : int (>= 0), optional
             Number of spaces separating items from their parent folder.
             The default is `2`.
@@ -595,7 +595,7 @@ class FakeDir(FakeItem):
             regular expressions. The default is `False`.
         mask : function, optional
             Function for filtering items.  Each individual item object
-            are passed to the mask function.  If `True` is returned, the
+            is passed to the mask function.  If `True` is returned, the
             item is kept.  The default is `None`.
         slash : str, option:
             Slash character to follow folders.  If `'sep'`, uses `os.se`p.  The

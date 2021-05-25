@@ -2,9 +2,6 @@
 """
 Custom exceptions for seedir.
 
-@author: Tom Earnest
-
-GitHub: https://github.com/earnestt1234/seedir
 """
 
 class SeedirError(Exception):

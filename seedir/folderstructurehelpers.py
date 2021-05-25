@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 19 10:29:16 2021
+Helpers for creating folder structures, used by `seedir.folderstructure`.
 
-@author: earne
 """
 import os
 
@@ -84,9 +83,32 @@ def count_fakedirs(objs):
     return folders
 
 def listdir_fullpath(path):
+    '''Like `os.listdir()`, but returns absolute paths.'''
     return [os.path.join(path, f) for f in os.listdir(path)]
 
 def sort_dir(items, first=None, sort_reverse=False, sort_key=None):
+    '''
+    Sorting function used by `seedir.realdir.seedir()` to sort contents when
+    producing folder diagrams.
+
+    Parameters
+    ----------
+    items : list-like
+        Collection of absolute paths to folder contents.
+    first : 'files' or 'folders', optional
+        Sort either files or folders first. The default is None.
+    sort_reverse : bool, optional
+        Reverse the sort applied. The default is False.
+    sort_key : function, optional
+        Function to apply to sort the objs by their basename.  The function
+        should take a string as a parameter.
+
+    Returns
+    -------
+    list
+        Sorted input as a list.
+
+    '''
     if sort_key is None:
         key = lambda x : os.path.basename(x)
     else:
@@ -450,18 +472,18 @@ def get_base_header(incomplete, extend, space):
     the incomplete arguments passed to this function for an example folder
     tree:
 
-        >>> #
-
-        doc/
-        ├─_static/                  [0]
-        │ ├─embedded/               [0, 1]
-        │ │ ├─deep_file             [0, 1, 2]
-        │ │ └─very/                 [0, 1, 2]
-        │ │   └─deep/               [0, 1, 3]
-        │ │     └─folder/           [0, 1, 4]
-        │ │       └─very_deep_file  [0, 1, 5]
-        │ └─less_deep_file          [0, 1]
-        └─index.rst                 [0]
+    ```
+    doc/
+    ├─_static/                  [0]
+    │ ├─embedded/               [0, 1]
+    │ │ ├─deep_file             [0, 1, 2]
+    │ │ └─very/                 [0, 1, 2]
+    │ │   └─deep/               [0, 1, 3]
+    │ │     └─folder/           [0, 1, 4]
+    │ │       └─very_deep_file  [0, 1, 5]
+    │ └─less_deep_file          [0, 1]
+    └─index.rst                 [0]
+    ```
 
     Parameters
     ----------

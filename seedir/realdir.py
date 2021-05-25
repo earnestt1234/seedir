@@ -93,14 +93,12 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
 
     Include or exclude specific items (with or without regular expressions):
 
-        >>> sd.seedir(c, exclude_folders='_static')
-        doc/
-        ├─about.rst
-        ├─conf.py
-        └─index.rst
+    >>> sd.seedir(c, exclude_folders='_static')
+    doc/
+    ├─about.rst
+    ├─conf.py
+    └─index.rst
 
-    See more examples on the notebook on GitHub!
-    https://github.com/earnestt1234/seedir/blob/master/examples.ipynb
 
     Parameters
     ----------
