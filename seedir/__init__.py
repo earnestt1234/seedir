@@ -12,7 +12,7 @@ tools for going in between these formats.
 
 ## Cheatsheet
 
-.. image:: ../img/seedir_diagram.png
+![](https://raw.githubusercontent.com/earnestt1234/seedir/master/img/seedir_diagram.png)
 
 """
 
