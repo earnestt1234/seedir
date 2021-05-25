@@ -131,7 +131,7 @@ exampledir/
 
 ```
 
-As `seedir.realdir.seedir()`, uses recursion, these arguments can hedge the traversal of deep, complicated folders.
+As `seedir.realdir.seedir()` uses recursion, these arguments can hedge the traversal of deep, complicated folders.
 
 When limiting the tree, using the `beyond` argument can be helpful to show what is being cut. The special value `'content'` shows the number of folders and files:
 
@@ -240,7 +240,7 @@ exampledir/
 
 ```
 
-Each style is basically a collection of string "tokens" which are combined to form the header of each printed line (based on the depth and folder structure). You can see these tokens using `seedir.get_styleargs()`:
+Each style is basically a collection of string "tokens" which are combined to form the header of each printed line (based on the depth and folder structure). You can see these tokens using `seedir.printing.get_styleargs()`:
 
 ```python
 >>> sd.get_styleargs('emoji')

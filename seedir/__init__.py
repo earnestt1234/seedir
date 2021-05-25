@@ -11,7 +11,9 @@ tools for going in between these formats.
 .. include:: gettingstarted.md
 """
 
-__pdoc__ = {'command_line' : False}
+__pdoc__ = {'command_line' : False,
+            'folderstructure': False,
+            'folderstructurehelpers': False}
 
 #imports for package namespace
 from .realdir import seedir
@@ -21,12 +23,10 @@ from .fakedir import (fakedir,
                       populate,
                       randomdir,)
 
-from .fakedir import FakeDir as FakeDir
-from .fakedir import FakeFile as FakeFile
-from .fakedir import FakeItem as FakeItem
+from .fakedir import FakeDir
+from .fakedir import FakeFile
 
 from .errors import SeedirError, FakedirError
 
 from .printing import (get_styleargs,
-                       STYLE_DICT,
-                       words)
+                       STYLE_DICT,)

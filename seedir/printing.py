@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 General module of resources and helpers for printing and making folder trees
-in `seedir`.
+in seedir.
 
 @author: Tom Earnest
 
@@ -10,7 +10,8 @@ GitHub: https://github.com/earnestt1234/seedir
 __pdoc__ = {}
 
 for key in ['is_match',
-            'format_indent']:
+            'format_indent',
+            'words']:
     __pdoc__[key] = False
 
 import copy
@@ -83,7 +84,7 @@ def is_match(pattern, string, regex=True):
 def get_styleargs(style):
     '''
     Return the string tokens associated with different styles for printing
-    folder trees with `seedir.seedir.seedir()`.
+    folder trees with `seedir.realdir.seedir()`.
 
     Parameters
     ----------

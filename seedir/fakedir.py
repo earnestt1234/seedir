@@ -5,7 +5,7 @@ i.e. coded representations of file trees.  This module can be used
 to make example folder tree diagrams, read folder tree strings, or convert
 abstract folder trees into real directories on a computer.  Many functions
 and methods here repesent parallels to counterparts (for real directories)
-in the `seedir.seedir` module.
+in the `seedir.realdir` module.
 
 @author: Tom Earnest
 
@@ -13,15 +13,8 @@ GitHub: https://github.com/earnestt1234/seedir
 """
 __pdoc__ = {}
 
-for key in ['count_fakefiles',
-            'count_fakedirs',
-            'sort_fakedir',
-            'beyond_fakedepth_str',
-            'get_fakebase_header',
-            'filter_fakeitem_names',
-            'get_random_int',
-            'recursive_add_fakes',
-            'recursive_fakedir_structure']:
+for key in ['get_random_int',
+            'recursive_add_fakes',]:
     __pdoc__[key] = False
 
 import os
@@ -46,7 +39,7 @@ class FakeItem:
         ----------
         name : str
             Name for the folder or file.
-        parent : seedir.FakeDir or None, optional
+        parent : seedir.fakedir.FakeDir or None, optional
             Parent of `self`. The default is `None`, meaning the object will
             be the "root" of the directory.
 
@@ -68,7 +61,7 @@ class FakeItem:
 
         Returns
         -------
-        seedir.FakeDir
+        seedir.fakedir.FakeDir
             The parent folder of the object.
 
         '''
@@ -80,7 +73,7 @@ class FakeItem:
         Setter for the `parent` attribute.
 
         When a new parent is assigned for an object, this method
-        verifies that the other object is `seedir.seedir.FakeDir`, and that the other
+        verifies that the other object is `seedir.fakedir.FakeDir`, and that the other
         objects children do not contain a fake item with the same name.
 
         If those conditions are met, `self` is removed from the children
@@ -89,13 +82,13 @@ class FakeItem:
 
         Parameters
         ----------
-        other : seedir.FakeDir
+        other : seedir.fakedir.FakeDir
             Fake directory to become the new `parent` for self.
 
         Raises
         ------
         FakedirError
-            When other is not `seedir.seedir.FakeDir` or when `self.name` is in
+            When other is not `seedir.fakedir.FakeDir` or when `self.name` is in
             the child names of other.
 
         Returns
@@ -210,7 +203,7 @@ class FakeFile(FakeItem):
 
 class FakeDir(FakeItem):
     '''Class to represent fake folders.  Can be used to create
-    custom folder tree diagrams.  See `seedir.seedir.fakedir()` for converting
+    custom folder tree diagrams.  See `seedir.fakedir.fakedir()` for converting
     a real directory into a FakeDir, `seedir.fakedir.fakedir_fromstring()` for
     converting a text folder diagram into a `FakeDir`, and `seedir.fakedir.randomdir()`
     for creating a random one.
@@ -550,7 +543,7 @@ class FakeDir(FakeItem):
         '''
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
-        `seedir.seedir.seedir()` (see its documentation for examples).
+        `seedir.realdir.seedir()` (see its documentation for examples).
 
         Parameters
         ----------
@@ -864,12 +857,12 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
              extensions=['txt']):
     '''
     Function for populating `seedir.fakedir.FakeDir` objects with random files and folders.
-    Used by `seedir.fakedir.randomdir()`.  Random names are chosen from
-    `seedir.printing.words` to make file and folder names.
+    Used by `seedir.fakedir.randomdir()`.  Random dictionary names are chosen
+    for file and folder names.
 
     Parameters
     ----------
-    fakedir : seedir.FakeDir
+    fakedir : seedir.fakedir.FakeDir
         Fake directory to populate.
     depth : int, optional
         Maximum depth to create folders and files. The default is `3`.
@@ -982,7 +975,7 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
 
     Returns
     -------
-    top : seedir.FakeDir
+    top : seedir.fakedir.FakeDir
         Fake directory.
 
     '''
@@ -1011,7 +1004,7 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
     ----------
     path : str
         System path of a folder.
-    parent : seedir.FakeDir
+    parent : seedir.fakedir.FakeDir
         Fake directory to add items to.
     depth : int, optional
         Tracker for depth of folders traversed. The default is 0.
@@ -1087,7 +1080,7 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
     '''
     Function for creating a `seedir.fakedir.FakeDir` (representation of a directory)
     from a real system directory.  Rather than immediately representing
-    a directory as a string (`seedir.seedir.seedir()`), this function can be used
+    a directory as a string (`seedir.realdir.seedir()`), this function can be used
     to create an editable representation of the directory, or to join one or
     more directories.
 
@@ -1149,7 +1142,7 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
 
     Returns
     -------
-    output : seedir.FakeDir
+    output : seedir.fakedir.FakeDir
         Fake directory matching the path.
 
     '''
@@ -1178,7 +1171,7 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     edit them, and recreate them in a new location.
 
     This function has mostly been tested with examples from Stack Overflow
-    and other Python learning sites (as well as output from `seedir.seedir.seedir()`).
+    and other Python learning sites (as well as output from `seedir.realdir.seedir()`).
     There are surely cases which will causes errors or unexpected results.
 
         >>> import seedir as sd
@@ -1246,7 +1239,7 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
 
     Returns
     -------
-    seedir.FakeDir
+    seedir.fakedir.FakeDir
         Fake directory corresponding to the input string.
 
     '''
