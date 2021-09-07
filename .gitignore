@@ -13,3 +13,6 @@ seedir/__pycache__
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
 
+# Mac specific editing files
+.DS_Store
+**/.DS_Store
