@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Added code blocks to examples in docstrings
+- replace `'\s'` with `' '` in `seedir.fakedir.fakedir_fromstring()`
+
 - replaced the "cheatsheet.png" image in the Getting Started section with a markdown link
 - [Remove .DS_Store files](https://github.com/earnestt1234/seedir/pull/5) (thanks @[timweissenfels](https://github.com/timweissenfels))
 

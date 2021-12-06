@@ -1286,7 +1286,7 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     if start_chars is None:
         start_chars = "".join([c for c in filtered if c not in '+=-'])
     if name_chars is None:
-        name_chars = filtered + '\s' + '-'
+        name_chars = filtered + ' ' + '-'
 
     names = []
     headers = []

@@ -1322,7 +1322,7 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     if start_chars is None:
         start_chars = &#34;&#34;.join([c for c in filtered if c not in &#39;+=-&#39;])
     if name_chars is None:
-        name_chars = filtered + &#39;\s&#39; + &#39;-&#39;
+        name_chars = filtered + &#39; &#39; + &#39;-&#39;
 
     names = []
     headers = []
@@ -1729,7 +1729,7 @@ The default is <code>True</code>.</dd>
     if start_chars is None:
         start_chars = &#34;&#34;.join([c for c in filtered if c not in &#39;+=-&#39;])
     if name_chars is None:
-        name_chars = filtered + &#39;\s&#39; + &#39;-&#39;
+        name_chars = filtered + &#39; &#39; + &#39;-&#39;
 
     names = []
     headers = []
