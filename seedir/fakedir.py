@@ -550,7 +550,6 @@ class FakeDir(FakeItem):
                     pass
         if path is None:
             path = os.getcwd()
-        os.mkdir(os.path.join(path, self.name))
         self.walk_apply(create, root=path)
 
     def seedir(self, style='lines', printout=True, indent=2, uniform=None,
@@ -857,10 +856,12 @@ class FakeDir(FakeItem):
         None.
 
         """
+        foo(self, *args, **kwargs)
         for f in self._children:
-            foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):
                 f.walk_apply(foo, *args, **kwargs)
+            else:
+                foo(f, *args, **kwargs)
 
 def get_random_int(collection, seed=None):
     '''
