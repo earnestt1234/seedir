@@ -52,13 +52,12 @@ Sometimes a directory is too large, is private, or contains certain irrelevant f
 One way is to call out specific folders of files to include or exclude:
 
 ```python
->>> sd.seedir(path, include_folders=['scrooge','paycheck'], exclude_files='reliquary.txt')
+>>> sd.seedir(path, include_folders=['scrooge','paycheck'], exclude_files='reliquary.pdf')
 exampledir/
 ├─scrooge/
 │ ├─light.pdf
-│ ├─paycheck/
-│ │ └─electrophoresis.txt
-│ └─reliquary.pdf
+│ └─paycheck/
+│   └─electrophoresis.txt
 ├─jowly.pdf
 ├─monkish.txt
 └─Vogel.txt
@@ -187,7 +186,7 @@ exampledir/
   
 ```
 
-The `first` additionally argument allows you to select whether files or folders appear first:
+The `first` argument allows you to select whether files or folders appear first:
 
 ```python
 >>> sd.seedir(path, itemlimit=5, first='files')

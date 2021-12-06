@@ -525,7 +525,7 @@ class FakeDir(FakeItem):
         # └─exposure/
 
         r.realize()
-        os.path.isdir('MyFakeDir/scrooge')
+        os.path.isdir('MyFakeDir/exposure')
         # True
         ```
 

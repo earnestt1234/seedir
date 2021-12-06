@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Added code blocks to examples in docstrings
   - replaced the "cheatsheet.png" image in the Getting Started section with a markdown link
   - remove broken link to `FolderStructure` class in `seedir.realdir` module
+  - fixed some examples in docstrings and readmes
 
 - replace `'\s'` with `' '` in `seedir.fakedir.fakedir_fromstring()`
 
