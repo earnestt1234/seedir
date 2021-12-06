@@ -364,6 +364,31 @@ class FakeDir(FakeItem):
             for s in name:
                 FakeFile(s, parent=self)
 
+    def copy(self):
+        '''
+        Generate a totally unlinked copy object.  The root of the new FakeDir
+        will be a copy of this folder (and all its subfolders).  Calling this
+        method does not alter self at all.
+
+        Returns
+        -------
+        seedir.fakedir.FakeDir
+            A copy FakeDir.
+
+        '''
+        def recurse_build(f, other):
+            '''Recursive helper for building the new copy.'''
+            if f.isfile():
+                new = FakeFile(name=f.name, parent=other)
+            elif f.isdir():
+                new = FakeDir(name=f.name, parent=other)
+                for child in f.listdir():
+                    recurse_build(child, other=new)
+            return new
+
+        return recurse_build(self, other=None)
+
+
     def delete(self, child):
         '''
         Delete items from a `seedir.fakedir.FakeDir`.

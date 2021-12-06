@@ -297,6 +297,24 @@ class TestFakeDir(unittest.TestCase):
         sd.populate(x)
         self.assertTrue(x.get_child_names())
 
+    def test_copy_equal(self):
+        x = sd.randomdir(seed=7)
+        y = x.copy()
+        self.assertEqual(x.seedir(printout=False), y.seedir(printout=False))
+
+    def test_copy_unlinked(self):
+        def pallindrome(f):
+            f.name = f.name + f.name[::-1]
+        x = sd.fakedir_fromstring(large_example)
+
+        before = x.seedir(printout=False)
+
+        y = x.copy()
+        y.walk_apply(pallindrome)
+
+        after = x.seedir(printout=False)
+        self.assertEqual(before, after)
+
 class TestMask(unittest.TestCase):
     def test_mask_no_folders_or_files(self):
         def foo(x):
