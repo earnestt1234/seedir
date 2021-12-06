@@ -31,10 +31,14 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
 
     ## EXAMPLES
 
+    ```
     >>> import seedir as sd
+
+    ```
 
     Make a basic tree diagram:
 
+    ```
     >>> c = 'example/folder/path'
     >>> sd.seedir(c)
     doc/
@@ -50,8 +54,11 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     ├─conf.py
     └─index.rst
 
+    ```
+
     Select different styles for the tree:
 
+    ```
     >>> sd.seedir(c, style='dash')
     doc/
     |-_static/
@@ -66,8 +73,11 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     |-conf.py
     |-index.rst
 
+    ```
+
     Sort the folder contents, separting folders and files:
 
+    ```
     >>> sd.seedir(c, sort=True, first='files')
     doc/
     ├─about.rst
@@ -82,8 +92,11 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
             └─folder/
               └─very_deep_file
 
+    ```
+
     Limit the folder depth or items included:
 
+    ```
     >>> sd.seedir(c, depthlimit=2, itemlimit=1)
     doc/
     ├─_static/
@@ -91,14 +104,18 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     │ └─less_deep_file
     └─about.rst
 
+    ```
+
     Include or exclude specific items (with or without regular expressions):
 
+    ```
     >>> sd.seedir(c, exclude_folders='_static')
     doc/
     ├─about.rst
     ├─conf.py
     └─index.rst
 
+    ```
 
     Parameters
     ----------

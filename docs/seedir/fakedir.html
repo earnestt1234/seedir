@@ -149,6 +149,7 @@ class FakeItem:
         &#39;&#39;&#39;Return a &#34;path&#34; string of self, from the head `seedir.fakedir.FakeDir`
         (which has `parent == None`).
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; f = sd.randomdir(seed=5) # create a random FakeDir
         &gt;&gt;&gt; f
@@ -175,6 +176,8 @@ class FakeItem:
         &gt;&gt;&gt; x = sd.FakeDir(&#39;newfolder&#39;, parent=f[&#39;zag/stein&#39;])
         &gt;&gt;&gt; x.get_path()
         &#39;MyFakeDir/zag/stein/newfolder&#39;
+
+        ```
 
         &#39;&#39;&#39;
         parents = [self.name]
@@ -205,6 +208,7 @@ class FakeFile(FakeItem):
 
     Files in a `seedir.fakedir.FakeDir` have this type.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; f = sd.randomdir(seed=5) # create a random FakeDir
     &gt;&gt;&gt; f
@@ -231,6 +235,8 @@ class FakeFile(FakeItem):
     &gt;&gt;&gt; f[&#39;senor.txt&#39;]
     FakeFile(MyFakeDir/senor.txt)
 
+    ```
+
     &#39;&#39;&#39;
     def __init__(self, name, parent=None):
         &#39;&#39;&#39;Same as `seedir.fakedir.FakeItem` initialization, but adds
@@ -254,13 +260,17 @@ class FakeDir(FakeItem):
 
     To make a `FakeDir` from scratch, use this class:
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; x = sd.FakeDir(&#39;myfakedir&#39;)
     &gt;&gt;&gt; x.seedir()
     myfakedir/
 
+    ```
+
     There are various ways to add to it:
 
+    ```
     # using methods
     &gt;&gt;&gt; x.create_file([&#39;__init__.py&#39;, &#39;main.py&#39;, &#39;styles.txt&#39;])
     &gt;&gt;&gt; x.create_folder(&#39;docs&#39;)
@@ -287,10 +297,15 @@ class FakeDir(FakeItem):
     ├─main.py
     └─styles.txt
 
+    ```
+
     You can index with path-like strings:
 
+    ```
     &gt;&gt;&gt; x[&#39;resources/images/a.png&#39;]
     FakeFile(myfakedir/resources/images/a.png)
+
+    ```
 
     &#39;&#39;&#39;
     def __init__(self, name, parent=None):
@@ -329,12 +344,15 @@ class FakeDir(FakeItem):
         &#34;&#34;&#34;
         Create a new folder (`seedir.fakedir.FakeDir`) as a child.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
         &gt;&gt;&gt; x.create_folder(&#34;new_folder&#34;)
         &gt;&gt;&gt; x.seedir()
         Test/
         └─new_folder/
+
+        ```
 
         Parameters
         ----------
@@ -356,12 +374,15 @@ class FakeDir(FakeItem):
         &#34;&#34;&#34;
         Create a new file (`seedir.fakedir.FakeFile`) as a child.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
         &gt;&gt;&gt; x.create_file(&#34;new_file.txt&#34;)
         &gt;&gt;&gt; x.seedir()
         Test/
         └─new_file.txt
+
+        ```
 
         Parameters
         ----------
@@ -383,6 +404,7 @@ class FakeDir(FakeItem):
         &#39;&#39;&#39;
         Delete items from a `seedir.fakedir.FakeDir`.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=5)
         &gt;&gt;&gt; r
@@ -420,6 +442,8 @@ class FakeDir(FakeItem):
             ├─vector.txt
             ├─sora.txt
             └─proviso.txt
+
+        ```
 
         Parameters
         ----------
@@ -468,6 +492,7 @@ class FakeDir(FakeItem):
     def get_child_names(self):
         &#39;&#39;&#39;Return a list of child names.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=5)
         &gt;&gt;&gt; r
@@ -494,6 +519,8 @@ class FakeDir(FakeItem):
         &gt;&gt;&gt; r.get_child_names()
         [&#39;senor.txt&#39;, &#39;verb.txt&#39;, &#39;takeoff.txt&#39;, &#39;monastic&#39;, &#39;zag&#39;]
 
+        ```
+
         &#39;&#39;&#39;
         return [c.name for c in self._children]
 
@@ -501,6 +528,7 @@ class FakeDir(FakeItem):
         &#39;&#39;&#39;Return the list of `seedir.fakedir.FakeFile` and `seedir.fakedir.FakeDir`
         objects that are children of `self` (like `os.listdir`).
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=1)
         &gt;&gt;&gt; r
@@ -510,6 +538,8 @@ class FakeDir(FakeItem):
 
         &gt;&gt;&gt; print([str(i) for i in r.listdir()])
         [&#39;FakeFile(MyFakeDir/churchmen.txt)&#39;, &#39;FakeDir(MyFakeDir/exposure)&#39;]
+
+        ```
         &#39;&#39;&#39;
         return self._children
 
@@ -733,6 +763,7 @@ class FakeDir(FakeItem):
         &#34;&#34;&#34;
         Remove items beyond the `depthlimit`.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=456)
         &gt;&gt;&gt; r
@@ -761,6 +792,8 @@ class FakeDir(FakeItem):
         ├─scrooge/
         ├─Uganda/
         └─pedantic/
+
+        ```
 
 
         Parameters
@@ -795,6 +828,7 @@ class FakeDir(FakeItem):
         &#34;&#34;&#34;
         Recursively apply a function the children of self (and so on)
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=5)
         &gt;&gt;&gt; r
@@ -842,6 +876,8 @@ class FakeDir(FakeItem):
             ├─vector.pdf
             ├─sora.pdf
             └─proviso.pdf
+
+        ```
 
         Parameters
         ----------
@@ -967,6 +1003,7 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
     Create a randomized `seedir.fakedir.FakeDir`, initialized with random
     dictionary words.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; sd.randomdir(seed=7)
     MyFakeDir/
@@ -992,6 +1029,8 @@ def randomdir(depth=2, files=range(1,4), folders=range(0,4),
         ├─clock.txt
         ├─covetous/
         └─Ekstrom/
+
+    ```
 
     Parameters
     ----------
@@ -1124,11 +1163,13 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
     to create an editable representation of the directory, or to join one or
     more directories.
 
-
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; f = sd.fakedir(&#39;.&#39;, depthlimit=0)
     &gt;&gt;&gt; type(f)
     &lt;class &#39;seedir.fakedir.FakeDir&#39;&gt;
+
+    ```
 
     Parameters
     ----------
@@ -1200,6 +1241,7 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     and other Python learning sites (as well as output from `seedir.realdir.seedir()`).
     There are surely cases which will causes errors or unexpected results.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; s = &#34;&#34;&#34;doc/
     ... ├─_static/
@@ -1228,6 +1270,8 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
       about.rst
       conf.py
       index.rst
+
+    ```
 
 
     Parameters
@@ -1375,10 +1419,11 @@ Rather than immediately representing
 a directory as a string (<code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code>), this function can be used
 to create an editable representation of the directory, or to join one or
 more directories.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; f = sd.fakedir('.', depthlimit=0)
 &gt;&gt;&gt; type(f)
 &lt;class 'seedir.fakedir.FakeDir'&gt;
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -1440,11 +1485,13 @@ expressions. The default is <code>False</code>.</dd>
     to create an editable representation of the directory, or to join one or
     more directories.
 
-
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; f = sd.fakedir(&#39;.&#39;, depthlimit=0)
     &gt;&gt;&gt; type(f)
     &lt;class &#39;seedir.fakedir.FakeDir&#39;&gt;
+
+    ```
 
     Parameters
     ----------
@@ -1515,7 +1562,7 @@ edit them, and recreate them in a new location.</p>
 <p>This function has mostly been tested with examples from Stack Overflow
 and other Python learning sites (as well as output from <code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code>).
 There are surely cases which will causes errors or unexpected results.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; s = &quot;&quot;&quot;doc/
 ... ├─_static/
 ... │ ├─embedded/
@@ -1528,8 +1575,8 @@ There are surely cases which will causes errors or unexpected results.</p>
 ... ├─about.rst
 ... ├─conf.py
 ... └─index.rst&quot;&quot;&quot;
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; f = sd.fakedir_fromstring(s) # now can be edited or restyled
+
+&gt;&gt;&gt; f = sd.fakedir_fromstring(s) # now can be edited or restyled
 &gt;&gt;&gt; f.seedir(style='spaces')
 doc/
   _static/
@@ -1543,6 +1590,7 @@ doc/
   about.rst
   conf.py
   index.rst
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -1600,6 +1648,7 @@ The default is <code>True</code>.</dd>
     and other Python learning sites (as well as output from `seedir.realdir.seedir()`).
     There are surely cases which will causes errors or unexpected results.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; s = &#34;&#34;&#34;doc/
     ... ├─_static/
@@ -1628,6 +1677,8 @@ The default is <code>True</code>.</dd>
       about.rst
       conf.py
       index.rst
+
+    ```
 
 
     Parameters
@@ -1881,7 +1932,7 @@ Leading period can be included or omitted.</dd>
 <dd>
 <div class="desc"><p>Create a randomized <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code>, initialized with random
 dictionary words.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; sd.randomdir(seed=7)
 MyFakeDir/
 ├─Hardin.txt
@@ -1906,6 +1957,7 @@ MyFakeDir/
     ├─clock.txt
     ├─covetous/
     └─Ekstrom/
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -1947,6 +1999,7 @@ Leading period can be included or omitted.</dd>
     Create a randomized `seedir.fakedir.FakeDir`, initialized with random
     dictionary words.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; sd.randomdir(seed=7)
     MyFakeDir/
@@ -1972,6 +2025,8 @@ Leading period can be included or omitted.</dd>
         ├─clock.txt
         ├─covetous/
         └─Ekstrom/
+
+    ```
 
     Parameters
     ----------
@@ -2029,27 +2084,28 @@ a real directory into a FakeDir, <code><a title="seedir.fakedir.fakedir_fromstri
 converting a text folder diagram into a <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code>, and <code><a title="seedir.fakedir.randomdir" href="#seedir.fakedir.randomdir">randomdir()</a></code>
 for creating a random one.</p>
 <p>To make a <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code> from scratch, use this class:</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; x = sd.FakeDir('myfakedir')
 &gt;&gt;&gt; x.seedir()
 myfakedir/
+
 </code></pre>
 <p>There are various ways to add to it:</p>
-<h1 id="using-methods">using methods</h1>
-<pre><code class="python-repl">&gt;&gt;&gt; x.create_file(['__init__.py', 'main.py', 'styles.txt'])
+<pre><code># using methods
+&gt;&gt;&gt; x.create_file(['__init__.py', 'main.py', 'styles.txt'])
 &gt;&gt;&gt; x.create_folder('docs')
-</code></pre>
-<h1 id="initializing-new-objects-and-setting-the-parent">initializing new objects and setting the parent</h1>
-<pre><code class="python-repl">&gt;&gt;&gt; y = sd.FakeDir('resources', parent=x)
-</code></pre>
-<h1 id="changing-the-parent-of-existing-objects">changing the parent of existing objects</h1>
-<pre><code class="python-repl">&gt;&gt;&gt; z = sd.FakeDir('images')
+
+# initializing new objects and setting the parent
+&gt;&gt;&gt; y = sd.FakeDir('resources', parent=x)
+
+# changing the parent of existing objects
+&gt;&gt;&gt; z = sd.FakeDir('images')
 &gt;&gt;&gt; z.parent = y
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; for n in ['a', 'b', 'c']:
+
+&gt;&gt;&gt; for n in ['a', 'b', 'c']:
 ...     z.create_file(n + '.png')
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; x.seedir(sort=True, first='folders')
+
+&gt;&gt;&gt; x.seedir(sort=True, first='folders')
 myfakedir/
 ├─docs/
 ├─resources/
@@ -2060,10 +2116,12 @@ myfakedir/
 ├─__init__.py
 ├─main.py
 └─styles.txt
+
 </code></pre>
 <p>You can index with path-like strings:</p>
-<pre><code class="python-repl">&gt;&gt;&gt; x['resources/images/a.png']
+<pre><code>&gt;&gt;&gt; x['resources/images/a.png']
 FakeFile(myfakedir/resources/images/a.png)
+
 </code></pre>
 <p>Same as <code><a title="seedir.fakedir.FakeItem" href="#seedir.fakedir.FakeItem">FakeItem</a></code> initialization, but adds
 the <code>_children</code> attribute for keeping track of items inside the fake dir.</p></div>
@@ -2080,13 +2138,17 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
 
     To make a `FakeDir` from scratch, use this class:
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; x = sd.FakeDir(&#39;myfakedir&#39;)
     &gt;&gt;&gt; x.seedir()
     myfakedir/
 
+    ```
+
     There are various ways to add to it:
 
+    ```
     # using methods
     &gt;&gt;&gt; x.create_file([&#39;__init__.py&#39;, &#39;main.py&#39;, &#39;styles.txt&#39;])
     &gt;&gt;&gt; x.create_folder(&#39;docs&#39;)
@@ -2113,10 +2175,15 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
     ├─main.py
     └─styles.txt
 
+    ```
+
     You can index with path-like strings:
 
+    ```
     &gt;&gt;&gt; x[&#39;resources/images/a.png&#39;]
     FakeFile(myfakedir/resources/images/a.png)
+
+    ```
 
     &#39;&#39;&#39;
     def __init__(self, name, parent=None):
@@ -2155,12 +2222,15 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &#34;&#34;&#34;
         Create a new folder (`seedir.fakedir.FakeDir`) as a child.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
         &gt;&gt;&gt; x.create_folder(&#34;new_folder&#34;)
         &gt;&gt;&gt; x.seedir()
         Test/
         └─new_folder/
+
+        ```
 
         Parameters
         ----------
@@ -2182,12 +2252,15 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &#34;&#34;&#34;
         Create a new file (`seedir.fakedir.FakeFile`) as a child.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
         &gt;&gt;&gt; x.create_file(&#34;new_file.txt&#34;)
         &gt;&gt;&gt; x.seedir()
         Test/
         └─new_file.txt
+
+        ```
 
         Parameters
         ----------
@@ -2209,6 +2282,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &#39;&#39;&#39;
         Delete items from a `seedir.fakedir.FakeDir`.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=5)
         &gt;&gt;&gt; r
@@ -2246,6 +2320,8 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             ├─vector.txt
             ├─sora.txt
             └─proviso.txt
+
+        ```
 
         Parameters
         ----------
@@ -2294,6 +2370,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
     def get_child_names(self):
         &#39;&#39;&#39;Return a list of child names.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=5)
         &gt;&gt;&gt; r
@@ -2320,6 +2397,8 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &gt;&gt;&gt; r.get_child_names()
         [&#39;senor.txt&#39;, &#39;verb.txt&#39;, &#39;takeoff.txt&#39;, &#39;monastic&#39;, &#39;zag&#39;]
 
+        ```
+
         &#39;&#39;&#39;
         return [c.name for c in self._children]
 
@@ -2327,6 +2406,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &#39;&#39;&#39;Return the list of `seedir.fakedir.FakeFile` and `seedir.fakedir.FakeDir`
         objects that are children of `self` (like `os.listdir`).
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=1)
         &gt;&gt;&gt; r
@@ -2336,6 +2416,8 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
 
         &gt;&gt;&gt; print([str(i) for i in r.listdir()])
         [&#39;FakeFile(MyFakeDir/churchmen.txt)&#39;, &#39;FakeDir(MyFakeDir/exposure)&#39;]
+
+        ```
         &#39;&#39;&#39;
         return self._children
 
@@ -2559,6 +2641,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &#34;&#34;&#34;
         Remove items beyond the `depthlimit`.
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=456)
         &gt;&gt;&gt; r
@@ -2587,6 +2670,8 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         ├─scrooge/
         ├─Uganda/
         └─pedantic/
+
+        ```
 
 
         Parameters
@@ -2621,6 +2706,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &#34;&#34;&#34;
         Recursively apply a function the children of self (and so on)
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; r = sd.randomdir(seed=5)
         &gt;&gt;&gt; r
@@ -2669,6 +2755,8 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             ├─sora.pdf
             └─proviso.pdf
 
+        ```
+
         Parameters
         ----------
         foo : function
@@ -2699,12 +2787,13 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new file (<code><a title="seedir.fakedir.FakeFile" href="#seedir.fakedir.FakeFile">FakeFile</a></code>) as a child.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; x = sd.FakeDir('Test')
 &gt;&gt;&gt; x.create_file(&quot;new_file.txt&quot;)
 &gt;&gt;&gt; x.seedir()
 Test/
 └─new_file.txt
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -2721,12 +2810,15 @@ Test/
     &#34;&#34;&#34;
     Create a new file (`seedir.fakedir.FakeFile`) as a child.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
     &gt;&gt;&gt; x.create_file(&#34;new_file.txt&#34;)
     &gt;&gt;&gt; x.seedir()
     Test/
     └─new_file.txt
+
+    ```
 
     Parameters
     ----------
@@ -2750,12 +2842,13 @@ Test/
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new folder (<code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code>) as a child.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; x = sd.FakeDir('Test')
 &gt;&gt;&gt; x.create_folder(&quot;new_folder&quot;)
 &gt;&gt;&gt; x.seedir()
 Test/
 └─new_folder/
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -2772,12 +2865,15 @@ Test/
     &#34;&#34;&#34;
     Create a new folder (`seedir.fakedir.FakeDir`) as a child.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; x = sd.FakeDir(&#39;Test&#39;)
     &gt;&gt;&gt; x.create_folder(&#34;new_folder&#34;)
     &gt;&gt;&gt; x.seedir()
     Test/
     └─new_folder/
+
+    ```
 
     Parameters
     ----------
@@ -2801,7 +2897,7 @@ Test/
 </code></dt>
 <dd>
 <div class="desc"><p>Delete items from a <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code>.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; r = sd.randomdir(seed=5)
 &gt;&gt;&gt; r
 MyFakeDir/
@@ -2823,8 +2919,8 @@ MyFakeDir/
     ├─vector.txt
     ├─sora.txt
     └─proviso.txt
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; r['zag'].delete(['thematic.txt', 'inelastic.txt']) # delete with string names
+
+&gt;&gt;&gt; r['zag'].delete(['thematic.txt', 'inelastic.txt']) # delete with string names
 &gt;&gt;&gt; r.delete(r['monastic']) # delete with objects
 &gt;&gt;&gt; r
 MyFakeDir/
@@ -2838,6 +2934,7 @@ MyFakeDir/
     ├─vector.txt
     ├─sora.txt
     └─proviso.txt
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -2862,6 +2959,7 @@ or a collection of names or items.</dd>
     &#39;&#39;&#39;
     Delete items from a `seedir.fakedir.FakeDir`.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; r = sd.randomdir(seed=5)
     &gt;&gt;&gt; r
@@ -2899,6 +2997,8 @@ or a collection of names or items.</dd>
         ├─vector.txt
         ├─sora.txt
         └─proviso.txt
+
+    ```
 
     Parameters
     ----------
@@ -2950,7 +3050,7 @@ or a collection of names or items.</dd>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a list of child names.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; r = sd.randomdir(seed=5)
 &gt;&gt;&gt; r
 MyFakeDir/
@@ -2972,9 +3072,10 @@ MyFakeDir/
     ├─vector.txt
     ├─sora.txt
     └─proviso.txt
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; r.get_child_names()
+
+&gt;&gt;&gt; r.get_child_names()
 ['senor.txt', 'verb.txt', 'takeoff.txt', 'monastic', 'zag']
+
 </code></pre></div>
 <details class="source">
 <summary>
@@ -2983,6 +3084,7 @@ MyFakeDir/
 <pre><code class="python">def get_child_names(self):
     &#39;&#39;&#39;Return a list of child names.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; r = sd.randomdir(seed=5)
     &gt;&gt;&gt; r
@@ -3009,6 +3111,8 @@ MyFakeDir/
     &gt;&gt;&gt; r.get_child_names()
     [&#39;senor.txt&#39;, &#39;verb.txt&#39;, &#39;takeoff.txt&#39;, &#39;monastic&#39;, &#39;zag&#39;]
 
+    ```
+
     &#39;&#39;&#39;
     return [c.name for c in self._children]</code></pre>
 </details>
@@ -3019,15 +3123,16 @@ MyFakeDir/
 <dd>
 <div class="desc"><p>Return the list of <code><a title="seedir.fakedir.FakeFile" href="#seedir.fakedir.FakeFile">FakeFile</a></code> and <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code>
 objects that are children of <code>self</code> (like <code>os.listdir</code>).</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; r = sd.randomdir(seed=1)
 &gt;&gt;&gt; r
 MyFakeDir/
 ├─churchmen.txt
 └─exposure/
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; print([str(i) for i in r.listdir()])
+
+&gt;&gt;&gt; print([str(i) for i in r.listdir()])
 ['FakeFile(MyFakeDir/churchmen.txt)', 'FakeDir(MyFakeDir/exposure)']
+
 </code></pre></div>
 <details class="source">
 <summary>
@@ -3037,6 +3142,7 @@ MyFakeDir/
     &#39;&#39;&#39;Return the list of `seedir.fakedir.FakeFile` and `seedir.fakedir.FakeDir`
     objects that are children of `self` (like `os.listdir`).
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; r = sd.randomdir(seed=1)
     &gt;&gt;&gt; r
@@ -3046,6 +3152,8 @@ MyFakeDir/
 
     &gt;&gt;&gt; print([str(i) for i in r.listdir()])
     [&#39;FakeFile(MyFakeDir/churchmen.txt)&#39;, &#39;FakeDir(MyFakeDir/exposure)&#39;]
+
+    ```
     &#39;&#39;&#39;
     return self._children</code></pre>
 </details>
@@ -3454,7 +3562,7 @@ Called automatically when a new <code>parent</code> is assigned.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Remove items beyond the <code>depthlimit</code>.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; r = sd.randomdir(seed=456)
 &gt;&gt;&gt; r
 MyFakeDir/
@@ -3472,8 +3580,8 @@ MyFakeDir/
 ├─Uganda/
 └─pedantic/
   └─cataclysmic.txt
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; r.trim(1)
+
+&gt;&gt;&gt; r.trim(1)
 &gt;&gt;&gt; r
 MyFakeDir/
 ├─Vogel.txt
@@ -3482,6 +3590,7 @@ MyFakeDir/
 ├─scrooge/
 ├─Uganda/
 └─pedantic/
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -3503,6 +3612,7 @@ MyFakeDir/
     &#34;&#34;&#34;
     Remove items beyond the `depthlimit`.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; r = sd.randomdir(seed=456)
     &gt;&gt;&gt; r
@@ -3531,6 +3641,8 @@ MyFakeDir/
     ├─scrooge/
     ├─Uganda/
     └─pedantic/
+
+    ```
 
 
     Parameters
@@ -3567,7 +3679,7 @@ MyFakeDir/
 </code></dt>
 <dd>
 <div class="desc"><p>Recursively apply a function the children of self (and so on)</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; r = sd.randomdir(seed=5)
 &gt;&gt;&gt; r
 MyFakeDir/
@@ -3589,11 +3701,11 @@ MyFakeDir/
     ├─vector.txt
     ├─sora.txt
     └─proviso.txt
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; def replace_txt(f):
+
+&gt;&gt;&gt; def replace_txt(f):
 ...    f.name = f.name.replace('txt', 'pdf')
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; r.walk_apply(replace_txt)
+
+&gt;&gt;&gt; r.walk_apply(replace_txt)
 &gt;&gt;&gt; r
 MyFakeDir/
 ├─senor.pdf
@@ -3614,6 +3726,7 @@ MyFakeDir/
     ├─vector.pdf
     ├─sora.pdf
     └─proviso.pdf
+
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -3634,6 +3747,7 @@ Additional keyword arguments for <code>foo</code>.</p>
     &#34;&#34;&#34;
     Recursively apply a function the children of self (and so on)
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; r = sd.randomdir(seed=5)
     &gt;&gt;&gt; r
@@ -3682,6 +3796,8 @@ Additional keyword arguments for <code>foo</code>.</p>
         ├─sora.pdf
         └─proviso.pdf
 
+    ```
+
     Parameters
     ----------
     foo : function
@@ -3723,7 +3839,7 @@ Additional keyword arguments for <code>foo</code>.</p>
 <dd>
 <div class="desc"><p>Class to represent files in <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code> objects.</p>
 <p>Files in a <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code> have this type.</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; f = sd.randomdir(seed=5) # create a random FakeDir
 &gt;&gt;&gt; f
 MyFakeDir/
@@ -3745,9 +3861,10 @@ MyFakeDir/
     ├─vector.txt
     ├─sora.txt
     └─proviso.txt
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; f['senor.txt']
+
+&gt;&gt;&gt; f['senor.txt']
 FakeFile(MyFakeDir/senor.txt)
+
 </code></pre>
 <p>Same as <code><a title="seedir.fakedir.FakeItem" href="#seedir.fakedir.FakeItem">FakeItem</a></code> initialization, but adds
 <code>filename</code> and <code>extension</code> attributes.</p></div>
@@ -3760,6 +3877,7 @@ FakeFile(MyFakeDir/senor.txt)
 
     Files in a `seedir.fakedir.FakeDir` have this type.
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; f = sd.randomdir(seed=5) # create a random FakeDir
     &gt;&gt;&gt; f
@@ -3785,6 +3903,8 @@ FakeFile(MyFakeDir/senor.txt)
 
     &gt;&gt;&gt; f[&#39;senor.txt&#39;]
     FakeFile(MyFakeDir/senor.txt)
+
+    ```
 
     &#39;&#39;&#39;
     def __init__(self, name, parent=None):
@@ -3922,6 +4042,7 @@ be the "root" of the directory.</dd>
         &#39;&#39;&#39;Return a &#34;path&#34; string of self, from the head `seedir.fakedir.FakeDir`
         (which has `parent == None`).
 
+        ```
         &gt;&gt;&gt; import seedir as sd
         &gt;&gt;&gt; f = sd.randomdir(seed=5) # create a random FakeDir
         &gt;&gt;&gt; f
@@ -3948,6 +4069,8 @@ be the "root" of the directory.</dd>
         &gt;&gt;&gt; x = sd.FakeDir(&#39;newfolder&#39;, parent=f[&#39;zag/stein&#39;])
         &gt;&gt;&gt; x.get_path()
         &#39;MyFakeDir/zag/stein/newfolder&#39;
+
+        ```
 
         &#39;&#39;&#39;
         parents = [self.name]
@@ -4015,7 +4138,7 @@ def parent(self):
 <dd>
 <div class="desc"><p>Return a "path" string of self, from the head <code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code>
 (which has <code>parent == None</code>).</p>
-<pre><code class="python-repl">&gt;&gt;&gt; import seedir as sd
+<pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; f = sd.randomdir(seed=5) # create a random FakeDir
 &gt;&gt;&gt; f
 MyFakeDir/
@@ -4037,10 +4160,11 @@ MyFakeDir/
     ├─vector.txt
     ├─sora.txt
     └─proviso.txt
-</code></pre>
-<pre><code class="python-repl">&gt;&gt;&gt; x = sd.FakeDir('newfolder', parent=f['zag/stein'])
+
+&gt;&gt;&gt; x = sd.FakeDir('newfolder', parent=f['zag/stein'])
 &gt;&gt;&gt; x.get_path()
 'MyFakeDir/zag/stein/newfolder'
+
 </code></pre></div>
 <details class="source">
 <summary>
@@ -4050,6 +4174,7 @@ MyFakeDir/
     &#39;&#39;&#39;Return a &#34;path&#34; string of self, from the head `seedir.fakedir.FakeDir`
     (which has `parent == None`).
 
+    ```
     &gt;&gt;&gt; import seedir as sd
     &gt;&gt;&gt; f = sd.randomdir(seed=5) # create a random FakeDir
     &gt;&gt;&gt; f
@@ -4076,6 +4201,8 @@ MyFakeDir/
     &gt;&gt;&gt; x = sd.FakeDir(&#39;newfolder&#39;, parent=f[&#39;zag/stein&#39;])
     &gt;&gt;&gt; x.get_path()
     &#39;MyFakeDir/zag/stein/newfolder&#39;
+
+    ```
 
     &#39;&#39;&#39;
     parents = [self.name]
