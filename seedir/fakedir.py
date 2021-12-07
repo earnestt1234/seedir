@@ -321,18 +321,19 @@ class FakeDir(FakeItem):
         Parameters
         ----------
         name : str
-            Name of the new folder
+            Name of the new folder.  Can also be a collection of names to create
+            multiple folders.
 
         Returns
         -------
-        None.
+        FakeDir or list
+            The new object or objects (as a list) are returned.
 
         """
         if isinstance(name, str):
-            FakeDir(name, parent=self)
+            return FakeDir(name, parent=self)
         else:
-            for s in name:
-                FakeDir(s, parent=self)
+            return [FakeDir(s, parent=self) for s in name]
 
     def create_file(self, name):
         """
@@ -351,18 +352,19 @@ class FakeDir(FakeItem):
         Parameters
         ----------
         name : str
-            Name of the new file.
+            Name of the new file.  Can also be a collection of names to create
+            multiple files.
 
         Returns
         -------
-        None.
+        FakeFile or list
+            The new object or objects (as a list) are returned.
 
         """
         if isinstance(name, str):
-            FakeFile(name, parent=self)
+            return FakeFile(name, parent=self)
         else:
-            for s in name:
-                FakeFile(s, parent=self)
+            return [FakeFile(s, parent=self) for s in name]
 
     def copy(self):
         '''
