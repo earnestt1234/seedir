@@ -463,7 +463,7 @@ class FakeDir(FakeItem):
             except StopIteration:
                 raise FakedirError('{} has no child with name "{}"'.format(self, target))
         else:
-            child_copy = child.copy()
+            child_copy = [c for c in child]
             for c in child_copy:
                 target = None
                 if type(c) in [FakeDir, FakeFile]:
