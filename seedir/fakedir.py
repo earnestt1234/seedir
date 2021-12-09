@@ -749,6 +749,13 @@ class FakeDir(FakeItem):
             FD.set_depth()
         self.walk_apply(apply_setdepth)
 
+    def siblings(self):
+        """Returns all the other children of `self.parent`."""
+        if self.parent is None:
+            return []
+        else:
+            return [f for f in self.parent.listdir() if f is not self]
+
     def trim(self, depthlimit):
         """
         Remove items beyond the `depthlimit`.
