@@ -167,6 +167,13 @@ class FakeItem:
         """Returns True if instance is a `seedir.fakedir.FakeDir` object"""
         return isinstance(self, FakeDir)
 
+    def siblings(self):
+        """Returns all the other children of `self.parent`."""
+        if self.parent is None:
+            return []
+        else:
+            return [f for f in self.parent.listdir() if f is not self]
+
 class FakeFile(FakeItem):
     '''Class to represent files in `seedir.fakedir.FakeDir` objects.
 
@@ -748,13 +755,6 @@ class FakeDir(FakeItem):
         def apply_setdepth(FD):
             FD.set_depth()
         self.walk_apply(apply_setdepth)
-
-    def siblings(self):
-        """Returns all the other children of `self.parent`."""
-        if self.parent is None:
-            return []
-        else:
-            return [f for f in self.parent.listdir() if f is not self]
 
     def trim(self, depthlimit):
         """
