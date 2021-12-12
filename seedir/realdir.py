@@ -23,7 +23,8 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
-           exclude_files=None, regex=False, mask=None, slash='/', **kwargs):
+           exclude_files=None, regex=False, mask=None, formatter=None,
+           slash='/', **kwargs):
     '''
 
     Primary function of the seedir package: generate folder trees for
@@ -268,6 +269,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
                          regex=regex,
                          slash=slash,
                          mask=mask,
+                         formatter=formatter,
                          **styleargs)
 
     if printout:

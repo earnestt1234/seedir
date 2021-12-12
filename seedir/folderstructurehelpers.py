@@ -511,3 +511,11 @@ def get_base_header(incomplete, extend, space):
         else:
             base_header.append(space)
     return "".join(base_header)
+
+def formatter_update_styleargs(formatter, item, styleargs):
+    newstyle = formatter(item)
+    if newstyle is None:
+        pass
+    else:
+        styleargs.update(newstyle)
+    return styleargs

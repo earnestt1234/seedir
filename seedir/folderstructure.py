@@ -14,7 +14,8 @@ from seedir.folderstructurehelpers import (listdir_fullpath,
                                            filter_fakeitem_names,
                                            beyond_depth_str,
                                            beyond_fakedepth_str,
-                                           get_base_header)
+                                           get_base_header,
+                                           formatter_update_styleargs)
 
 class FolderStructure:
     '''General class for determining folder strctures.'''
@@ -63,13 +64,23 @@ class FolderStructure:
                          sort=True, sort_reverse=False, sort_key=None,
                          include_folders=None, exclude_folders=None,
                          include_files=None, exclude_files=None,
-                         regex=False, mask=None, slash='/'):
+                         regex=False, mask=None, formatter=None, slash='/'):
         '''
         Main algorithm for creating folder structure string.  See
         `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
         for a description of the parameters.
 
         '''
+
+        # collect style arguments
+        styleargs = {
+            'extend': extend,
+            'space': space,
+            'split': split,
+            'final': final,
+            'filestart': filestart,
+            'folderstart': folderstart
+            }
 
         # initialize
         output = ''
@@ -78,7 +89,9 @@ class FolderStructure:
             incomplete = []
 
         if depth == 0:
-            output += (folderstart +
+            if formatter is not None:
+                formatter_update_styleargs(formatter, folder, styleargs)
+            output += (styleargs['folderstart'] +
                        self.getname(folder) +
                        slash +
                        '\n')
@@ -144,20 +157,26 @@ class FolderStructure:
             isbeyondstr = lastitem and beyond_added
             name = f if isbeyondstr else self.getname(f)
 
+            # update tokens with formatter if passed
+            if formatter is not None:
+                formatter_update_styleargs(formatter, f, styleargs)
+
             # create header for the item
-            base_header = get_base_header(incomplete, extend, space)
+            base_header = get_base_header(incomplete,
+                                          styleargs['extend'],
+                                          styleargs['space'])
 
             if lastitem:
-                branch = final
+                branch = styleargs['final']
                 incomplete.remove(depth)
             else:
-                branch = split
+                branch = styleargs['split']
 
             header = base_header + branch
 
             # concat to output and recurse if item is folder
             if not isbeyondstr and self.isdir(f):
-                output += header + folderstart + name + slash +'\n'
+                output += header + styleargs['folderstart'] + name + slash +'\n'
                 output += self._folderstructure(f, depth=depth + 1,
                                                 incomplete=incomplete,
                                                 split=split, extend=extend,
@@ -178,11 +197,12 @@ class FolderStructure:
                                                 exclude_files=exclude_files,
                                                 regex=regex,
                                                 mask=mask,
+                                                formatter=formatter,
                                                 slash=slash)
 
             # only concat to output if file
             else:
-                output += header + filestart + name + '\n'
+                output += header + styleargs['filestart'] + name + '\n'
 
         return output
 
