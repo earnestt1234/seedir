@@ -591,7 +591,7 @@ class FakeDir(FakeItem):
                first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash='/', mask=None,
-               **kwargs):
+               formatter=None, **kwargs):
         '''
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -742,6 +742,7 @@ class FakeDir(FakeItem):
                              regex=regex,
                              slash=slash,
                              mask=mask,
+                             formatter=formatter,
                              **styleargs).strip()
 
         if printout:
