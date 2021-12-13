@@ -513,6 +513,26 @@ def get_base_header(incomplete, extend, space):
     return "".join(base_header)
 
 def formatter_update_styleargs(formatter, item, styleargs):
+    '''
+    Update a dictionary of style tokens based on a formatter function and
+    an item.  Added in v 0.3.0 to support the addition of the formatter parameter
+    for the seedir algorithm.
+
+    Parameters
+    ----------
+    formatter : function
+        Formatting function.
+    item : file or folder item
+        String or FakeItem produced in the seedir algorithm
+    styleargs : dict
+        Dictionary of seedir style tokens
+
+    Returns
+    -------
+    styleargs : dict
+        The input dictionary, after it may have been updated.
+
+    '''
     newstyle = formatter(item)
     if newstyle is None:
         pass
