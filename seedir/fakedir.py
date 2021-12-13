@@ -1196,7 +1196,7 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
     mask : function, optional
         Function for filtering items.  Absolute paths of each individual item
         are passed to the mask function.  If `True` is returned, the
-        item is kept.  The default is `Non`e.
+        item is kept.  The default is `None`.
     regex : bool, optional
         Interpret include/exclude folder/file arguments as regular
         expressions. The default is `False`.
