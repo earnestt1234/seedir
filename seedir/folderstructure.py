@@ -81,6 +81,7 @@ class FolderStructure:
             'filestart': filestart,
             'folderstart': folderstart
             }
+        backup = styleargs.copy()
 
         # initialize
         output = ''
@@ -95,6 +96,7 @@ class FolderStructure:
                        self.getname(folder) +
                        slash +
                        '\n')
+            styleargs = backup
 
         current_itemlimit = itemlimit
         beyond_added = False
