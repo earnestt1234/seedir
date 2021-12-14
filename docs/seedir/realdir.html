@@ -58,7 +58,8 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
-           exclude_files=None, regex=False, mask=None, slash=&#39;/&#39;, **kwargs):
+           exclude_files=None, regex=False, mask=None, formatter=None,
+           slash=&#39;/&#39;, **kwargs):
     &#39;&#39;&#39;
 
     Primary function of the seedir package: generate folder trees for
@@ -218,6 +219,24 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         Function for filtering items.  Absolute paths of each individual item
         are passed to the `mask` function.  If `True` is returned, the
         item is kept.  The default is `None`.
+    formatter : function, optional
+        Function for customizing the tokens used for specific items during
+        traversal.
+
+        The formatter function should accept a system path as a
+        single argument (either relative or absolute, depending on what is passed
+        to the `path` argument), and it should return either a dictionary or None.
+        The dictionary should have names of seedir tokens as keys (&#39;split&#39;,
+        &#39;extend&#39;, &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
+        to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
+        for examples.  Though note, not all six tokens need to be specified.
+
+        If None is returned by formatter, the tokens will be set by `style`.
+
+        Note that items exlcuded by the inclusion/exclusion arguments (or the
+        `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
+        entries created by the `beyond` argument *will* be seen by formatter.
+
     slash : str, option:
         Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.sep`.  The
         default is `&#39;/&#39;`.
@@ -303,6 +322,7 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
                          regex=regex,
                          slash=slash,
                          mask=mask,
+                         formatter=formatter,
                          **styleargs)
 
     if printout:
@@ -319,7 +339,7 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="seedir.realdir.seedir"><code class="name flex">
-<span>def <span class="ident">seedir</span></span>(<span>path=None, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None, slash='/', **kwargs)</span>
+<span>def <span class="ident">seedir</span></span>(<span>path=None, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None, formatter=None, slash='/', **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Primary function of the seedir package: generate folder trees for
@@ -478,6 +498,25 @@ are passed to the <code>mask</code> function.
 If <code>True</code> is returned, the
 item is kept.
 The default is <code>None</code>.</dd>
+<dt><strong><code>formatter</code></strong> :&ensp;<code>function</code>, optional</dt>
+<dd>
+<p>Function for customizing the tokens used for specific items during
+traversal.</p>
+<p>The formatter function should accept a system path as a
+single argument (either relative or absolute, depending on what is passed
+to the <code>path</code> argument), and it should return either a dictionary or None.
+The dictionary should have names of seedir tokens as keys ('split',
+'extend', 'space', 'final', 'folderstart', or 'finalstart') and strings
+to use for those tokens as values.
+Call <code><a title="seedir.printing.get_styleargs" href="printing.html#seedir.printing.get_styleargs">get_styleargs()</a></code>
+for examples.
+Though note, not all six tokens need to be specified.</p>
+<p>If None is returned by formatter, the tokens will be set by <code>style</code>.</p>
+<p>Note that items exlcuded by the inclusion/exclusion arguments (or the
+<code>mask</code>) <em>will not</em> be seen by formatter.
+Alternatively, any folder tree
+entries created by the <code>beyond</code> argument <em>will</em> be seen by formatter.</p>
+</dd>
 <dt><strong><code>slash</code></strong> :&ensp;<code>str, option:</code></dt>
 <dd>Slash character to follow folders.
 If <code>'sep'</code>, uses <code>os.sep</code>.
@@ -529,7 +568,8 @@ case the tree diagram is printed in the console.</dd>
            anystart=None, depthlimit=None, itemlimit=None, beyond=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
-           exclude_files=None, regex=False, mask=None, slash=&#39;/&#39;, **kwargs):
+           exclude_files=None, regex=False, mask=None, formatter=None,
+           slash=&#39;/&#39;, **kwargs):
     &#39;&#39;&#39;
 
     Primary function of the seedir package: generate folder trees for
@@ -689,6 +729,24 @@ case the tree diagram is printed in the console.</dd>
         Function for filtering items.  Absolute paths of each individual item
         are passed to the `mask` function.  If `True` is returned, the
         item is kept.  The default is `None`.
+    formatter : function, optional
+        Function for customizing the tokens used for specific items during
+        traversal.
+
+        The formatter function should accept a system path as a
+        single argument (either relative or absolute, depending on what is passed
+        to the `path` argument), and it should return either a dictionary or None.
+        The dictionary should have names of seedir tokens as keys (&#39;split&#39;,
+        &#39;extend&#39;, &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
+        to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
+        for examples.  Though note, not all six tokens need to be specified.
+
+        If None is returned by formatter, the tokens will be set by `style`.
+
+        Note that items exlcuded by the inclusion/exclusion arguments (or the
+        `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
+        entries created by the `beyond` argument *will* be seen by formatter.
+
     slash : str, option:
         Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.sep`.  The
         default is `&#39;/&#39;`.
@@ -774,6 +832,7 @@ case the tree diagram is printed in the console.</dd>
                          regex=regex,
                          slash=slash,
                          mask=mask,
+                         formatter=formatter,
                          **styleargs)
 
     if printout:

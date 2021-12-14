@@ -203,6 +203,13 @@ class FakeItem:
         &#34;&#34;&#34;Returns True if instance is a `seedir.fakedir.FakeDir` object&#34;&#34;&#34;
         return isinstance(self, FakeDir)
 
+    def siblings(self):
+        &#34;&#34;&#34;Returns all the other children of `self.parent`.&#34;&#34;&#34;
+        if self.parent is None:
+            return []
+        else:
+            return [f for f in self.parent.listdir() if f is not self]
+
 class FakeFile(FakeItem):
     &#39;&#39;&#39;Class to represent files in `seedir.fakedir.FakeDir` objects.
 
@@ -357,18 +364,19 @@ class FakeDir(FakeItem):
         Parameters
         ----------
         name : str
-            Name of the new folder
+            Name of the new folder.  Can also be a collection of names to create
+            multiple folders.
 
         Returns
         -------
-        None.
+        FakeDir or list
+            The new object or objects (as a list) are returned.
 
         &#34;&#34;&#34;
         if isinstance(name, str):
-            FakeDir(name, parent=self)
+            return FakeDir(name, parent=self)
         else:
-            for s in name:
-                FakeDir(s, parent=self)
+            return [FakeDir(s, parent=self) for s in name]
 
     def create_file(self, name):
         &#34;&#34;&#34;
@@ -387,18 +395,44 @@ class FakeDir(FakeItem):
         Parameters
         ----------
         name : str
-            Name of the new file.
+            Name of the new file.  Can also be a collection of names to create
+            multiple files.
 
         Returns
         -------
-        None.
+        FakeFile or list
+            The new object or objects (as a list) are returned.
 
         &#34;&#34;&#34;
         if isinstance(name, str):
-            FakeFile(name, parent=self)
+            return FakeFile(name, parent=self)
         else:
-            for s in name:
-                FakeFile(s, parent=self)
+            return [FakeFile(s, parent=self) for s in name]
+
+    def copy(self):
+        &#39;&#39;&#39;
+        Generate a totally unlinked copy object.  The root of the new FakeDir
+        will be a copy of this folder (and all its subfolders).  Calling this
+        method does not alter self at all.
+
+        Returns
+        -------
+        seedir.fakedir.FakeDir
+            A copy FakeDir.
+
+        &#39;&#39;&#39;
+        def recurse_build(f, other):
+            &#39;&#39;&#39;Recursive helper for building the new copy.&#39;&#39;&#39;
+            if f.isfile():
+                new = FakeFile(name=f.name, parent=other)
+            elif f.isdir():
+                new = FakeDir(name=f.name, parent=other)
+                for child in f.listdir():
+                    recurse_build(child, other=new)
+            return new
+
+        return recurse_build(self, other=None)
+
 
     def delete(self, child):
         &#39;&#39;&#39;
@@ -474,7 +508,7 @@ class FakeDir(FakeItem):
             except StopIteration:
                 raise FakedirError(&#39;{} has no child with name &#34;{}&#34;&#39;.format(self, target))
         else:
-            child_copy = child.copy()
+            child_copy = [c for c in child]
             for c in child_copy:
                 target = None
                 if type(c) in [FakeDir, FakeFile]:
@@ -561,7 +595,7 @@ class FakeDir(FakeItem):
         # └─exposure/
 
         r.realize()
-        os.path.isdir(&#39;MyFakeDir/scrooge&#39;)
+        os.path.isdir(&#39;MyFakeDir/exposure&#39;)
         # True
         ```
 
@@ -586,7 +620,6 @@ class FakeDir(FakeItem):
                     pass
         if path is None:
             path = os.getcwd()
-        os.mkdir(os.path.join(path, self.name))
         self.walk_apply(create, root=path)
 
     def seedir(self, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
@@ -594,7 +627,7 @@ class FakeDir(FakeItem):
                first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash=&#39;/&#39;, mask=None,
-               **kwargs):
+               formatter=None, **kwargs):
         &#39;&#39;&#39;
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -663,6 +696,25 @@ class FakeDir(FakeItem):
             Function for filtering items.  Each individual item object
             is passed to the mask function.  If `True` is returned, the
             item is kept.  The default is `None`.
+        formatter : function, optional
+            Function for customizing the tokens used for specific items during
+            traversal.
+
+            The formatter function should accept a FakeItem as a single argument,
+            and it should return either a dictionary or None. The dictionary
+            should have names of seedir tokens as keys (&#39;split&#39;, &#39;extend&#39;,
+            &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
+            to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
+            for examples.  Though note, not all six tokens need to be specified.
+
+            If None is returned by formatter, the tokens will be set by `style`.
+
+            Note that items exlcuded by the inclusion/exclusion arguments (or the
+            `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
+            entries created by the `beyond` argument *will* be seen by formatter.
+            These items will be of type `str` rather than FakeItem, so formatter
+            will need to handle that.
+
         slash : str, option:
             Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.se`p.  The
             default is `&#39;/&#39;`.
@@ -745,6 +797,7 @@ class FakeDir(FakeItem):
                              regex=regex,
                              slash=slash,
                              mask=mask,
+                             formatter=formatter,
                              **styleargs).strip()
 
         if printout:
@@ -893,10 +946,12 @@ class FakeDir(FakeItem):
         None.
 
         &#34;&#34;&#34;
+        foo(self, *args, **kwargs)
         for f in self._children:
-            foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):
                 f.walk_apply(foo, *args, **kwargs)
+            else:
+                foo(f, *args, **kwargs)
 
 def get_random_int(collection, seed=None):
     &#39;&#39;&#39;
@@ -1197,7 +1252,7 @@ def fakedir(path, depthlimit=None, itemlimit=None, first=None,
     mask : function, optional
         Function for filtering items.  Absolute paths of each individual item
         are passed to the mask function.  If `True` is returned, the
-        item is kept.  The default is `Non`e.
+        item is kept.  The default is `None`.
     regex : bool, optional
         Interpret include/exclude folder/file arguments as regular
         expressions. The default is `False`.
@@ -1455,7 +1510,7 @@ Absolute paths of each individual item
 are passed to the mask function.
 If <code>True</code> is returned, the
 item is kept.
-The default is <code>Non</code>e.</dd>
+The default is <code>None</code>.</dd>
 <dt><strong><code>regex</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>Interpret include/exclude folder/file arguments as regular
 expressions. The default is <code>False</code>.</dd>
@@ -1519,7 +1574,7 @@ expressions. The default is <code>False</code>.</dd>
     mask : function, optional
         Function for filtering items.  Absolute paths of each individual item
         are passed to the mask function.  If `True` is returned, the
-        item is kept.  The default is `Non`e.
+        item is kept.  The default is `None`.
     regex : bool, optional
         Interpret include/exclude folder/file arguments as regular
         expressions. The default is `False`.
@@ -2235,18 +2290,19 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         Parameters
         ----------
         name : str
-            Name of the new folder
+            Name of the new folder.  Can also be a collection of names to create
+            multiple folders.
 
         Returns
         -------
-        None.
+        FakeDir or list
+            The new object or objects (as a list) are returned.
 
         &#34;&#34;&#34;
         if isinstance(name, str):
-            FakeDir(name, parent=self)
+            return FakeDir(name, parent=self)
         else:
-            for s in name:
-                FakeDir(s, parent=self)
+            return [FakeDir(s, parent=self) for s in name]
 
     def create_file(self, name):
         &#34;&#34;&#34;
@@ -2265,18 +2321,44 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         Parameters
         ----------
         name : str
-            Name of the new file.
+            Name of the new file.  Can also be a collection of names to create
+            multiple files.
 
         Returns
         -------
-        None.
+        FakeFile or list
+            The new object or objects (as a list) are returned.
 
         &#34;&#34;&#34;
         if isinstance(name, str):
-            FakeFile(name, parent=self)
+            return FakeFile(name, parent=self)
         else:
-            for s in name:
-                FakeFile(s, parent=self)
+            return [FakeFile(s, parent=self) for s in name]
+
+    def copy(self):
+        &#39;&#39;&#39;
+        Generate a totally unlinked copy object.  The root of the new FakeDir
+        will be a copy of this folder (and all its subfolders).  Calling this
+        method does not alter self at all.
+
+        Returns
+        -------
+        seedir.fakedir.FakeDir
+            A copy FakeDir.
+
+        &#39;&#39;&#39;
+        def recurse_build(f, other):
+            &#39;&#39;&#39;Recursive helper for building the new copy.&#39;&#39;&#39;
+            if f.isfile():
+                new = FakeFile(name=f.name, parent=other)
+            elif f.isdir():
+                new = FakeDir(name=f.name, parent=other)
+                for child in f.listdir():
+                    recurse_build(child, other=new)
+            return new
+
+        return recurse_build(self, other=None)
+
 
     def delete(self, child):
         &#39;&#39;&#39;
@@ -2352,7 +2434,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             except StopIteration:
                 raise FakedirError(&#39;{} has no child with name &#34;{}&#34;&#39;.format(self, target))
         else:
-            child_copy = child.copy()
+            child_copy = [c for c in child]
             for c in child_copy:
                 target = None
                 if type(c) in [FakeDir, FakeFile]:
@@ -2439,7 +2521,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         # └─exposure/
 
         r.realize()
-        os.path.isdir(&#39;MyFakeDir/scrooge&#39;)
+        os.path.isdir(&#39;MyFakeDir/exposure&#39;)
         # True
         ```
 
@@ -2464,7 +2546,6 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
                     pass
         if path is None:
             path = os.getcwd()
-        os.mkdir(os.path.join(path, self.name))
         self.walk_apply(create, root=path)
 
     def seedir(self, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
@@ -2472,7 +2553,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
                first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash=&#39;/&#39;, mask=None,
-               **kwargs):
+               formatter=None, **kwargs):
         &#39;&#39;&#39;
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -2541,6 +2622,25 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             Function for filtering items.  Each individual item object
             is passed to the mask function.  If `True` is returned, the
             item is kept.  The default is `None`.
+        formatter : function, optional
+            Function for customizing the tokens used for specific items during
+            traversal.
+
+            The formatter function should accept a FakeItem as a single argument,
+            and it should return either a dictionary or None. The dictionary
+            should have names of seedir tokens as keys (&#39;split&#39;, &#39;extend&#39;,
+            &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
+            to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
+            for examples.  Though note, not all six tokens need to be specified.
+
+            If None is returned by formatter, the tokens will be set by `style`.
+
+            Note that items exlcuded by the inclusion/exclusion arguments (or the
+            `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
+            entries created by the `beyond` argument *will* be seen by formatter.
+            These items will be of type `str` rather than FakeItem, so formatter
+            will need to handle that.
+
         slash : str, option:
             Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.se`p.  The
             default is `&#39;/&#39;`.
@@ -2623,6 +2723,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
                              regex=regex,
                              slash=slash,
                              mask=mask,
+                             formatter=formatter,
                              **styleargs).strip()
 
         if printout:
@@ -2771,10 +2872,12 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         None.
 
         &#34;&#34;&#34;
+        foo(self, *args, **kwargs)
         for f in self._children:
-            foo(f, *args, **kwargs)
             if isinstance(f, FakeDir):
-                f.walk_apply(foo, *args, **kwargs)</code></pre>
+                f.walk_apply(foo, *args, **kwargs)
+            else:
+                foo(f, *args, **kwargs)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2782,6 +2885,49 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
 </ul>
 <h3>Methods</h3>
 <dl>
+<dt id="seedir.fakedir.FakeDir.copy"><code class="name flex">
+<span>def <span class="ident">copy</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate a totally unlinked copy object.
+The root of the new FakeDir
+will be a copy of this folder (and all its subfolders).
+Calling this
+method does not alter self at all.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code></dt>
+<dd>A copy FakeDir.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def copy(self):
+    &#39;&#39;&#39;
+    Generate a totally unlinked copy object.  The root of the new FakeDir
+    will be a copy of this folder (and all its subfolders).  Calling this
+    method does not alter self at all.
+
+    Returns
+    -------
+    seedir.fakedir.FakeDir
+        A copy FakeDir.
+
+    &#39;&#39;&#39;
+    def recurse_build(f, other):
+        &#39;&#39;&#39;Recursive helper for building the new copy.&#39;&#39;&#39;
+        if f.isfile():
+            new = FakeFile(name=f.name, parent=other)
+        elif f.isdir():
+            new = FakeDir(name=f.name, parent=other)
+            for child in f.listdir():
+                recurse_build(child, other=new)
+        return new
+
+    return recurse_build(self, other=None)</code></pre>
+</details>
+</dd>
 <dt id="seedir.fakedir.FakeDir.create_file"><code class="name flex">
 <span>def <span class="ident">create_file</span></span>(<span>self, name)</span>
 </code></dt>
@@ -2798,10 +2944,15 @@ Test/
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
-<dd>Name of the new file.</dd>
+<dd>Name of the new file.
+Can also be a collection of names to create
+multiple files.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>None.</p></div>
+<dl>
+<dt><code><a title="seedir.fakedir.FakeFile" href="#seedir.fakedir.FakeFile">FakeFile</a></code> or <code>list</code></dt>
+<dd>The new object or objects (as a list) are returned.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2823,18 +2974,19 @@ Test/
     Parameters
     ----------
     name : str
-        Name of the new file.
+        Name of the new file.  Can also be a collection of names to create
+        multiple files.
 
     Returns
     -------
-    None.
+    FakeFile or list
+        The new object or objects (as a list) are returned.
 
     &#34;&#34;&#34;
     if isinstance(name, str):
-        FakeFile(name, parent=self)
+        return FakeFile(name, parent=self)
     else:
-        for s in name:
-            FakeFile(s, parent=self)</code></pre>
+        return [FakeFile(s, parent=self) for s in name]</code></pre>
 </details>
 </dd>
 <dt id="seedir.fakedir.FakeDir.create_folder"><code class="name flex">
@@ -2853,10 +3005,15 @@ Test/
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
-<dd>Name of the new folder</dd>
+<dd>Name of the new folder.
+Can also be a collection of names to create
+multiple folders.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>None.</p></div>
+<dl>
+<dt><code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code> or <code>list</code></dt>
+<dd>The new object or objects (as a list) are returned.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2878,18 +3035,19 @@ Test/
     Parameters
     ----------
     name : str
-        Name of the new folder
+        Name of the new folder.  Can also be a collection of names to create
+        multiple folders.
 
     Returns
     -------
-    None.
+    FakeDir or list
+        The new object or objects (as a list) are returned.
 
     &#34;&#34;&#34;
     if isinstance(name, str):
-        FakeDir(name, parent=self)
+        return FakeDir(name, parent=self)
     else:
-        for s in name:
-            FakeDir(s, parent=self)</code></pre>
+        return [FakeDir(s, parent=self) for s in name]</code></pre>
 </details>
 </dd>
 <dt id="seedir.fakedir.FakeDir.delete"><code class="name flex">
@@ -3029,7 +3187,7 @@ or a collection of names or items.</dd>
         except StopIteration:
             raise FakedirError(&#39;{} has no child with name &#34;{}&#34;&#39;.format(self, target))
     else:
-        child_copy = child.copy()
+        child_copy = [c for c in child]
         for c in child_copy:
             target = None
             if type(c) in [FakeDir, FakeFile]:
@@ -3175,7 +3333,7 @@ r = sd.randomdir(seed=1)
 # └─exposure/
 
 r.realize()
-os.path.isdir('MyFakeDir/scrooge')
+os.path.isdir('MyFakeDir/exposure')
 # True
 </code></pre>
 <h2 id="parameters">Parameters</h2>
@@ -3208,7 +3366,7 @@ in which the current working directory is used.</dd>
     # └─exposure/
 
     r.realize()
-    os.path.isdir(&#39;MyFakeDir/scrooge&#39;)
+    os.path.isdir(&#39;MyFakeDir/exposure&#39;)
     # True
     ```
 
@@ -3233,12 +3391,11 @@ in which the current working directory is used.</dd>
                 pass
     if path is None:
         path = os.getcwd()
-    os.mkdir(os.path.join(path, self.name))
     self.walk_apply(create, root=path)</code></pre>
 </details>
 </dd>
 <dt id="seedir.fakedir.FakeDir.seedir"><code class="name flex">
-<span>def <span class="ident">seedir</span></span>(<span>self, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, slash='/', mask=None, **kwargs)</span>
+<span>def <span class="ident">seedir</span></span>(<span>self, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, slash='/', mask=None, formatter=None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a folder tree diagram for <code>self</code>.
@@ -3324,6 +3481,26 @@ is passed to the mask function.
 If <code>True</code> is returned, the
 item is kept.
 The default is <code>None</code>.</dd>
+<dt><strong><code>formatter</code></strong> :&ensp;<code>function</code>, optional</dt>
+<dd>
+<p>Function for customizing the tokens used for specific items during
+traversal.</p>
+<p>The formatter function should accept a FakeItem as a single argument,
+and it should return either a dictionary or None. The dictionary
+should have names of seedir tokens as keys ('split', 'extend',
+'space', 'final', 'folderstart', or 'finalstart') and strings
+to use for those tokens as values.
+Call <code><a title="seedir.printing.get_styleargs" href="printing.html#seedir.printing.get_styleargs">get_styleargs()</a></code>
+for examples.
+Though note, not all six tokens need to be specified.</p>
+<p>If None is returned by formatter, the tokens will be set by <code>style</code>.</p>
+<p>Note that items exlcuded by the inclusion/exclusion arguments (or the
+<code>mask</code>) <em>will not</em> be seen by formatter.
+Alternatively, any folder tree
+entries created by the <code>beyond</code> argument <em>will</em> be seen by formatter.
+These items will be of type <code>str</code> rather than FakeItem, so formatter
+will need to handle that.</p>
+</dd>
 <dt><strong><code>slash</code></strong> :&ensp;<code>str, option:</code></dt>
 <dd>Slash character to follow folders.
 If <code>'sep'</code>, uses <code>os.se</code>p.
@@ -3380,7 +3557,7 @@ case the tree diagram is printed in the console.</dd>
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
            exclude_files=None, regex=False, slash=&#39;/&#39;, mask=None,
-           **kwargs):
+           formatter=None, **kwargs):
     &#39;&#39;&#39;
 
     Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -3449,6 +3626,25 @@ case the tree diagram is printed in the console.</dd>
         Function for filtering items.  Each individual item object
         is passed to the mask function.  If `True` is returned, the
         item is kept.  The default is `None`.
+    formatter : function, optional
+        Function for customizing the tokens used for specific items during
+        traversal.
+
+        The formatter function should accept a FakeItem as a single argument,
+        and it should return either a dictionary or None. The dictionary
+        should have names of seedir tokens as keys (&#39;split&#39;, &#39;extend&#39;,
+        &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
+        to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
+        for examples.  Though note, not all six tokens need to be specified.
+
+        If None is returned by formatter, the tokens will be set by `style`.
+
+        Note that items exlcuded by the inclusion/exclusion arguments (or the
+        `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
+        entries created by the `beyond` argument *will* be seen by formatter.
+        These items will be of type `str` rather than FakeItem, so formatter
+        will need to handle that.
+
     slash : str, option:
         Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.se`p.  The
         default is `&#39;/&#39;`.
@@ -3531,6 +3727,7 @@ case the tree diagram is printed in the console.</dd>
                          regex=regex,
                          slash=slash,
                          mask=mask,
+                         formatter=formatter,
                          **styleargs).strip()
 
     if printout:
@@ -3812,10 +4009,12 @@ Additional keyword arguments for <code>foo</code>.</p>
     None.
 
     &#34;&#34;&#34;
+    foo(self, *args, **kwargs)
     for f in self._children:
-        foo(f, *args, **kwargs)
         if isinstance(f, FakeDir):
-            f.walk_apply(foo, *args, **kwargs)</code></pre>
+            f.walk_apply(foo, *args, **kwargs)
+        else:
+            foo(f, *args, **kwargs)</code></pre>
 </details>
 </dd>
 </dl>
@@ -3828,6 +4027,7 @@ Additional keyword arguments for <code>foo</code>.</p>
 <li><code><a title="seedir.fakedir.FakeItem.isfile" href="#seedir.fakedir.FakeItem.isfile">isfile</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.parent" href="#seedir.fakedir.FakeItem.parent">parent</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.set_depth" href="#seedir.fakedir.FakeItem.set_depth">set_depth</a></code></li>
+<li><code><a title="seedir.fakedir.FakeItem.siblings" href="#seedir.fakedir.FakeItem.siblings">siblings</a></code></li>
 </ul>
 </li>
 </ul>
@@ -3933,6 +4133,7 @@ FakeFile(MyFakeDir/senor.txt)
 <li><code><a title="seedir.fakedir.FakeItem.isfile" href="#seedir.fakedir.FakeItem.isfile">isfile</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.parent" href="#seedir.fakedir.FakeItem.parent">parent</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.set_depth" href="#seedir.fakedir.FakeItem.set_depth">set_depth</a></code></li>
+<li><code><a title="seedir.fakedir.FakeItem.siblings" href="#seedir.fakedir.FakeItem.siblings">siblings</a></code></li>
 </ul>
 </li>
 </ul>
@@ -4094,7 +4295,14 @@ be the "root" of the directory.</dd>
 
     def isdir(self):
         &#34;&#34;&#34;Returns True if instance is a `seedir.fakedir.FakeDir` object&#34;&#34;&#34;
-        return isinstance(self, FakeDir)</code></pre>
+        return isinstance(self, FakeDir)
+
+    def siblings(self):
+        &#34;&#34;&#34;Returns all the other children of `self.parent`.&#34;&#34;&#34;
+        if self.parent is None:
+            return []
+        else:
+            return [f for f in self.parent.listdir() if f is not self]</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
@@ -4260,6 +4468,23 @@ Automatically called when setting new parents.</p></div>
         self.depth = self.parent.depth + 1</code></pre>
 </details>
 </dd>
+<dt id="seedir.fakedir.FakeItem.siblings"><code class="name flex">
+<span>def <span class="ident">siblings</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns all the other children of <code>self.parent</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def siblings(self):
+    &#34;&#34;&#34;Returns all the other children of `self.parent`.&#34;&#34;&#34;
+    if self.parent is None:
+        return []
+    else:
+        return [f for f in self.parent.listdir() if f is not self]</code></pre>
+</details>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -4289,6 +4514,7 @@ Automatically called when setting new parents.</p></div>
 <li>
 <h4><code><a title="seedir.fakedir.FakeDir" href="#seedir.fakedir.FakeDir">FakeDir</a></code></h4>
 <ul class="two-column">
+<li><code><a title="seedir.fakedir.FakeDir.copy" href="#seedir.fakedir.FakeDir.copy">copy</a></code></li>
 <li><code><a title="seedir.fakedir.FakeDir.create_file" href="#seedir.fakedir.FakeDir.create_file">create_file</a></code></li>
 <li><code><a title="seedir.fakedir.FakeDir.create_folder" href="#seedir.fakedir.FakeDir.create_folder">create_folder</a></code></li>
 <li><code><a title="seedir.fakedir.FakeDir.delete" href="#seedir.fakedir.FakeDir.delete">delete</a></code></li>
@@ -4306,12 +4532,13 @@ Automatically called when setting new parents.</p></div>
 </li>
 <li>
 <h4><code><a title="seedir.fakedir.FakeItem" href="#seedir.fakedir.FakeItem">FakeItem</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="seedir.fakedir.FakeItem.get_path" href="#seedir.fakedir.FakeItem.get_path">get_path</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.isdir" href="#seedir.fakedir.FakeItem.isdir">isdir</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.isfile" href="#seedir.fakedir.FakeItem.isfile">isfile</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.parent" href="#seedir.fakedir.FakeItem.parent">parent</a></code></li>
 <li><code><a title="seedir.fakedir.FakeItem.set_depth" href="#seedir.fakedir.FakeItem.set_depth">set_depth</a></code></li>
+<li><code><a title="seedir.fakedir.FakeItem.siblings" href="#seedir.fakedir.FakeItem.siblings">siblings</a></code></li>
 </ul>
 </li>
 </ul>
