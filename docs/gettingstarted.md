@@ -9,7 +9,7 @@ The following examples will cover what you can do with seedir.  We can start by 
 
 ## Displaying folder trees
 
-The primary function of seedir is to create plain text diagrams of folders, for use in blogs, examples, Q&As, etc.  The GitHub repo for seedir includes an example folder (`seedir/seedir/exampledir`) which will be used here.
+The primary function of seedir is to create plain text diagrams of folders, for use in blogs, examples, Q&As, etc.  The GitHub repo for seedir includes an example folder (`seedir/seedir/exampledir`) which will be used here. 
 
 To printout out the structure of this folder, you can use the primary `seedir.realdir.seedir()` function:
 
@@ -17,19 +17,15 @@ To printout out the structure of this folder, you can use the primary `seedir.re
 >>> path = 'exampledir'
 >>> sd.seedir(path)
 exampledir/
-├─scrooge/
-│ ├─patrimonial/
-│ ├─sandal/
-│ ├─light.pdf
-│ ├─paycheck/
-│ │ ├─electrophoresis.txt
-│ │ └─Pyongyang/
-│ └─reliquary.pdf
 ├─jowly.pdf
 ├─monkish.txt
-├─Uganda/
 ├─pedantic/
 │ └─cataclysmic.txt
+├─scrooge/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ └─electrophoresis.txt
+│ └─reliquary.pdf
 └─Vogel.txt
   
 ```
@@ -54,12 +50,12 @@ One way is to call out specific folders of files to include or exclude:
 ```python
 >>> sd.seedir(path, include_folders=['scrooge','paycheck'], exclude_files='reliquary.pdf')
 exampledir/
+├─jowly.pdf
+├─monkish.txt
 ├─scrooge/
 │ ├─light.pdf
 │ └─paycheck/
 │   └─electrophoresis.txt
-├─jowly.pdf
-├─monkish.txt
 └─Vogel.txt
 
 ```
@@ -69,16 +65,12 @@ These "include" and "exclude" arguments also support regular expressions:
 ```python
 >>> sd.seedir(path, include_files='.*\.pdf$', regex=True) # all PDFs
 exampledir/
-├─scrooge/
-│ ├─patrimonial/
-│ ├─sandal/
-│ ├─light.pdf
-│ ├─paycheck/
-│ │ └─Pyongyang/
-│ └─reliquary.pdf
 ├─jowly.pdf
-├─Uganda/
-└─pedantic/
+├─pedantic/
+└─scrooge/
+  ├─light.pdf
+  ├─paycheck/
+  └─reliquary.pdf
 
 ```
 
@@ -98,7 +90,6 @@ You can also use the `mask` parameter to functionally filter out items in the fo
 exampledir/
 ├─jowly.pdf
 ├─monkish.txt
-├─Uganda/
 ├─pedantic/
 │ └─cataclysmic.txt
 └─Vogel.txt
@@ -112,21 +103,18 @@ You can also wholly limit the output by providing the `depthlimit` or `itemlimit
 ```python
 >>> sd.seedir(path, depthlimit=1)
 exampledir/
-├─scrooge/
 ├─jowly.pdf
 ├─monkish.txt
-├─Uganda/
 ├─pedantic/
+├─scrooge/
 └─Vogel.txt
 
 >>> sd.seedir(path, itemlimit=3)
 exampledir/
-├─scrooge/
-│ ├─patrimonial/
-│ ├─sandal/
-│ └─light.pdf
 ├─jowly.pdf
-└─monkish.txt
+├─monkish.txt
+└─pedantic/
+  └─cataclysmic.txt
 
 ```
 
@@ -137,14 +125,12 @@ When limiting the tree, using the `beyond` argument can be helpful to show what 
 ```python
 >>> sd.seedir(path, depthlimit=1, beyond='content')
 exampledir/
-├─scrooge/
-│ └─3 folder(s), 2 file(s)
 ├─jowly.pdf
 ├─monkish.txt
-├─Uganda/
-│ └─0 folder(s), 0 file(s)
 ├─pedantic/
 │ └─0 folder(s), 1 file(s)
+├─scrooge/
+│ └─1 folder(s), 2 file(s)
 └─Vogel.txt
 
 ```
@@ -154,9 +140,8 @@ exampledir/
 Especially when using the `itemlimit`, but also generally, you may want to sort the output to determine which items appear first. You can apply a general sort using `sort=True`:
 
 ```python
->>> sd.seedir(path, itemlimit=5, sort=True)
+>>> sd.seedir(path, itemlimit=4, sort=True)
 exampledir/
-├─Uganda/
 ├─Vogel.txt
 ├─jowly.pdf
 ├─monkish.txt
@@ -168,7 +153,7 @@ exampledir/
 There are additional reverse and key arguments (akin to `sorted()` or `list.sort()`) which allow you to customize the sorting:
 
 ```python
->>> sd.seedir(path, itemlimit=5, sort=True, sort_reverse=True, sort_key=lambda s : len(s))
+>>> sd.seedir(path, sort=True, sort_reverse=True, sort_key=lambda s : len(s))
 exampledir/
 ├─monkish.txt
 ├─jowly.pdf
@@ -177,65 +162,80 @@ exampledir/
 │ └─cataclysmic.txt
 └─scrooge/
   ├─reliquary.pdf
-  ├─patrimonial/
   ├─light.pdf
-  ├─paycheck/
-  │ ├─electrophoresis.txt
-  │ └─Pyongyang/
-  └─sandal/
+  └─paycheck/
+    └─electrophoresis.txt
   
 ```
 
 The `first` argument allows you to select whether files or folders appear first:
 
 ```python
->>> sd.seedir(path, itemlimit=5, first='files')
+>>> sd.seedir(path, first='files')
 exampledir/
 ├─Vogel.txt
 ├─jowly.pdf
 ├─monkish.txt
-├─Uganda/
-└─pedantic/
-  └─cataclysmic.txt
+├─pedantic/
+│ └─cataclysmic.txt
+└─scrooge/
+  ├─light.pdf
+  ├─reliquary.pdf
+  └─paycheck/
+    └─electrophoresis.txt
   
 ```
 
 ## Styles 💅
 
+### Basic styling
+
 `seedir.realdir.seedir()` has a few builtin styles for formatting the output of the folder tree:
 
 ```python
->>> sd.seedir(path, itemlimit=3, style='emoji')
+>>> sd.seedir(path, style='emoji')
 📁 exampledir/
-├─📁 scrooge/
-│ ├─📁 patrimonial/
-│ ├─📁 sandal/
-│ └─📄 light.pdf
 ├─📄 jowly.pdf
-└─📄 monkish.txt
+├─📄 monkish.txt
+├─📁 pedantic/
+│ └─📄 cataclysmic.txt
+├─📁 scrooge/
+│ ├─📄 light.pdf
+│ ├─📁 paycheck/
+│ │ └─📄 electrophoresis.txt
+│ └─📄 reliquary.pdf
+└─📄 Vogel.txt
 
 ```
 
 For any builtin style, you can customize the indent size:
 
 ```python
->>> sd.seedir(path, itemlimit=3, style='spaces', indent=4)
+>>> sd.seedir(path, style='spaces', indent=4)
 exampledir/
-    scrooge/
-        patrimonial/
-        sandal/
-        light.pdf
     jowly.pdf
     monkish.txt
+    pedantic/
+        cataclysmic.txt
+    scrooge/
+        light.pdf
+        paycheck/
+            electrophoresis.txt
+        reliquary.pdf
+    Vogel.txt
     
->>> sd.seedir(path, itemlimit=3, style='plus', indent=6)
+>>> sd.seedir(path, style='plus', indent=6)
 exampledir/
-+-----scrooge/
-|     +-----patrimonial/
-|     +-----sandal/
-|     +-----light.pdf
 +-----jowly.pdf
 +-----monkish.txt
++-----pedantic/
+|     +-----cataclysmic.txt
++-----scrooge/
+|     +-----light.pdf
+|     +-----paycheck/
+|     |     +-----electrophoresis.txt
+|     +-----reliquary.pdf
++-----Vogel.txt
 
 ```
 
@@ -250,30 +250,101 @@ Each style is basically a collection of string "tokens" which are combined to fo
 You can pass any of these tokens as `**kwargs` to explicitly customize styles with new symbols (note that passed tokens will not be affected by the `indent` parameter; it assumes you know how long you want them to be):
 
 ```python
->>> sd.seedir(path, itemlimit=3, space='  ', extend='||', split='-}', final='\\\\', folderstart=' ', filestart=' ')
+>>> sd.seedir(path, space='  ', extend='||', split='-}', final='\\\\', folderstart=' ', filestart=' ')
 exampledir/
--} scrooge/
-||-} patrimonial/
-||-} sandal/
-||\\ light.pdf
 -} jowly.pdf
-\\ monkish.txt
+-} monkish.txt
+-} pedantic/
+||\\ cataclysmic.txt
+-} scrooge/
+||-} light.pdf
+||-} paycheck/
+||||\\ electrophoresis.txt
+||\\ reliquary.pdf
+\\ Vogel.txt
 
 ```
 
 There are also `uniform` and `anystart` arguments for customizing multiple tokens at once:
 
 ```python
->>> sd.seedir(path, itemlimit=3, uniform='----', anystart='>')
+>>> sd.seedir(path, uniform='----', anystart='>')
 >exampledir/
----->scrooge/
--------->patrimonial/
--------->sandal/
--------->light.pdf
 ---->jowly.pdf
 ---->monkish.txt
+---->pedantic/
+-------->cataclysmic.txt
+---->scrooge/
+-------->light.pdf
+-------->paycheck/
+------------>electrophoresis.txt
+-------->reliquary.pdf
+---->Vogel.txt
 
 ```
+
+### Functional styling
+
+[Following a user-raised issue](https://github.com/earnestt1234/seedir/issues/4), seedir has added a `formatter` parameter for enabling some programmatic styling of the folder tree.  This can be useful when you want to alter the style of the diagram based on things like the depth, item name, file extension, etc.  The path of each item (relative to the root) is passed to `formatter`, which returns new style tokens to use for that item.
+
+```python
+>>> import os
+
+>>> def my_style(item):
+... 
+...     outdict = {}
+... 
+...     # get the extension
+...     ext = os.path.splitext(item)[1]
+... 
+...     if ext == '.txt':
+...         outdict['filestart'] = '✏️'
+... 
+...     if os.path.basename(item) == 'scrooge':
+...         outdict['folderstart'] = '👉'
+... 
+...     return outdict
+
+>>> sd.seedir(path, formatter=my_style)
+exampledir/
+├─jowly.pdf
+├─✏️monkish.txt
+├─pedantic/
+│ └─✏️cataclysmic.txt
+├─👉scrooge/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ └─✏️electrophoresis.txt
+│ └─reliquary.pdf
+└─✏️Vogel.txt
+
+```
+
+Some properties (e.g., the depth of the folder relative to the parent) are a little more difficult to determine with a system paths.  However, switching to object-oriented FakeDirs (introduced in the following section) make accessing interfolder relations a little easier:
+
+```python
+>>> # now items passed are FakeDir / FakeFile, not system path
+>>> def formatter(item):
+...     if item.depth > 1: # we can access the depth attribute
+...         return sd.get_styleargs('plus')
+
+>>> f = sd.fakedir(path)
+>>> f.seedir(formatter=formatter)
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─pedantic/
+| +-cataclysmic.txt
+├─scrooge/
+| +-light.pdf
+| +-paycheck/
+| | +-electrophoresis.txt
+| +-reliquary.pdf
+└─Vogel.txt
+
+```
+
+
 
 ## Fake directories
 
@@ -294,7 +365,7 @@ To add items to `x`, you can create subitems, initialize new directories, or mov
 
 ```python
 >>> x.create_file(['__init__.py', 'main.py', 'styles.txt'])
->>> x.create_folder('docs')
+[FakeFile(myfakedir/__init__.py), FakeFile(myfakedir/main.py), FakeFile(myfakedir/styles.txt)]
 
 >>> y = sd.FakeDir('resources', parent=x)
 
@@ -303,10 +374,12 @@ To add items to `x`, you can create subitems, initialize new directories, or mov
 
 >>> for n in ['a', 'b', 'c']:
 ...     z.create_file(n + '.png')
+FakeFile(myfakedir/resources/images/a.png)
+FakeFile(myfakedir/resources/images/b.png)
+FakeFile(myfakedir/resources/images/c.png)
 
 >>> x.seedir(sort=True, first='folders')
 myfakedir/
-├─docs/
 ├─resources/
 │ └─images/
 │   ├─a.png
@@ -346,7 +419,6 @@ myfakedir/
 ├─__init__.py
 ├─main.py
 ├─styles.txt
-├─docs/
 └─resources/
   └─images/
     └─c.png
@@ -361,7 +433,6 @@ You can also move items within the tree:
 myfakedir/
 ├─__init__.py
 ├─main.py
-├─docs/
 └─resources/
   ├─images/
   │ └─c.png
@@ -377,19 +448,15 @@ The `seedir.fakedir.fakedir()` function allows you to convert real directories i
 >>> f = sd.fakedir(path) # using path from above
 >>> f.seedir()
 exampledir/
-├─scrooge/
-│ ├─patrimonial/
-│ ├─sandal/
-│ ├─light.pdf
-│ ├─paycheck/
-│ │ ├─electrophoresis.txt
-│ │ └─Pyongyang/
-│ └─reliquary.pdf
 ├─jowly.pdf
 ├─monkish.txt
-├─Uganda/
 ├─pedantic/
 │ └─cataclysmic.txt
+├─scrooge/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ └─electrophoresis.txt
+│ └─reliquary.pdf
 └─Vogel.txt
 
 >>> type(f)
@@ -405,7 +472,6 @@ Similar to `seedir.realdir.seedir()`, `seedir.fakedir.fakedir()` has options to 
 exampledir/
 ├─jowly.pdf
 ├─monkish.txt
-├─Uganda/
 └─pedantic/
   └─cataclysmic.txt
   
@@ -419,7 +485,6 @@ Fake directories created from your system directories can be combined with other
 myfakedir/
 ├─__init__.py
 ├─main.py
-├─docs/
 ├─resources/
 │ ├─images/
 │ │ └─c.png
@@ -427,7 +492,6 @@ myfakedir/
 └─exampledir/
   ├─jowly.pdf
   ├─monkish.txt
-  ├─Uganda/
   └─pedantic/
     └─cataclysmic.txt
 
