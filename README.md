@@ -9,23 +9,29 @@ A Python package for creating, editing, and reading folder tree diagrams.
 ```python
 >>> import seedir as sd
 >>> sd.seedir(style='lines', itemlimit=10, depthlimit=2, exclude_folders='.git')
-
 seedir/
-├─.DS_Store
-├─seedirpackagetesting.py
-├─LICENSE
-├─tests/
-│ ├─__init__.py
-│ ├─__pycache__/
-│ └─tests.py
-├─MANIFEST.in
-├─pdoc_command.txt
+├─.gitattributes
+├─.gitignore
+├─.ipynb_checkpoints/
+│ └─examples-checkpoint.ipynb
+├─build/
+│ ├─bdist.win-amd64/
+│ └─lib/
+├─CHANGELOG.md
+├─dist/
+│ └─seedir-0.1.4-py3-none-any.whl
 ├─docs/
-│ └─seedir/
-├─README.md
+│ ├─exampledir/
+│ ├─gettingstarted.md
+│ ├─seedir/
+│ └─templates/
 ├─img/
-│ └─pun.jpg
-└─setup.py
+│ ├─pun.jpg
+│ ├─seedir_diagram.png
+│ └─seedir_diagram.pptx
+├─LICENSE
+└─MANIFEST.in
+
 ```
 
 ## Installation

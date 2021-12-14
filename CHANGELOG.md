@@ -8,13 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Planned
 
-- Add a [`formatter` parameter](https://github.com/earnestt1234/seedir/issues/4) for more customizable diagrams
-- Several documentation typos
-- Revert the API documenation back to the default pdoc3 style (except maybe keep the shorter line height)
-- Return a reference to objects created by FakeDir creation methods
-- remove [call to `copy` method](https://github.com/earnestt1234/seedir/blob/09fbed86a356fa9b01588546e1e7dbda15812b49/seedir/fakedir.py#L417) in `Fakedir.delete()`
-- Add a `copy` method for FakeDirs
-- Update the `walk_apply` method to `self`, rather than just children (and double check methods that use this)
+### Added
+
+- [`formatter` parameter](https://github.com/earnestt1234/seedir/issues/4) for more customizable diagrams
+- FakeDir methods for creating files/folders now return references to the objects created
+- A `copy()` method for FakeDirs
+- A `siblings()` method for FakeDirs
 
 ### Changed
 
@@ -23,10 +22,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - replaced the "cheatsheet.png" image in the Getting Started section with a markdown link
   - remove broken link to `FolderStructure` class in `seedir.realdir` module
   - fixed some examples in docstrings and readmes
-
+- in getting started, redo examples to omit empty folders (which are omitted by GitHub)
 - replace `'\s'` with `' '` in `seedir.fakedir.fakedir_fromstring()`
-
 - [Remove .DS_Store files](https://github.com/earnestt1234/seedir/pull/5) (thanks @[timweissenfels](https://github.com/timweissenfels))
+- Reverted API doc style back to pdoc3 default
+
+### Fixed
+
+- remove [call to `copy` method](https://github.com/earnestt1234/seedir/blob/09fbed86a356fa9b01588546e1e7dbda15812b49/seedir/fakedir.py#L417) in `Fakedir.delete()`, which prevented non-list arguments
+- the `walk_apply` method is now applied to the calling folder, rather than just children
 
 ## [0.2.0](https://github.com/earnestt1234/seedir/releases/tag/v0.2.0) - 2021-05-21
 
