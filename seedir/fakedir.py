@@ -660,6 +660,25 @@ class FakeDir(FakeItem):
             Function for filtering items.  Each individual item object
             is passed to the mask function.  If `True` is returned, the
             item is kept.  The default is `None`.
+        formatter : function, optional
+            Function for customizing the tokens used for specific items during
+            traversal.
+
+            The formatter function should accept a FakeItem as a single argument,
+            and it should return either a dictionary or None. The dictionary
+            should have names of seedir tokens as keys ('split', 'extend',
+            'space', 'final', 'folderstart', or 'finalstart') and strings
+            to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
+            for examples.  Though note, not all six tokens need to be specified.
+
+            If None is returned by formatter, the tokens will be set by `style`.
+
+            Note that items exlcuded by the inclusion/exclusion arguments (or the
+            `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
+            entries created by the `beyond` argument *will* be seen by formatter.
+            These items will be of type `str` rather than FakeItem, so formatter
+            will need to handle that.
+
         slash : str, option:
             Slash character to follow folders.  If `'sep'`, uses `os.se`p.  The
             default is `'/'`.

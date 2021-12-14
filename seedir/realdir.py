@@ -184,6 +184,24 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         Function for filtering items.  Absolute paths of each individual item
         are passed to the `mask` function.  If `True` is returned, the
         item is kept.  The default is `None`.
+    formatter : function, optional
+        Function for customizing the tokens used for specific items during
+        traversal.
+
+        The formatter function should accept a system path as a
+        single argument (either relative or absolute, depending on what is passed
+        to the `path` argument), and it should return either a dictionary or None.
+        The dictionary should have names of seedir tokens as keys ('split',
+        'extend', 'space', 'final', 'folderstart', or 'finalstart') and strings
+        to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
+        for examples.  Though note, not all six tokens need to be specified.
+
+        If None is returned by formatter, the tokens will be set by `style`.
+
+        Note that items exlcuded by the inclusion/exclusion arguments (or the
+        `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
+        entries created by the `beyond` argument *will* be seen by formatter.
+
     slash : str, option:
         Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
         default is `'/'`.
