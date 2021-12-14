@@ -11,7 +11,6 @@
   }
 
   body {
-  	background-color: #EBEBEB;
     line-height: 1.5em;
   }
 
@@ -106,29 +105,22 @@
   pre code {
     background: #f8f8f8;
     font-size: .8em;
-    line-height: 1.2em;
+    line-height: 1.15em;
   }
   code {
-    background: white;
+    background: #f2f2f1;
     padding: 1px 4px;
     overflow-wrap: break-word;
-	border-top: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
-	border-left: 1px solid #ccc;
-    border-right: 1px solid #ccc;
   }
-  h1 code { background: transparent;
-  			border: transparent;
-			}
-  nav code {border: transparent;}
-  
-  dt code {border: transparent;}
+  h1 code { background: transparent }
 
   pre {
     background: #f8f8f8;
     border: 0;
     border-top: 1px solid #ccc;
     border-bottom: 1px solid #ccc;
+    margin: 1em 0;
+    padding: 1ex;
   }
 
   #http-server-module-list {
@@ -188,7 +180,7 @@
       margin: 10px 0;
     }
     .name {
-      background: #C8C8C8;
+      background: #eee;
       font-weight: bold;
       font-size: .85em;
       padding: 5px 10px;
