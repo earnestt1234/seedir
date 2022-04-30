@@ -538,4 +538,5 @@ def formatter_update_styleargs(formatter, item, styleargs):
         pass
     else:
         styleargs.update(newstyle)
+
     return styleargs
