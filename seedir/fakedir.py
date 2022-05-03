@@ -18,12 +18,11 @@ import re
 import random
 
 from seedir.errors import FakedirError
-
 from seedir.folderstructure import FakeDirStructure
-
 from seedir.folderstructurehelpers import (sort_dir,
                                            filter_item_names,
-                                           listdir_fullpath)
+                                           formatter_update_args,
+                                           listdir_fullpath,)
 
 import seedir.printing as printing
 
@@ -746,27 +745,37 @@ class FakeDir(FakeItem):
         if slash.lower() in ['sep', 'os.sep']:
             slash = os.sep
 
-        base_args = dict(depthlimit=depthlimit,
-                         itemlimit=itemlimit,
-                         beyond=beyond,
-                         first=first,
-                         sort=sort,
-                         sort_reverse=sort_reverse,
-                         sort_key=sort_key,
-                         include_folders=include_folders,
-                         exclude_folders=exclude_folders,
-                         include_files=include_files,
-                         exclude_files=exclude_files,
-                         regex=regex,
-                         slash=slash,
-                         mask=mask,
-                         formatter=formatter,
-                         sticky_formatter=sticky_formatter,
-                         **styleargs)
+        default_args = dict(depthlimit=depthlimit,
+                            itemlimit=itemlimit,
+                            beyond=beyond,
+                            first=first,
+                            sort=sort,
+                            sort_reverse=sort_reverse,
+                            sort_key=sort_key,
+                            include_folders=include_folders,
+                            exclude_folders=exclude_folders,
+                            include_files=include_files,
+                            exclude_files=exclude_files,
+                            regex=regex,
+                            slash=slash,
+                            mask=mask,
+                            formatter=formatter,
+                            sticky_formatter=sticky_formatter,
+                            **styleargs)
 
+        # apply formatter for root folder
+        current_args = default_args.copy()
+
+        if formatter is not None:
+            formatter_update_args(formatter, self, current_args)
+
+        if sticky_formatter:
+            default_args = current_args
+
+        # call
         s = FakeDirStructure(self,
-                             base_args=base_args,
-                             **base_args)
+                             default_args=default_args,
+                             **current_args)
 
         if printout:
             print(s)

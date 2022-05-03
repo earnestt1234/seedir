@@ -57,7 +57,7 @@ class FolderStructure:
         self.getname = getname_func
         self.beyondstr = beyondstr_func
 
-    def _folderstructure(self, folder, base_args, depth=0, incomplete=None, extend='│ ',
+    def _folderstructure(self, folder, default_args, depth=0, incomplete=None, extend='│ ',
                          space='  ', split='├─', final='└─',
                          filestart='', folderstart='', depthlimit=None,
                          itemlimit=None, beyond=None, first=None,
@@ -156,8 +156,8 @@ class FolderStructure:
         # get output for each item in folder
         for i, f in enumerate(finalpaths):
 
-            current_args = base_args.copy() # used in this iteration
-            next_base_args = base_args      # passed to child
+            current_args = default_args.copy() # used in this iteration
+            next_default_args = default_args   # passed to child
 
             lastitem = (i == (len(finalpaths) - 1))
             isbeyondstr = lastitem and beyond_added
@@ -168,7 +168,7 @@ class FolderStructure:
                 formatter_update_args(formatter, f, current_args)
 
             if sticky_formatter:
-                next_base_args = current_args
+                next_default_args = current_args
 
             # create header for the item
             base_header = get_base_header(incomplete,
@@ -192,7 +192,7 @@ class FolderStructure:
                            '\n')
                 output += self._folderstructure(f, depth=depth + 1,
                                                 incomplete=incomplete,
-                                                base_args=next_base_args,
+                                                default_args=next_default_args,
                                                 **current_args)
 
             # only concat to output if file

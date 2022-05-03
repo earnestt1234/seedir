@@ -13,9 +13,8 @@ The main algorithm for determining the folder structure string is within the
 import os
 
 from seedir.folderstructure import RealDirStructure
-
+from seedir.folderstructurehelpers import formatter_update_args
 from seedir.errors import SeedirError
-
 import seedir.printing as printing
 
 
@@ -272,27 +271,37 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     if path is None:
         path = os.getcwd()
 
-    base_args = dict(depthlimit=depthlimit,
-                     itemlimit=itemlimit,
-                     beyond=beyond,
-                     first=first,
-                     sort=sort,
-                     sort_reverse=sort_reverse,
-                     sort_key=sort_key,
-                     include_folders=include_folders,
-                     exclude_folders=exclude_folders,
-                     include_files=include_files,
-                     exclude_files=exclude_files,
-                     regex=regex,
-                     slash=slash,
-                     mask=mask,
-                     formatter=formatter,
-                     sticky_formatter=sticky_formatter,
-                     **styleargs)
+    default_args = dict(depthlimit=depthlimit,
+                        itemlimit=itemlimit,
+                        beyond=beyond,
+                        first=first,
+                        sort=sort,
+                        sort_reverse=sort_reverse,
+                        sort_key=sort_key,
+                        include_folders=include_folders,
+                        exclude_folders=exclude_folders,
+                        include_files=include_files,
+                        exclude_files=exclude_files,
+                        regex=regex,
+                        slash=slash,
+                        mask=mask,
+                        formatter=formatter,
+                        sticky_formatter=sticky_formatter,
+                        **styleargs)
 
+    # apply formatter for root folder
+    current_args = default_args.copy()
+
+    if formatter is not None:
+        formatter_update_args(formatter, path, current_args)
+
+    if sticky_formatter:
+        default_args = current_args
+
+    # call
     s = RealDirStructure(path,
-                         base_args=base_args,
-                         **base_args,)
+                         default_args=default_args,
+                         **current_args)
 
     if printout:
         print(s)
