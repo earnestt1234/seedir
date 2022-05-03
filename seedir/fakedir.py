@@ -591,7 +591,7 @@ class FakeDir(FakeItem):
                first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash='/', mask=None,
-               formatter=None, **kwargs):
+               formatter=None, sticky_formatter=False, **kwargs):
         '''
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -746,23 +746,27 @@ class FakeDir(FakeItem):
         if slash.lower() in ['sep', 'os.sep']:
             slash = os.sep
 
+        base_args = dict(depthlimit=depthlimit,
+                         itemlimit=itemlimit,
+                         beyond=beyond,
+                         first=first,
+                         sort=sort,
+                         sort_reverse=sort_reverse,
+                         sort_key=sort_key,
+                         include_folders=include_folders,
+                         exclude_folders=exclude_folders,
+                         include_files=include_files,
+                         exclude_files=exclude_files,
+                         regex=regex,
+                         slash=slash,
+                         mask=mask,
+                         formatter=formatter,
+                         sticky_formatter=sticky_formatter,
+                         **styleargs)
+
         s = FakeDirStructure(self,
-                             depthlimit=depthlimit,
-                             itemlimit=itemlimit,
-                             beyond=beyond,
-                             first=first,
-                             sort=sort,
-                             sort_reverse=sort_reverse,
-                             sort_key=sort_key,
-                             include_folders=include_folders,
-                             exclude_folders=exclude_folders,
-                             include_files=include_files,
-                             exclude_files=exclude_files,
-                             regex=regex,
-                             slash=slash,
-                             mask=mask,
-                             formatter=formatter,
-                             **styleargs).strip()
+                             base_args=base_args,
+                             **base_args)
 
         if printout:
             print(s)

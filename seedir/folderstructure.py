@@ -164,7 +164,7 @@ class FolderStructure:
             name = f if isbeyondstr else self.getname(f)
 
             # update tokens with formatter if passed
-            if formatter is not None:
+            if not isbeyondstr and formatter is not None:
                 formatter_update_styleargs(formatter, f, current_args)
 
             if sticky_formatter:
