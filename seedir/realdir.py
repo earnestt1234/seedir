@@ -24,7 +24,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
            exclude_files=None, regex=False, mask=None, formatter=None,
-           sticky_formatter=True, slash='/', **kwargs):
+           sticky_formatter=False, slash='/', **kwargs):
     '''
 
     Primary function of the seedir package: generate folder trees for
@@ -273,22 +273,22 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         path = os.getcwd()
 
     base_args = dict(depthlimit=depthlimit,
-                        itemlimit=itemlimit,
-                        beyond=beyond,
-                        first=first,
-                        sort=sort,
-                        sort_reverse=sort_reverse,
-                        sort_key=sort_key,
-                        include_folders=include_folders,
-                        exclude_folders=exclude_folders,
-                        include_files=include_files,
-                        exclude_files=exclude_files,
-                        regex=regex,
-                        slash=slash,
-                        mask=mask,
-                        formatter=formatter,
-                        sticky_formatter=sticky_formatter,
-                        **styleargs)
+                     itemlimit=itemlimit,
+                     beyond=beyond,
+                     first=first,
+                     sort=sort,
+                     sort_reverse=sort_reverse,
+                     sort_key=sort_key,
+                     include_folders=include_folders,
+                     exclude_folders=exclude_folders,
+                     include_files=include_files,
+                     exclude_files=exclude_files,
+                     regex=regex,
+                     slash=slash,
+                     mask=mask,
+                     formatter=formatter,
+                     sticky_formatter=sticky_formatter,
+                     **styleargs)
 
     s = RealDirStructure(path,
                          base_args=base_args,

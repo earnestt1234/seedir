@@ -73,17 +73,6 @@ class FolderStructure:
 
         '''
 
-        # collect style arguments
-        styleargs = {
-            'extend': extend,
-            'space': space,
-            'split': split,
-            'final': final,
-            'filestart': filestart,
-            'folderstart': folderstart
-            }
-        backup = styleargs.copy()
-
         # initialize
         output = ''
 
@@ -91,13 +80,24 @@ class FolderStructure:
             incomplete = []
 
         if depth == 0:
+
+            d0args = {
+                'extend': extend,
+                'space': space,
+                'split': split,
+                'final': final,
+                'filestart': filestart,
+                'folderstart': folderstart,
+                'slash': slash
+                }
+
             if formatter is not None:
-                formatter_update_styleargs(formatter, folder, styleargs)
-            output += (styleargs['folderstart'] +
+                formatter_update_styleargs(formatter, folder, d0args)
+            output += (d0args['folderstart'] +
                        self.getname(folder) +
-                       slash +
+                       d0args['slash'] +
                        '\n')
-            styleargs = backup
+
 
         current_itemlimit = itemlimit
         beyond_added = False
@@ -156,8 +156,8 @@ class FolderStructure:
         # get output for each item in folder
         for i, f in enumerate(finalpaths):
 
-            current_args = base_args.copy()
-            next_base_args = base_args
+            current_args = base_args.copy() # used in this iteration
+            next_base_args = base_args      # passed to child
 
             lastitem = (i == (len(finalpaths) - 1))
             isbeyondstr = lastitem and beyond_added
@@ -185,7 +185,11 @@ class FolderStructure:
 
             # concat to output and recurse if item is folder
             if not isbeyondstr and self.isdir(f):
-                output += header + current_args['folderstart'] + name + slash +'\n'
+                output += (header +
+                           current_args['folderstart'] +
+                           name +
+                           current_args['slash'] +
+                           '\n')
                 output += self._folderstructure(f, depth=depth + 1,
                                                 incomplete=incomplete,
                                                 base_args=next_base_args,
@@ -193,7 +197,10 @@ class FolderStructure:
 
             # only concat to output if file
             else:
-                output += header + current_args['filestart'] + name + '\n'
+                output += (header +
+                           current_args['filestart'] +
+                           name +
+                           '\n')
 
         return output
 
