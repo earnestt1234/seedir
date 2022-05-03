@@ -512,7 +512,7 @@ def get_base_header(incomplete, extend, space):
             base_header.append(space)
     return "".join(base_header)
 
-def formatter_update_styleargs(formatter, item, styleargs):
+def formatter_update_args(formatter, item, args):
     '''
     Update a dictionary of style tokens based on a formatter function and
     an item.  Added in v 0.3.0 to support the addition of the formatter parameter
@@ -537,6 +537,6 @@ def formatter_update_styleargs(formatter, item, styleargs):
     if newstyle is None:
         pass
     else:
-        styleargs.update(newstyle)
+        args.update(newstyle)
 
-    return styleargs
+    return args

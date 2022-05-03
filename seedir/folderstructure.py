@@ -15,7 +15,7 @@ from seedir.folderstructurehelpers import (listdir_fullpath,
                                            beyond_depth_str,
                                            beyond_fakedepth_str,
                                            get_base_header,
-                                           formatter_update_styleargs)
+                                           formatter_update_args)
 
 class FolderStructure:
     '''General class for determining folder strctures.'''
@@ -92,7 +92,7 @@ class FolderStructure:
                 }
 
             if formatter is not None:
-                formatter_update_styleargs(formatter, folder, d0args)
+                formatter_update_args(formatter, folder, d0args)
             output += (d0args['folderstart'] +
                        self.getname(folder) +
                        d0args['slash'] +
@@ -165,7 +165,7 @@ class FolderStructure:
 
             # update tokens with formatter if passed
             if not isbeyondstr and formatter is not None:
-                formatter_update_styleargs(formatter, f, current_args)
+                formatter_update_args(formatter, f, current_args)
 
             if sticky_formatter:
                 next_base_args = current_args
