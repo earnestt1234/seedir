@@ -19,6 +19,7 @@ With the command:
 
 Test methods MUST start with "test"
 """
+
 import os
 import unittest
 
@@ -27,6 +28,8 @@ from seedir.folderstructurehelpers import (get_base_header,
                                            count_fakedirs,
                                            count_fakefiles,
                                            sort_fakedir)
+
+# ---- Test seedir strings
 
 example = """mypkg/
     __init__.py
@@ -125,20 +128,50 @@ complex_inclusion = '''MyFakeDir/
 │ └─light.txt
 └─pedantic/'''
 
-try:
-    testdir = os.path.join(os.environ['USERPROFILE'], 'Desktop')
-except:
-    try:
-        testdir = os.environ['USERPROFILE']
-    except:
-        try:
-            testdir = os.path.dirname(os.path.abspath(__file__))
-        except:
-            testdir = input('Cannot automatically find a directory for '
-                            'testing seedir.seedir() - please enter a '
-                            'path to test with depthlimit=1:\n')
-            while not os.path.isdir(testdir):
-                testdir = input('Not found, try again:\n')
+fmt_expand_single = '''MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ ├─light.txt
+│ ├─reliquary.txt
+│ ├─sandal/
+│ ├─paycheck/
+│ │ ├─electrophoresis.txt
+│ │ └─Pyongyang/
+│ └─patrimonial/
+├─Uganda/
+└─pedantic/'''
+
+fmt_expand_single_partial = '''MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/
+│ ├─light.txt
+│ ├─reliquary.txt
+│ ├─sandal/
+│ ├─paycheck/
+│ └─patrimonial/
+├─Uganda/
+└─pedantic/'''
+
+fmt_notbeyond = """MyFakeDir/
+->Vogel.txt
+└─3 folder(s), 2 file(s)"""
+
+fmt_with_mask = '''MyFakeDir/
+├─scrooge/
+│ ├─light.txt
+│ └─reliquary.txt
+├─Uganda/
+└─pedantic/
+  └─cataclysmic.txt'''
+
+# realdir for testing on
+testdir = os.path.dirname(os.path.abspath(__file__))
+
+# ---- Test cases
 
 class PrintSomeDirs(unittest.TestCase):
     print('\n--------------------'
@@ -411,6 +444,83 @@ class TestFolderStructure(unittest.TestCase):
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(printout=False,**params)
         self.assertEqual(ans, s)
+
+class TestFormatter(unittest.TestCase):
+
+    def test_formatter_beyond(self):
+
+        def fmt(p):
+
+            d = {'split':'->', 'final':'->'}
+
+            return d
+
+        ans = fmt_notbeyond
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(formatter=fmt, itemlimit=1, beyond='content', printout=False)
+        self.assertEqual(s, ans)
+
+
+    def test_formatter_no_return(self):
+
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(formatter=lambda x: None, printout=False)
+        self.assertEqual(s, large_example)
+
+    def test_expand_one_folder_sticky(self):
+
+        def fmt(p):
+
+            d = {}
+            if p.name == 'scrooge':
+                d['depthlimit'] = None
+
+            return d
+
+        ans = fmt_expand_single
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(formatter=fmt, depthlimit=1, sticky_formatter=True, printout=False)
+        self.assertEqual(ans, s)
+
+    def test_expand_one_folder_nosticky(self):
+
+        def fmt(p):
+
+            d = {}
+            if p.name == 'scrooge':
+                d['depthlimit'] = None
+
+            return d
+
+        ans = fmt_expand_single_partial
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(formatter=fmt, depthlimit=1, printout=False)
+        self.assertEqual(ans, s)
+
+    def test_mask_with_fmt(self):
+
+        def fmt(p):
+
+            d = {}
+
+            def case1(p):
+                return not p.name.endswith('.txt')
+
+            def case2(p):
+                return p.name.endswith('.txt')
+
+            if p.depth == 0:
+                d['mask'] = case1
+
+            else:
+                d['mask'] = case2
+
+            return d
+
+        ans = fmt_with_mask
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(formatter=fmt, printout=False)
+        self.assertEqual(s, ans)
 
 if __name__ == '__main__':
     unittest.main()
