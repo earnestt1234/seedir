@@ -184,23 +184,37 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         are passed to the `mask` function.  If `True` is returned, the
         item is kept.  The default is `None`.
     formatter : function, optional
-        Function for customizing the tokens used for specific items during
-        traversal.
+        Function for customizing the directory printing logic and style
+        based on specific folders & files.  When passed, the formatter
+        is called on each item in the file tree, and the current arguments
+        are updated based what is returned.
 
         The formatter function should accept a system path as a
         single argument (either relative or absolute, depending on what is passed
         to the `path` argument), and it should return either a dictionary or None.
-        The dictionary should have names of seedir tokens as keys ('split',
-        'extend', 'space', 'final', 'folderstart', or 'finalstart') and strings
-        to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
-        for examples.  Though note, not all six tokens need to be specified.
+        The dictionary should have names of arguments as keys and their respective
+        setting as values.
+
+        The following options can meaningfully be toggled by passing a formatter
+        function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
+        `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
+        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+
+        Note that in version 0.3.0, formatter could only be used to update
+        the style tokens.  It can now be used to udpate those as well as the other
+        arguments listed above.
 
         If None is returned by formatter, the tokens will be set by `style`.
 
         Note that items exlcuded by the inclusion/exclusion arguments (or the
-        `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
-        entries created by the `beyond` argument *will* be seen by formatter.
+        `mask`) *will not* be seen by formatter.  Similarly, any folder tree
+        entries created by the `beyond` argument *will not* be seen by formatter.
 
+    sticky_formatter : bool, optional
+        When True, updates to argumnts made by the `formatter` (see above)
+        will be permanent.  Thus, if arguments are updated when the `formatter`
+        is called on a folder, its children will (recursively) inherit
+        those new arguments.
     slash : str, option:
         Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
         default is `'/'`.

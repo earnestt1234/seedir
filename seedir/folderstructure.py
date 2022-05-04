@@ -71,6 +71,15 @@ class FolderStructure:
         `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
         for a description of the parameters.
 
+        Note that since the expansion of the formatter parameter
+        (version 0.3.1), the call & logic has been slightly updated.
+        Primarily, the `default_args` parameter has been added, to represent
+        arguments to default to when the formatter is not in use.  The actual
+        keyword arguments are treated as the options to be used for `folder`,
+        and can change between iterations.  The `default_args` stay the same,
+        unless `sticky_formatter` is used in combination with `formatter` to
+        permanently update the default arguments.
+
         '''
 
         # initialize

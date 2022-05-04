@@ -54,12 +54,11 @@ import re
 import random
 
 from seedir.errors import FakedirError
-
 from seedir.folderstructure import FakeDirStructure
-
 from seedir.folderstructurehelpers import (sort_dir,
                                            filter_item_names,
-                                           listdir_fullpath)
+                                           formatter_update_args,
+                                           listdir_fullpath,)
 
 import seedir.printing as printing
 
@@ -627,7 +626,7 @@ class FakeDir(FakeItem):
                first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash=&#39;/&#39;, mask=None,
-               formatter=None, **kwargs):
+               formatter=None, sticky_formatter=False, **kwargs):
         &#39;&#39;&#39;
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -697,24 +696,37 @@ class FakeDir(FakeItem):
             is passed to the mask function.  If `True` is returned, the
             item is kept.  The default is `None`.
         formatter : function, optional
-            Function for customizing the tokens used for specific items during
-            traversal.
+            Function for customizing the directory printing logic and style
+            based on specific folders &amp; files.  When passed, the formatter
+            is called on each item in the file tree, and the current arguments
+            are updated based what is returned.
 
-            The formatter function should accept a FakeItem as a single argument,
-            and it should return either a dictionary or None. The dictionary
-            should have names of seedir tokens as keys (&#39;split&#39;, &#39;extend&#39;,
-            &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
-            to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
-            for examples.  Though note, not all six tokens need to be specified.
+            The formatter function should accept a FakeItem as a
+            single argument (either relative or absolute, depending on what is passed
+            to the `path` argument), and it should return either a dictionary or None.
+            The dictionary should have names of arguments as keys and their respective
+            setting as values.
+
+            The following options can meaningfully be toggled by passing a formatter
+            function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
+            `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
+            keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+
+            Note that in version 0.3.0, formatter could only be used to update
+            the style tokens.  It can now be used to udpate those as well as the other
+            arguments listed above.
 
             If None is returned by formatter, the tokens will be set by `style`.
 
             Note that items exlcuded by the inclusion/exclusion arguments (or the
-            `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
-            entries created by the `beyond` argument *will* be seen by formatter.
-            These items will be of type `str` rather than FakeItem, so formatter
-            will need to handle that.
+            `mask`) *will not* be seen by formatter.  Similarly, any folder tree
+            entries created by the `beyond` argument *will not* be seen by formatter.
 
+        sticky_formatter : bool, optional
+            When True, updates to argumnts made by the `formatter` (see above)
+            will be permanent.  Thus, if arguments are updated when the `formatter`
+            is called on a folder, its children will (recursively) inherit
+            those new arguments.
         slash : str, option:
             Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.se`p.  The
             default is `&#39;/&#39;`.
@@ -782,23 +794,37 @@ class FakeDir(FakeItem):
         if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
             slash = os.sep
 
+        default_args = dict(depthlimit=depthlimit,
+                            itemlimit=itemlimit,
+                            beyond=beyond,
+                            first=first,
+                            sort=sort,
+                            sort_reverse=sort_reverse,
+                            sort_key=sort_key,
+                            include_folders=include_folders,
+                            exclude_folders=exclude_folders,
+                            include_files=include_files,
+                            exclude_files=exclude_files,
+                            regex=regex,
+                            slash=slash,
+                            mask=mask,
+                            formatter=formatter,
+                            sticky_formatter=sticky_formatter,
+                            **styleargs)
+
+        # apply formatter for root folder
+        current_args = default_args.copy()
+
+        if formatter is not None:
+            formatter_update_args(formatter, self, current_args)
+
+        if sticky_formatter:
+            default_args = current_args
+
+        # call
         s = FakeDirStructure(self,
-                             depthlimit=depthlimit,
-                             itemlimit=itemlimit,
-                             beyond=beyond,
-                             first=first,
-                             sort=sort,
-                             sort_reverse=sort_reverse,
-                             sort_key=sort_key,
-                             include_folders=include_folders,
-                             exclude_folders=exclude_folders,
-                             include_files=include_files,
-                             exclude_files=exclude_files,
-                             regex=regex,
-                             slash=slash,
-                             mask=mask,
-                             formatter=formatter,
-                             **styleargs).strip()
+                             default_args=default_args,
+                             **current_args)
 
         if printout:
             print(s)
@@ -2553,7 +2579,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
                first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash=&#39;/&#39;, mask=None,
-               formatter=None, **kwargs):
+               formatter=None, sticky_formatter=False, **kwargs):
         &#39;&#39;&#39;
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -2623,24 +2649,37 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             is passed to the mask function.  If `True` is returned, the
             item is kept.  The default is `None`.
         formatter : function, optional
-            Function for customizing the tokens used for specific items during
-            traversal.
+            Function for customizing the directory printing logic and style
+            based on specific folders &amp; files.  When passed, the formatter
+            is called on each item in the file tree, and the current arguments
+            are updated based what is returned.
 
-            The formatter function should accept a FakeItem as a single argument,
-            and it should return either a dictionary or None. The dictionary
-            should have names of seedir tokens as keys (&#39;split&#39;, &#39;extend&#39;,
-            &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
-            to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
-            for examples.  Though note, not all six tokens need to be specified.
+            The formatter function should accept a FakeItem as a
+            single argument (either relative or absolute, depending on what is passed
+            to the `path` argument), and it should return either a dictionary or None.
+            The dictionary should have names of arguments as keys and their respective
+            setting as values.
+
+            The following options can meaningfully be toggled by passing a formatter
+            function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
+            `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
+            keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+
+            Note that in version 0.3.0, formatter could only be used to update
+            the style tokens.  It can now be used to udpate those as well as the other
+            arguments listed above.
 
             If None is returned by formatter, the tokens will be set by `style`.
 
             Note that items exlcuded by the inclusion/exclusion arguments (or the
-            `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
-            entries created by the `beyond` argument *will* be seen by formatter.
-            These items will be of type `str` rather than FakeItem, so formatter
-            will need to handle that.
+            `mask`) *will not* be seen by formatter.  Similarly, any folder tree
+            entries created by the `beyond` argument *will not* be seen by formatter.
 
+        sticky_formatter : bool, optional
+            When True, updates to argumnts made by the `formatter` (see above)
+            will be permanent.  Thus, if arguments are updated when the `formatter`
+            is called on a folder, its children will (recursively) inherit
+            those new arguments.
         slash : str, option:
             Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.se`p.  The
             default is `&#39;/&#39;`.
@@ -2708,23 +2747,37 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
             slash = os.sep
 
+        default_args = dict(depthlimit=depthlimit,
+                            itemlimit=itemlimit,
+                            beyond=beyond,
+                            first=first,
+                            sort=sort,
+                            sort_reverse=sort_reverse,
+                            sort_key=sort_key,
+                            include_folders=include_folders,
+                            exclude_folders=exclude_folders,
+                            include_files=include_files,
+                            exclude_files=exclude_files,
+                            regex=regex,
+                            slash=slash,
+                            mask=mask,
+                            formatter=formatter,
+                            sticky_formatter=sticky_formatter,
+                            **styleargs)
+
+        # apply formatter for root folder
+        current_args = default_args.copy()
+
+        if formatter is not None:
+            formatter_update_args(formatter, self, current_args)
+
+        if sticky_formatter:
+            default_args = current_args
+
+        # call
         s = FakeDirStructure(self,
-                             depthlimit=depthlimit,
-                             itemlimit=itemlimit,
-                             beyond=beyond,
-                             first=first,
-                             sort=sort,
-                             sort_reverse=sort_reverse,
-                             sort_key=sort_key,
-                             include_folders=include_folders,
-                             exclude_folders=exclude_folders,
-                             include_files=include_files,
-                             exclude_files=exclude_files,
-                             regex=regex,
-                             slash=slash,
-                             mask=mask,
-                             formatter=formatter,
-                             **styleargs).strip()
+                             default_args=default_args,
+                             **current_args)
 
         if printout:
             print(s)
@@ -3395,7 +3448,7 @@ in which the current working directory is used.</dd>
 </details>
 </dd>
 <dt id="seedir.fakedir.FakeDir.seedir"><code class="name flex">
-<span>def <span class="ident">seedir</span></span>(<span>self, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, slash='/', mask=None, formatter=None, **kwargs)</span>
+<span>def <span class="ident">seedir</span></span>(<span>self, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, slash='/', mask=None, formatter=None, sticky_formatter=False, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a folder tree diagram for <code>self</code>.
@@ -3483,24 +3536,36 @@ item is kept.
 The default is <code>None</code>.</dd>
 <dt><strong><code>formatter</code></strong> :&ensp;<code>function</code>, optional</dt>
 <dd>
-<p>Function for customizing the tokens used for specific items during
-traversal.</p>
-<p>The formatter function should accept a FakeItem as a single argument,
-and it should return either a dictionary or None. The dictionary
-should have names of seedir tokens as keys ('split', 'extend',
-'space', 'final', 'folderstart', or 'finalstart') and strings
-to use for those tokens as values.
-Call <code><a title="seedir.printing.get_styleargs" href="printing.html#seedir.printing.get_styleargs">get_styleargs()</a></code>
-for examples.
-Though note, not all six tokens need to be specified.</p>
+<p>Function for customizing the directory printing logic and style
+based on specific folders &amp; files.
+When passed, the formatter
+is called on each item in the file tree, and the current arguments
+are updated based what is returned.</p>
+<p>The formatter function should accept a FakeItem as a
+single argument (either relative or absolute, depending on what is passed
+to the <code>path</code> argument), and it should return either a dictionary or None.
+The dictionary should have names of arguments as keys and their respective
+setting as values.</p>
+<p>The following options can meaningfully be toggled by passing a formatter
+function: <code>depthlimit</code>, <code>itemlimit</code>, <code>beyond</code>, <code>first</code>, <code>sort</code>, <code>sort_reverse</code>,
+<code>sort_key</code>, <code>include_folders</code>, <code>regex</code>, <code>mask</code>, as well as any seedir token
+keywords (<code>extend</code>, <code>space</code>, <code>split</code>, <code>final</code>, <code>folderstart</code>, <code>folderend</code>).</p>
+<p>Note that in version 0.3.0, formatter could only be used to update
+the style tokens.
+It can now be used to udpate those as well as the other
+arguments listed above.</p>
 <p>If None is returned by formatter, the tokens will be set by <code>style</code>.</p>
 <p>Note that items exlcuded by the inclusion/exclusion arguments (or the
 <code>mask</code>) <em>will not</em> be seen by formatter.
-Alternatively, any folder tree
-entries created by the <code>beyond</code> argument <em>will</em> be seen by formatter.
-These items will be of type <code>str</code> rather than FakeItem, so formatter
-will need to handle that.</p>
+Similarly, any folder tree
+entries created by the <code>beyond</code> argument <em>will not</em> be seen by formatter.</p>
 </dd>
+<dt><strong><code>sticky_formatter</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>When True, updates to argumnts made by the <code>formatter</code> (see above)
+will be permanent.
+Thus, if arguments are updated when the <code>formatter</code>
+is called on a folder, its children will (recursively) inherit
+those new arguments.</dd>
 <dt><strong><code>slash</code></strong> :&ensp;<code>str, option:</code></dt>
 <dd>Slash character to follow folders.
 If <code>'sep'</code>, uses <code>os.se</code>p.
@@ -3557,7 +3622,7 @@ case the tree diagram is printed in the console.</dd>
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
            exclude_files=None, regex=False, slash=&#39;/&#39;, mask=None,
-           formatter=None, **kwargs):
+           formatter=None, sticky_formatter=False, **kwargs):
     &#39;&#39;&#39;
 
     Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -3627,24 +3692,37 @@ case the tree diagram is printed in the console.</dd>
         is passed to the mask function.  If `True` is returned, the
         item is kept.  The default is `None`.
     formatter : function, optional
-        Function for customizing the tokens used for specific items during
-        traversal.
+        Function for customizing the directory printing logic and style
+        based on specific folders &amp; files.  When passed, the formatter
+        is called on each item in the file tree, and the current arguments
+        are updated based what is returned.
 
-        The formatter function should accept a FakeItem as a single argument,
-        and it should return either a dictionary or None. The dictionary
-        should have names of seedir tokens as keys (&#39;split&#39;, &#39;extend&#39;,
-        &#39;space&#39;, &#39;final&#39;, &#39;folderstart&#39;, or &#39;finalstart&#39;) and strings
-        to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
-        for examples.  Though note, not all six tokens need to be specified.
+        The formatter function should accept a FakeItem as a
+        single argument (either relative or absolute, depending on what is passed
+        to the `path` argument), and it should return either a dictionary or None.
+        The dictionary should have names of arguments as keys and their respective
+        setting as values.
+
+        The following options can meaningfully be toggled by passing a formatter
+        function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
+        `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
+        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+
+        Note that in version 0.3.0, formatter could only be used to update
+        the style tokens.  It can now be used to udpate those as well as the other
+        arguments listed above.
 
         If None is returned by formatter, the tokens will be set by `style`.
 
         Note that items exlcuded by the inclusion/exclusion arguments (or the
-        `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
-        entries created by the `beyond` argument *will* be seen by formatter.
-        These items will be of type `str` rather than FakeItem, so formatter
-        will need to handle that.
+        `mask`) *will not* be seen by formatter.  Similarly, any folder tree
+        entries created by the `beyond` argument *will not* be seen by formatter.
 
+    sticky_formatter : bool, optional
+        When True, updates to argumnts made by the `formatter` (see above)
+        will be permanent.  Thus, if arguments are updated when the `formatter`
+        is called on a folder, its children will (recursively) inherit
+        those new arguments.
     slash : str, option:
         Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.se`p.  The
         default is `&#39;/&#39;`.
@@ -3712,23 +3790,37 @@ case the tree diagram is printed in the console.</dd>
     if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
         slash = os.sep
 
+    default_args = dict(depthlimit=depthlimit,
+                        itemlimit=itemlimit,
+                        beyond=beyond,
+                        first=first,
+                        sort=sort,
+                        sort_reverse=sort_reverse,
+                        sort_key=sort_key,
+                        include_folders=include_folders,
+                        exclude_folders=exclude_folders,
+                        include_files=include_files,
+                        exclude_files=exclude_files,
+                        regex=regex,
+                        slash=slash,
+                        mask=mask,
+                        formatter=formatter,
+                        sticky_formatter=sticky_formatter,
+                        **styleargs)
+
+    # apply formatter for root folder
+    current_args = default_args.copy()
+
+    if formatter is not None:
+        formatter_update_args(formatter, self, current_args)
+
+    if sticky_formatter:
+        default_args = current_args
+
+    # call
     s = FakeDirStructure(self,
-                         depthlimit=depthlimit,
-                         itemlimit=itemlimit,
-                         beyond=beyond,
-                         first=first,
-                         sort=sort,
-                         sort_reverse=sort_reverse,
-                         sort_key=sort_key,
-                         include_folders=include_folders,
-                         exclude_folders=exclude_folders,
-                         include_files=include_files,
-                         exclude_files=exclude_files,
-                         regex=regex,
-                         slash=slash,
-                         mask=mask,
-                         formatter=formatter,
-                         **styleargs).strip()
+                         default_args=default_args,
+                         **current_args)
 
     if printout:
         print(s)
