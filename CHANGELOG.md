@@ -4,7 +4,14 @@ This document will serve as a record for past and future changes to seedir.  It 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.3.0 - 2021-12-20
+## 0.3.1 - PLANNED
+
+- Update the `formatter` parameter to edit additional arguments, besides style keywords
+- Add `folderend` and `fileend` parameters for customizing tokens at end of items
+- Clean up the command line tool.
+- See the "dev" branch for tracking progress
+
+## [0.3.0](https://github.com/earnestt1234/seedir/releases/tag/v0.3.0) - 2021-12-20
 
 ### Added
 
