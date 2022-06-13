@@ -11,6 +11,7 @@ The main algorithm for determining the folder structure string is within the
 """
 
 import os
+import warnings
 
 from seedir.folderstructure import RealDirStructure
 from seedir.folderstructurehelpers import formatter_update_args
@@ -23,7 +24,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
            first=None, sort=False, sort_reverse=False, sort_key=None,
            include_folders=None, exclude_folders=None, include_files=None,
            exclude_files=None, regex=False, mask=None, formatter=None,
-           sticky_formatter=False, slash='/', **kwargs):
+           sticky_formatter=False, slash=None, **kwargs):
     '''
 
     Primary function of the seedir package: generate folder trees for
@@ -254,14 +255,12 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     '''
 
     accept_kwargs = ['extend', 'split', 'space', 'final',
-                     'folderstart', 'filestart']
+                     'folderstart', 'filestart', 'folderend', 'fileend']
 
     if any(i not in accept_kwargs for i in kwargs.keys()):
         raise SeedirError('kwargs must be any of {}'.format(accept_kwargs))
 
-    if style:
-        styleargs = printing.get_styleargs(style)
-
+    styleargs = printing.get_styleargs(style)
     styleargs = printing.format_indent(styleargs, indent=indent)
 
     if uniform is not None:
@@ -272,15 +271,20 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         styleargs['folderstart'] = anystart
         styleargs['filestart'] = anystart
 
+    if slash is not None:
+        warnings.warn("`slash` will removed in a future version; "
+                      "pass `folderend` as a keyword argument instead.",
+                      DeprecationWarning)
+        if slash.lower() in ['sep', 'os.sep']:
+            slash = os.sep
+        styleargs['folderend'] = slash
+
     for k in kwargs:
         if k in styleargs:
             styleargs[k] = kwargs[k]
 
     if sort_key is not None or sort_reverse == True:
         sort = True
-
-    if slash.lower() in ['sep', 'os.sep']:
-        slash = os.sep
 
     if path is None:
         path = os.getcwd()

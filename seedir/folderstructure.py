@@ -57,15 +57,14 @@ class FolderStructure:
         self.getname = getname_func
         self.beyondstr = beyondstr_func
 
-    def _folderstructure(self, folder, default_args, depth=0, incomplete=None, extend='│ ',
-                         space='  ', split='├─', final='└─',
-                         filestart='', folderstart='', depthlimit=None,
-                         itemlimit=None, beyond=None, first=None,
+    def _folderstructure(self, folder, default_args, depth=0, incomplete=None,
+                         extend='│ ', space='  ', split='├─', final='└─',
+                         filestart='', folderstart='', fileend='', folderend='/',
+                         depthlimit=None, itemlimit=None, beyond=None, first=None,
                          sort=True, sort_reverse=False, sort_key=None,
                          include_folders=None, exclude_folders=None,
                          include_files=None, exclude_files=None,
-                         regex=False, mask=None, formatter=None, sticky_formatter=False,
-                         slash='/'):
+                         regex=False, mask=None, formatter=None, sticky_formatter=False):
         '''
         Main algorithm for creating folder structure string.  See
         `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
@@ -97,14 +96,15 @@ class FolderStructure:
                 'final': final,
                 'filestart': filestart,
                 'folderstart': folderstart,
-                'slash': slash
+                'fileend' : fileend,
+                'folderend': folderend
                 }
 
             if formatter is not None:
                 formatter_update_args(formatter, folder, d0args)
             output += (d0args['folderstart'] +
                        self.getname(folder) +
-                       d0args['slash'] +
+                       d0args['folderend'] +
                        '\n')
 
 
@@ -197,7 +197,7 @@ class FolderStructure:
                 output += (header +
                            current_args['folderstart'] +
                            name +
-                           current_args['slash'] +
+                           current_args['folderend'] +
                            '\n')
                 output += self._folderstructure(f, depth=depth + 1,
                                                 incomplete=incomplete,
@@ -209,6 +209,7 @@ class FolderStructure:
                 output += (header +
                            current_args['filestart'] +
                            name +
+                           current_args['fileend'] +
                            '\n')
 
         return output
