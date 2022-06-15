@@ -20,11 +20,11 @@ import seedir.printing as printing
 
 
 def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
-           anystart=None, depthlimit=None, itemlimit=None, beyond=None,
-           first=None, sort=False, sort_reverse=False, sort_key=None,
-           include_folders=None, exclude_folders=None, include_files=None,
-           exclude_files=None, regex=False, mask=None, formatter=None,
-           sticky_formatter=False, slash=None, **kwargs):
+           anystart=None, anyend=None, depthlimit=None, itemlimit=None,
+           beyond=None, first=None, sort=False, sort_reverse=False,
+           sort_key=None, include_folders=None, exclude_folders=None,
+           include_files=None, exclude_files=None, regex=False, mask=None,
+           formatter=None, sticky_formatter=False, slash=None, **kwargs):
     '''
 
     Primary function of the seedir package: generate folder trees for
@@ -141,8 +141,12 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         final tokens are replaced with `uniform` (the `'spaces'` style is
         essentially `uniform = '  '`).
     anystart : str or None, optional
-        Characters to append before any item (i.e. folder or file).  The
+        Characters to prepend before any item (i.e. folder or file).  The
         default is `None`.  Specific starts for folders and files can be
+        specified (see `**kwargs`).
+    anyend : str or None, optional
+        Characters to append after any item (i.e. folder or file).  The
+        default is `None`.  Specific ends for folders and files can be
         specified (see `**kwargs`).
     depthlimit : int or None, optional
         Limit the depth of folders to traverse.  Folders at the `depthlimit` are
@@ -228,18 +232,20 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         directories are completely traversed), `split` (characters to show a
         folder or file within a directory, with more items following),
         `final` (characters to show a folder or file within a directory,
-        with no more items following), `folderstart` (characters to append
-        before any folder), and `filestart` (characters to append beffore any
-        file).  The following shows the default tokens for the `'lines'` style:
+        with no more items following), `folderstart` (characters to prepend
+        before any folder), `filestart` (characters to preppend before any
+        file), `folderend` (characters to append after any folder), and
+        `fileend` (characters to append after any file). The following shows
+        the default tokens for the `'lines'` style:
 
             >>> import seedir as sd
             >>> sd.get_styleargs('lines')
-            {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': ''}
+            {'split': '', 'extend': ' ', 'space': '  ', 'final': '', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
 
         All default style tokens are 2 character strings, except for
-        `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
-        affected by the indent parameter.  The `uniform` and `anystart`
-        parameters can be used to affect multiple style tokens.
+        the file/folder start/end tokens.  Style tokens from `**kwargs` are not
+        affected by the indent parameter.  The `uniform`, `anystart`, and
+        `anyend` parameters can be used to affect multiple style tokens.
 
     Raises
     ------
@@ -270,6 +276,10 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     if anystart is not None:
         styleargs['folderstart'] = anystart
         styleargs['filestart'] = anystart
+
+    if anyend is not None:
+        styleargs['folderend'] = anyend
+        styleargs['fileend'] = anyend
 
     if slash is not None:
         warnings.warn("`slash` will removed in a future version; "
