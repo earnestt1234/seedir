@@ -76,8 +76,8 @@ STYLE_DICT = {
 
 filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, 'words.txt')
-wordfile = open(wordpath, 'r')
-words = [line.strip() for line in wordfile.readlines()]
+with open(wordpath, 'r') as wordfile:
+    words = [line.strip() for line in wordfile.readlines()]
 """List of dictionary words for seedir.fakedir.randomdir()"""
 
 # functions
