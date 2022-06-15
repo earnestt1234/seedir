@@ -735,10 +735,9 @@ class FakeDir(FakeItem):
         if any(i not in accept_kwargs for i in kwargs.keys()):
             raise FakedirError('kwargs must be any of {}'.format(accept_kwargs))
 
-        if style:
-            styleargs = printing.get_styleargs(style)
 
-        styleargs = printing.format_indent(styleargs, indent=indent)
+        styleargs = printing.get_styleargs(style)
+        printing.format_indent(styleargs, indent=indent)
 
         if uniform is not None:
             for arg in ['extend', 'split', 'final', 'space']:

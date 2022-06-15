@@ -124,6 +124,9 @@ def format_indent(style_dict, indent=2):
     Format the indent of style tokens, from seedir.STYLE_DICT or returned
     by seedir.get_styleargs().
 
+    Note that as of v0.3.1, the dictionary is modified in place,
+    rather than a new copy being created.
+
     Parameters
     ----------
     style_dict : dict
@@ -132,8 +135,8 @@ def format_indent(style_dict, indent=2):
         Number of spaces to indent. The default is 2.  With 0, all tokens
         become the null string.  With 1, all tokens are only the first
         character.  With 2, the style tokens are returned unedited.  When >2,
-        the final character of each token (except 'folderstart' and
-        'filestart') are extened n - indent times, to give a string whose
+        the final character of each token (excep the file/folder start/end tokens)
+        are extened n - indent times, to give a string whose
         length is equal to indent.
 
     Raises
@@ -147,22 +150,19 @@ def format_indent(style_dict, indent=2):
         New dictionary of edited tokens.
 
     '''
-    folder = style_dict['folderstart']
-    file = style_dict['filestart']
+    indentable = ['split', 'extend', 'space', 'final']
     if indent < 0 or not isinstance(indent, int):
-        raise SeedirError('indent must be a positive integer')
+        raise SeedirError('indent must be a non-negative integer')
     elif indent == 0:
-        output = {k : '' for k,_ in style_dict.items()
-                  if k not in ['folderstart','filestart']}
+        for key in indentable:
+            style_dict[key] = ''
     elif indent == 1:
-        output = {k : v[0] for k,v in style_dict.items()
-                  if k not in ['folderstart','filestart']}
-    elif indent == 2:
-        output = style_dict
-    else:
-        indent -= 2
-        output = {k : v + v[-1]*indent for k,v in style_dict.items()
-                  if k not in ['folderstart','filestart']}
-    output['folderstart'] = folder
-    output['filestart'] = file
-    return output
+        for key in indentable:
+            style_dict[key] = style_dict[key][0]
+    elif indent > 2:
+        extension = indent - 2
+        for key in indentable:
+            val = style_dict[key]
+            style_dict[key] = val + val[-1] * extension
+
+    return None

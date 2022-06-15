@@ -261,7 +261,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         raise SeedirError('kwargs must be any of {}'.format(accept_kwargs))
 
     styleargs = printing.get_styleargs(style)
-    styleargs = printing.format_indent(styleargs, indent=indent)
+    printing.format_indent(styleargs, indent=indent)
 
     if uniform is not None:
         for arg in ['extend', 'split', 'final', 'space']:
@@ -301,7 +301,6 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
                         include_files=include_files,
                         exclude_files=exclude_files,
                         regex=regex,
-                        slash=slash,
                         mask=mask,
                         formatter=formatter,
                         sticky_formatter=sticky_formatter,
