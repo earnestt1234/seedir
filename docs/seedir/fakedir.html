@@ -623,8 +623,7 @@ class FakeDir(FakeItem):
             if isinstance(f, FakeDir):
                 os.mkdir(joined)
             elif isinstance(f, FakeFile):
-                with open(joined, &#39;w&#39;) as file:
-                    pass
+                with open(joined, &#39;w&#39;): pass;
         if path is None:
             path = os.getcwd()
         self.walk_apply(create, root=path)
@@ -2608,8 +2607,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             if isinstance(f, FakeDir):
                 os.mkdir(joined)
             elif isinstance(f, FakeFile):
-                with open(joined, &#39;w&#39;) as file:
-                    pass
+                with open(joined, &#39;w&#39;): pass;
         if path is None:
             path = os.getcwd()
         self.walk_apply(create, root=path)
@@ -3504,8 +3502,7 @@ in which the current working directory is used.</dd>
         if isinstance(f, FakeDir):
             os.mkdir(joined)
         elif isinstance(f, FakeFile):
-            with open(joined, &#39;w&#39;) as file:
-                pass
+            with open(joined, &#39;w&#39;): pass;
     if path is None:
         path = os.getcwd()
     self.walk_apply(create, root=path)</code></pre>
