@@ -237,12 +237,13 @@ class TestSeedirStringFormatting(unittest.TestCase):
         self.assertTrue(x is not y)
 
     def test_format_indent(self):
-        d = sd.get_styleargs('lines')
-        f1 = sd.printing.format_indent(d, indent=4)
-        f2 = sd.printing.format_indent(d, indent=1)
+        a = sd.get_styleargs('lines')
+        b = sd.get_styleargs('lines')
+        sd.printing.format_indent(a, indent=4)
+        sd.printing.format_indent(b, indent=1)
         chars = ['extend', 'space', 'split', 'final']
-        self.assertTrue(all(len(f1[c])==4 for c in chars))
-        self.assertTrue(all(len(f2[c])==1 for c in chars))
+        self.assertTrue(all(len(a[c])==4 for c in chars))
+        self.assertTrue(all(len(b[c])==1 for c in chars))
 
     def test_words_list(self):
         self.assertTrue(sd.printing.words[0] == 'a')
