@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>seedir.printing API documentation</title>
 <meta name="description" content="General module of resources and helpers for printing and making folder trees
 in seedir." />
@@ -59,44 +59,56 @@ STYLE_DICT = {
               &#39;space&#39;:&#39;  &#39;,
               &#39;final&#39;:&#39;└─&#39;,
               &#39;folderstart&#39;:&#39;&#39;,
-              &#39;filestart&#39;:&#39;&#39;},
+              &#39;filestart&#39;:&#39;&#39;,
+              &#39;folderend&#39;: &#39;/&#39;,
+              &#39;fileend&#39;: &#39;&#39;},
     &#39;dash&#39;:  {&#39;split&#39;:&#39;|-&#39;,
               &#39;extend&#39;:&#39;| &#39;,
               &#39;space&#39;:&#39;  &#39;,
               &#39;final&#39;:&#39;|-&#39;,
               &#39;folderstart&#39;:&#39;&#39;,
-              &#39;filestart&#39;:&#39;&#39;},
+              &#39;filestart&#39;:&#39;&#39;,
+              &#39;folderend&#39;: &#39;/&#39;,
+              &#39;fileend&#39;: &#39;&#39;},
     &#39;spaces&#39;:{&#39;split&#39;:&#39;  &#39;,
               &#39;extend&#39;:&#39;  &#39;,
               &#39;space&#39;:&#39;  &#39;,
               &#39;final&#39;:&#39;  &#39;,
               &#39;folderstart&#39;:&#39;&#39;,
-              &#39;filestart&#39;:&#39;&#39;},
+              &#39;filestart&#39;:&#39;&#39;,
+              &#39;folderend&#39;: &#39;/&#39;,
+              &#39;fileend&#39;: &#39;&#39;},
     &#39;plus&#39;:  {&#39;split&#39;:&#39;+-&#39;,
               &#39;extend&#39;:&#39;| &#39;,
               &#39;space&#39;:&#39;  &#39;,
               &#39;final&#39;:&#39;+-&#39;,
               &#39;folderstart&#39;:&#39;&#39;,
-              &#39;filestart&#39;:&#39;&#39;},
+              &#39;filestart&#39;:&#39;&#39;,
+              &#39;folderend&#39;: &#39;/&#39;,
+              &#39;fileend&#39;: &#39;&#39;},
     &#39;arrow&#39;: {&#39;split&#39;:&#39;  &#39;,
               &#39;extend&#39;:&#39;  &#39;,
               &#39;space&#39;:&#39;  &#39;,
               &#39;final&#39;:&#39;  &#39;,
               &#39;folderstart&#39;:&#39;&gt;&#39;,
-              &#39;filestart&#39;:&#39;&gt;&#39;},
+              &#39;filestart&#39;:&#39;&gt;&#39;,
+              &#39;folderend&#39;: &#39;/&#39;,
+              &#39;fileend&#39;: &#39;&#39;},
     &#39;emoji&#39;: {&#39;split&#39;:&#39;├─&#39;,
               &#39;extend&#39;:&#39;│ &#39;,
               &#39;space&#39;:&#39;  &#39;,
               &#39;final&#39;:&#39;└─&#39;,
               &#39;folderstart&#39;:FOLDER,
-              &#39;filestart&#39;:FILE}
+              &#39;filestart&#39;:FILE,
+              &#39;folderend&#39;: &#39;/&#39;,
+              &#39;fileend&#39;: &#39;&#39;}
     }
 &#39;&#39;&#39;&#34;Tokens&#34; used to create folder trees in different styles&#39;&#39;&#39;
 
 filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, &#39;words.txt&#39;)
-wordfile = open(wordpath, &#39;r&#39;)
-words = [line.strip() for line in wordfile.readlines()]
+with open(wordpath, &#39;r&#39;) as wordfile:
+    words = [line.strip() for line in wordfile.readlines()]
 &#34;&#34;&#34;List of dictionary words for seedir.fakedir.randomdir()&#34;&#34;&#34;
 
 # functions
@@ -143,6 +155,9 @@ def format_indent(style_dict, indent=2):
     Format the indent of style tokens, from seedir.STYLE_DICT or returned
     by seedir.get_styleargs().
 
+    Note that as of v0.3.1, the dictionary is modified in place,
+    rather than a new copy being created.
+
     Parameters
     ----------
     style_dict : dict
@@ -151,8 +166,8 @@ def format_indent(style_dict, indent=2):
         Number of spaces to indent. The default is 2.  With 0, all tokens
         become the null string.  With 1, all tokens are only the first
         character.  With 2, the style tokens are returned unedited.  When &gt;2,
-        the final character of each token (except &#39;folderstart&#39; and
-        &#39;filestart&#39;) are extened n - indent times, to give a string whose
+        the final character of each token (excep the file/folder start/end tokens)
+        are extened n - indent times, to give a string whose
         length is equal to indent.
 
     Raises
@@ -166,25 +181,22 @@ def format_indent(style_dict, indent=2):
         New dictionary of edited tokens.
 
     &#39;&#39;&#39;
-    folder = style_dict[&#39;folderstart&#39;]
-    file = style_dict[&#39;filestart&#39;]
+    indentable = [&#39;split&#39;, &#39;extend&#39;, &#39;space&#39;, &#39;final&#39;]
     if indent &lt; 0 or not isinstance(indent, int):
-        raise SeedirError(&#39;indent must be a positive integer&#39;)
+        raise SeedirError(&#39;indent must be a non-negative integer&#39;)
     elif indent == 0:
-        output = {k : &#39;&#39; for k,_ in style_dict.items()
-                  if k not in [&#39;folderstart&#39;,&#39;filestart&#39;]}
+        for key in indentable:
+            style_dict[key] = &#39;&#39;
     elif indent == 1:
-        output = {k : v[0] for k,v in style_dict.items()
-                  if k not in [&#39;folderstart&#39;,&#39;filestart&#39;]}
-    elif indent == 2:
-        output = style_dict
-    else:
-        indent -= 2
-        output = {k : v + v[-1]*indent for k,v in style_dict.items()
-                  if k not in [&#39;folderstart&#39;,&#39;filestart&#39;]}
-    output[&#39;folderstart&#39;] = folder
-    output[&#39;filestart&#39;] = file
-    return output</code></pre>
+        for key in indentable:
+            style_dict[key] = style_dict[key][0]
+    elif indent &gt; 2:
+        extension = indent - 2
+        for key in indentable:
+            val = style_dict[key]
+            style_dict[key] = val + val[-1] * extension
+
+    return None</code></pre>
 </details>
 </section>
 <section>
@@ -288,7 +300,7 @@ Current options are <code>'lines'</code>, <code>'spaces'</code>, <code>'arrow'</
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

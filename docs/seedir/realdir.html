@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>seedir.realdir API documentation</title>
 <meta name="description" content="This module provides code for producing folder structure strings for directories.
 Currently, the only tool here is `seedir()`, the primary function of …" />
@@ -46,6 +46,7 @@ The main algorithm for determining the folder structure string is within the
 &#34;&#34;&#34;
 
 import os
+import warnings
 
 from seedir.folderstructure import RealDirStructure
 from seedir.folderstructurehelpers import formatter_update_args
@@ -54,11 +55,11 @@ import seedir.printing as printing
 
 
 def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
-           anystart=None, depthlimit=None, itemlimit=None, beyond=None,
-           first=None, sort=False, sort_reverse=False, sort_key=None,
-           include_folders=None, exclude_folders=None, include_files=None,
-           exclude_files=None, regex=False, mask=None, formatter=None,
-           sticky_formatter=False, slash=&#39;/&#39;, **kwargs):
+           anystart=None, anyend=None, depthlimit=None, itemlimit=None,
+           beyond=None, first=None, sort=False, sort_reverse=False,
+           sort_key=None, include_folders=None, exclude_folders=None,
+           include_files=None, exclude_files=None, regex=False, mask=None,
+           formatter=None, sticky_formatter=False, slash=None, **kwargs):
     &#39;&#39;&#39;
 
     Primary function of the seedir package: generate folder trees for
@@ -175,8 +176,12 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         final tokens are replaced with `uniform` (the `&#39;spaces&#39;` style is
         essentially `uniform = &#39;  &#39;`).
     anystart : str or None, optional
-        Characters to append before any item (i.e. folder or file).  The
+        Characters to prepend before any item (i.e. folder or file).  The
         default is `None`.  Specific starts for folders and files can be
+        specified (see `**kwargs`).
+    anyend : str or None, optional
+        Characters to append after any item (i.e. folder or file).  The
+        default is `None`.  Specific ends for folders and files can be
         specified (see `**kwargs`).
     depthlimit : int or None, optional
         Limit the depth of folders to traverse.  Folders at the `depthlimit` are
@@ -233,7 +238,8 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         The following options can meaningfully be toggled by passing a formatter
         function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
         `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
-        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `filestart`,
+        `folderend`, `fileend`).
 
         Note that in version 0.3.0, formatter could only be used to update
         the style tokens.  It can now be used to udpate those as well as the other
@@ -251,6 +257,10 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         is called on a folder, its children will (recursively) inherit
         those new arguments.
     slash : str, option:
+
+        **`DeprecationWarning`**: *With addition of `folderend` in v0.3.1,
+        `slash` is to be deprecated in a future version.*
+
         Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.sep`.  The
         default is `&#39;/&#39;`.
     **kwargs : str
@@ -262,18 +272,20 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         directories are completely traversed), `split` (characters to show a
         folder or file within a directory, with more items following),
         `final` (characters to show a folder or file within a directory,
-        with no more items following), `folderstart` (characters to append
-        before any folder), and `filestart` (characters to append beffore any
-        file).  The following shows the default tokens for the `&#39;lines&#39;` style:
+        with no more items following), `folderstart` (characters to prepend
+        before any folder), `filestart` (characters to preppend before any
+        file), `folderend` (characters to append after any folder), and
+        `fileend` (characters to append after any file). The following shows
+        the default tokens for the `&#39;lines&#39;` style:
 
             &gt;&gt;&gt; import seedir as sd
             &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
-            {&#39;split&#39;: &#39;├─&#39;, &#39;extend&#39;: &#39;│ &#39;, &#39;space&#39;: &#39;  &#39;, &#39;final&#39;: &#39;└─&#39;, &#39;folderstart&#39;: &#39;&#39;, &#39;filestart&#39;: &#39;&#39;}
+            {&#39;split&#39;: &#39;├─&#39;, &#39;extend&#39;: &#39;│ &#39;, &#39;space&#39;: &#39;  &#39;, &#39;final&#39;: &#39;└─&#39;, &#39;folderstart&#39;: &#39;&#39;, &#39;filestart&#39;: &#39;&#39;, &#39;folderend&#39;: &#39;/&#39;, &#39;fileend&#39;: &#39;&#39;}
 
         All default style tokens are 2 character strings, except for
-        `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
-        affected by the indent parameter.  The `uniform` and `anystart`
-        parameters can be used to affect multiple style tokens.
+        the file/folder start/end tokens.  Style tokens from `**kwargs` are not
+        affected by the indent parameter.  The `uniform`, `anystart`, and
+        `anyend` parameters can be used to affect multiple style tokens.
 
     Raises
     ------
@@ -289,15 +301,13 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
     &#39;&#39;&#39;
 
     accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
-                     &#39;folderstart&#39;, &#39;filestart&#39;]
+                     &#39;folderstart&#39;, &#39;filestart&#39;, &#39;folderend&#39;, &#39;fileend&#39;]
 
     if any(i not in accept_kwargs for i in kwargs.keys()):
         raise SeedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
 
-    if style:
-        styleargs = printing.get_styleargs(style)
-
-    styleargs = printing.format_indent(styleargs, indent=indent)
+    styleargs = printing.get_styleargs(style)
+    printing.format_indent(styleargs, indent=indent)
 
     if uniform is not None:
         for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
@@ -307,15 +317,24 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         styleargs[&#39;folderstart&#39;] = anystart
         styleargs[&#39;filestart&#39;] = anystart
 
+    if anyend is not None:
+        styleargs[&#39;folderend&#39;] = anyend
+        styleargs[&#39;fileend&#39;] = anyend
+
+    if slash is not None:
+        warnings.warn(&#34;`slash` will removed in a future version; &#34;
+                      &#34;pass `folderend` as a keyword argument instead.&#34;,
+                      DeprecationWarning)
+        if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
+            slash = os.sep
+        styleargs[&#39;folderend&#39;] = slash
+
     for k in kwargs:
         if k in styleargs:
             styleargs[k] = kwargs[k]
 
     if sort_key is not None or sort_reverse == True:
         sort = True
-
-    if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-        slash = os.sep
 
     if path is None:
         path = os.getcwd()
@@ -332,7 +351,6 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
                         include_files=include_files,
                         exclude_files=exclude_files,
                         regex=regex,
-                        slash=slash,
                         mask=mask,
                         formatter=formatter,
                         sticky_formatter=sticky_formatter,
@@ -366,7 +384,7 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="seedir.realdir.seedir"><code class="name flex">
-<span>def <span class="ident">seedir</span></span>(<span>path=None, style='lines', printout=True, indent=2, uniform=None, anystart=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None, formatter=None, sticky_formatter=False, slash='/', **kwargs)</span>
+<span>def <span class="ident">seedir</span></span>(<span>path=None, style='lines', printout=True, indent=2, uniform=None, anystart=None, anyend=None, depthlimit=None, itemlimit=None, beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None, formatter=None, sticky_formatter=False, slash=None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Primary function of the seedir package: generate folder trees for
@@ -470,10 +488,16 @@ final tokens are replaced with <code>uniform</code> (the <code>'spaces'</code> s
 essentially <code>uniform = '
 '</code>).</dd>
 <dt><strong><code>anystart</code></strong> :&ensp;<code>str</code> or <code>None</code>, optional</dt>
-<dd>Characters to append before any item (i.e. folder or file).
+<dd>Characters to prepend before any item (i.e. folder or file).
 The
 default is <code>None</code>.
 Specific starts for folders and files can be
+specified (see <code>**kwargs</code>).</dd>
+<dt><strong><code>anyend</code></strong> :&ensp;<code>str</code> or <code>None</code>, optional</dt>
+<dd>Characters to append after any item (i.e. folder or file).
+The
+default is <code>None</code>.
+Specific ends for folders and files can be
 specified (see <code>**kwargs</code>).</dd>
 <dt><strong><code>depthlimit</code></strong> :&ensp;<code>int</code> or <code>None</code>, optional</dt>
 <dd>Limit the depth of folders to traverse.
@@ -540,7 +564,8 @@ setting as values.</p>
 <p>The following options can meaningfully be toggled by passing a formatter
 function: <code>depthlimit</code>, <code>itemlimit</code>, <code>beyond</code>, <code>first</code>, <code>sort</code>, <code>sort_reverse</code>,
 <code>sort_key</code>, <code>include_folders</code>, <code>regex</code>, <code>mask</code>, as well as any seedir token
-keywords (<code>extend</code>, <code>space</code>, <code>split</code>, <code>final</code>, <code>folderstart</code>, <code>folderend</code>).</p>
+keywords (<code>extend</code>, <code>space</code>, <code>split</code>, <code>final</code>, <code>folderstart</code>, <code>filestart</code>,
+<code>folderend</code>, <code>fileend</code>).</p>
 <p>Note that in version 0.3.0, formatter could only be used to update
 the style tokens.
 It can now be used to udpate those as well as the other
@@ -558,10 +583,14 @@ Thus, if arguments are updated when the <code>formatter</code>
 is called on a folder, its children will (recursively) inherit
 those new arguments.</dd>
 <dt><strong><code>slash</code></strong> :&ensp;<code>str, option:</code></dt>
-<dd>Slash character to follow folders.
+<dd>
+<p><strong><code>DeprecationWarning</code></strong>: <em>With addition of <code>folderend</code> in v0.3.1,
+<code>slash</code> is to be deprecated in a future version.</em></p>
+<p>Slash character to follow folders.
 If <code>'sep'</code>, uses <code>os.sep</code>.
 The
-default is <code>'/'</code>.</dd>
+default is <code>'/'</code>.</p>
+</dd>
 <dt><strong><code>**kwargs</code></strong> :&ensp;<code>str</code></dt>
 <dd>
 <p>Specific tokens to use for creating the file tree diagram.
@@ -573,20 +602,21 @@ correct indentation of an item when some of its parent / grandparent
 directories are completely traversed), <code>split</code> (characters to show a
 folder or file within a directory, with more items following),
 <code>final</code> (characters to show a folder or file within a directory,
-with no more items following), <code>folderstart</code> (characters to append
-before any folder), and <code>filestart</code> (characters to append beffore any
-file).
-The following shows the default tokens for the <code>'lines'</code> style:</p>
+with no more items following), <code>folderstart</code> (characters to prepend
+before any folder), <code>filestart</code> (characters to preppend before any
+file), <code>folderend</code> (characters to append after any folder), and
+<code>fileend</code> (characters to append after any file). The following shows
+the default tokens for the <code>'lines'</code> style:</p>
 <pre><code>&gt;&gt;&gt; import seedir as sd
 &gt;&gt;&gt; sd.get_styleargs('lines')
-{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': ''}
+{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
 </code></pre>
 <p>All default style tokens are 2 character strings, except for
-<code>folderstart</code> and <code>filestart</code>.
+the file/folder start/end tokens.
 Style tokens from <code>**kwargs</code> are not
 affected by the indent parameter.
-The <code>uniform</code> and <code>anystart</code>
-parameters can be used to affect multiple style tokens.</p>
+The <code>uniform</code>, <code>anystart</code>, and
+<code>anyend</code> parameters can be used to affect multiple style tokens.</p>
 </dd>
 </dl>
 <h2 id="raises">Raises</h2>
@@ -605,11 +635,11 @@ case the tree diagram is printed in the console.</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
-           anystart=None, depthlimit=None, itemlimit=None, beyond=None,
-           first=None, sort=False, sort_reverse=False, sort_key=None,
-           include_folders=None, exclude_folders=None, include_files=None,
-           exclude_files=None, regex=False, mask=None, formatter=None,
-           sticky_formatter=False, slash=&#39;/&#39;, **kwargs):
+           anystart=None, anyend=None, depthlimit=None, itemlimit=None,
+           beyond=None, first=None, sort=False, sort_reverse=False,
+           sort_key=None, include_folders=None, exclude_folders=None,
+           include_files=None, exclude_files=None, regex=False, mask=None,
+           formatter=None, sticky_formatter=False, slash=None, **kwargs):
     &#39;&#39;&#39;
 
     Primary function of the seedir package: generate folder trees for
@@ -726,8 +756,12 @@ case the tree diagram is printed in the console.</dd>
         final tokens are replaced with `uniform` (the `&#39;spaces&#39;` style is
         essentially `uniform = &#39;  &#39;`).
     anystart : str or None, optional
-        Characters to append before any item (i.e. folder or file).  The
+        Characters to prepend before any item (i.e. folder or file).  The
         default is `None`.  Specific starts for folders and files can be
+        specified (see `**kwargs`).
+    anyend : str or None, optional
+        Characters to append after any item (i.e. folder or file).  The
+        default is `None`.  Specific ends for folders and files can be
         specified (see `**kwargs`).
     depthlimit : int or None, optional
         Limit the depth of folders to traverse.  Folders at the `depthlimit` are
@@ -784,7 +818,8 @@ case the tree diagram is printed in the console.</dd>
         The following options can meaningfully be toggled by passing a formatter
         function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
         `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
-        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `filestart`,
+        `folderend`, `fileend`).
 
         Note that in version 0.3.0, formatter could only be used to update
         the style tokens.  It can now be used to udpate those as well as the other
@@ -802,6 +837,10 @@ case the tree diagram is printed in the console.</dd>
         is called on a folder, its children will (recursively) inherit
         those new arguments.
     slash : str, option:
+
+        **`DeprecationWarning`**: *With addition of `folderend` in v0.3.1,
+        `slash` is to be deprecated in a future version.*
+
         Slash character to follow folders.  If `&#39;sep&#39;`, uses `os.sep`.  The
         default is `&#39;/&#39;`.
     **kwargs : str
@@ -813,18 +852,20 @@ case the tree diagram is printed in the console.</dd>
         directories are completely traversed), `split` (characters to show a
         folder or file within a directory, with more items following),
         `final` (characters to show a folder or file within a directory,
-        with no more items following), `folderstart` (characters to append
-        before any folder), and `filestart` (characters to append beffore any
-        file).  The following shows the default tokens for the `&#39;lines&#39;` style:
+        with no more items following), `folderstart` (characters to prepend
+        before any folder), `filestart` (characters to preppend before any
+        file), `folderend` (characters to append after any folder), and
+        `fileend` (characters to append after any file). The following shows
+        the default tokens for the `&#39;lines&#39;` style:
 
             &gt;&gt;&gt; import seedir as sd
             &gt;&gt;&gt; sd.get_styleargs(&#39;lines&#39;)
-            {&#39;split&#39;: &#39;├─&#39;, &#39;extend&#39;: &#39;│ &#39;, &#39;space&#39;: &#39;  &#39;, &#39;final&#39;: &#39;└─&#39;, &#39;folderstart&#39;: &#39;&#39;, &#39;filestart&#39;: &#39;&#39;}
+            {&#39;split&#39;: &#39;├─&#39;, &#39;extend&#39;: &#39;│ &#39;, &#39;space&#39;: &#39;  &#39;, &#39;final&#39;: &#39;└─&#39;, &#39;folderstart&#39;: &#39;&#39;, &#39;filestart&#39;: &#39;&#39;, &#39;folderend&#39;: &#39;/&#39;, &#39;fileend&#39;: &#39;&#39;}
 
         All default style tokens are 2 character strings, except for
-        `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
-        affected by the indent parameter.  The `uniform` and `anystart`
-        parameters can be used to affect multiple style tokens.
+        the file/folder start/end tokens.  Style tokens from `**kwargs` are not
+        affected by the indent parameter.  The `uniform`, `anystart`, and
+        `anyend` parameters can be used to affect multiple style tokens.
 
     Raises
     ------
@@ -840,15 +881,13 @@ case the tree diagram is printed in the console.</dd>
     &#39;&#39;&#39;
 
     accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
-                     &#39;folderstart&#39;, &#39;filestart&#39;]
+                     &#39;folderstart&#39;, &#39;filestart&#39;, &#39;folderend&#39;, &#39;fileend&#39;]
 
     if any(i not in accept_kwargs for i in kwargs.keys()):
         raise SeedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
 
-    if style:
-        styleargs = printing.get_styleargs(style)
-
-    styleargs = printing.format_indent(styleargs, indent=indent)
+    styleargs = printing.get_styleargs(style)
+    printing.format_indent(styleargs, indent=indent)
 
     if uniform is not None:
         for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
@@ -858,15 +897,24 @@ case the tree diagram is printed in the console.</dd>
         styleargs[&#39;folderstart&#39;] = anystart
         styleargs[&#39;filestart&#39;] = anystart
 
+    if anyend is not None:
+        styleargs[&#39;folderend&#39;] = anyend
+        styleargs[&#39;fileend&#39;] = anyend
+
+    if slash is not None:
+        warnings.warn(&#34;`slash` will removed in a future version; &#34;
+                      &#34;pass `folderend` as a keyword argument instead.&#34;,
+                      DeprecationWarning)
+        if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
+            slash = os.sep
+        styleargs[&#39;folderend&#39;] = slash
+
     for k in kwargs:
         if k in styleargs:
             styleargs[k] = kwargs[k]
 
     if sort_key is not None or sort_reverse == True:
         sort = True
-
-    if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-        slash = os.sep
 
     if path is None:
         path = os.getcwd()
@@ -883,7 +931,6 @@ case the tree diagram is printed in the console.</dd>
                         include_files=include_files,
                         exclude_files=exclude_files,
                         regex=regex,
-                        slash=slash,
                         mask=mask,
                         formatter=formatter,
                         sticky_formatter=sticky_formatter,
@@ -934,7 +981,7 @@ case the tree diagram is printed in the console.</dd>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

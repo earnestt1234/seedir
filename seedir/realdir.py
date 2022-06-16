@@ -204,7 +204,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
         `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
         keywords (`extend`, `space`, `split`, `final`, `folderstart`, `filestart`,
-        'folderend', 'fileend').
+        `folderend`, `fileend`).
 
         Note that in version 0.3.0, formatter could only be used to update
         the style tokens.  It can now be used to udpate those as well as the other
@@ -222,6 +222,10 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         is called on a folder, its children will (recursively) inherit
         those new arguments.
     slash : str, option:
+
+        **`DeprecationWarning`**: *With addition of `folderend` in v0.3.1,
+        `slash` is to be deprecated in a future version.*
+
         Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
         default is `'/'`.
     **kwargs : str
