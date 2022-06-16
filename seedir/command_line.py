@@ -10,8 +10,13 @@ helptxt = """
 Help for the seedir CLI.  Function for printing a folder tree
 structure, similar to UNIX `tree`.  Directs all arguments to `seedir.seedir()`.
 
-Note that this has been revamped for version 0.3.1, and moved from getopts
-to argparse.
+Note that this has been revamped for version v0.3.1.  Specifically, parsing
+was moved from getopts to argparse.  Options should now all explicitly
+reference parameters of `seedir.seedir()`.
+
+Not all seedir arguments are accepted, namely ones which expect Python
+callables and ones which alter the style.  The latter may be added
+in a future version.
 
 Options (short/long):
 
@@ -42,6 +47,9 @@ Options (short/long):
     -s / --sort
         Sort the contents of each directory by name.
 
+    -t / --indent INDENT
+        Amount to indent.  Default: 2
+
     -y / --style STYLE
         seedir style to use.  Default: "lines"
 
@@ -57,6 +65,8 @@ Options (long only):
 
 def parse():
 
+    """Parse command line arguments with argparse."""
+
     parser = argparse.ArgumentParser(add_help=False)
 
     parser.add_argument('-b', '--beyond', default='content')
@@ -67,6 +77,7 @@ def parse():
     parser.add_argument('-p', '--path', default=os.getcwd())
     parser.add_argument('-r', '--sort_reverse', action='store_true')
     parser.add_argument('-s', '--sort', action='store_true')
+    parser.add_argument('-t', '--indent', default=2, type=int)
     parser.add_argument('-y', '--style', default='lines')
 
     parser.add_argument('--include_folders', default=None, nargs='+')
@@ -79,12 +90,15 @@ def parse():
 
 def main():
 
+    """Parses arguments and passes them to `seedir.seedir()`"""
+
     args = parse()
     if args.help:
         print(helptxt)
         return
 
     kwargs = vars(args)
+    del kwargs['help']
     sd.seedir(**kwargs)
 
 if __name__ == '__main__':
