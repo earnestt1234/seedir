@@ -14,6 +14,7 @@ for key in ['get_random_int',
 import os
 import string
 import re
+import warnings
 
 import random
 
@@ -586,8 +587,8 @@ class FakeDir(FakeItem):
         self.walk_apply(create, root=path)
 
     def seedir(self, style='lines', printout=True, indent=2, uniform=None,
-               anystart=None, depthlimit=None, itemlimit=None, beyond=None,
-               first=None, sort=False, sort_reverse=False, sort_key=None,
+               anystart=None, anyend=None, depthlimit=None, itemlimit=None,
+               beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, slash='/', mask=None,
                formatter=None, sticky_formatter=False, **kwargs):
@@ -618,6 +619,10 @@ class FakeDir(FakeItem):
         anystart : str or None, optional
             Characters to append before any item (i.e. folder or file).  The
             default is `None`.  Specific starts for folders and files can be
+            specified (see `**kwargs`).
+        anyend : str or None, optional
+            Characters to append after any item (i.e. folder or file).  The
+            default is `None`.  Specific ends for folders and files can be
             specified (see `**kwargs`).
         depthlimit : int or None, optional
             Limit the depth of folders to traverse.  Folders at the `depthlimit` are
@@ -674,7 +679,8 @@ class FakeDir(FakeItem):
             The following options can meaningfully be toggled by passing a formatter
             function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
             `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
-            keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+            keywords (`extend`, `space`, `split`, `final`, `folderstart`, `filestart`,
+            'folderend', 'fileend').
 
             Note that in version 0.3.0, formatter could only be used to update
             the style tokens.  It can now be used to udpate those as well as the other
@@ -692,7 +698,7 @@ class FakeDir(FakeItem):
             is called on a folder, its children will (recursively) inherit
             those new arguments.
         slash : str, option:
-            Slash character to follow folders.  If `'sep'`, uses `os.se`p.  The
+            Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
             default is `'/'`.
         **kwargs : str
             Specific tokens to use for creating the file tree diagram.  The tokens
@@ -703,18 +709,20 @@ class FakeDir(FakeItem):
             directories are completely traversed), `split` (characters to show a
             folder or file within a directory, with more items following),
             `final` (characters to show a folder or file within a directory,
-            with no more items following), `folderstart` (characters to append
-            before any folder), and `filestart` (characters to append beffore any
-            file).  The following shows the default tokens for the `'lines'` style:
+            with no more items following), `folderstart` (characters to prepend
+            before any folder), `filestart` (characters to preppend before any
+            file), `folderend` (characters to append after any folder), and
+            `fileend` (characters to append after any file). The following shows
+            the default tokens for the `'lines'` style:
 
-            >>> import seedir as sd
-            >>> sd.get_styleargs('lines')
-            {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': ''}
+                >>> import seedir as sd
+                >>> sd.get_styleargs('lines')
+                {'split': '', 'extend': ' ', 'space': '  ', 'final': '', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
 
             All default style tokens are 2 character strings, except for
-            `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
-            affected by the indent parameter.  The `uniform` and `anystart`
-            parameters can be used to affect multiple style tokens.
+            the file/folder start/end tokens.  Style tokens from `**kwargs` are not
+            affected by the indent parameter.  The `uniform`, `anystart`, and
+            `anyend` parameters can be used to affect multiple style tokens.
 
         Raises
         ------
@@ -730,7 +738,7 @@ class FakeDir(FakeItem):
         '''
 
         accept_kwargs = ['extend', 'split', 'space', 'final',
-                         'folderstart', 'filestart']
+                         'folderstart', 'filestart', 'folderend', 'fileend']
 
         if any(i not in accept_kwargs for i in kwargs.keys()):
             raise FakedirError('kwargs must be any of {}'.format(accept_kwargs))
@@ -746,6 +754,18 @@ class FakeDir(FakeItem):
         if anystart is not None:
             styleargs['folderstart'] = anystart
             styleargs['filestart'] = anystart
+
+        if anyend is not None:
+            styleargs['folderend'] = anyend
+            styleargs['fileend'] = anyend
+
+        if slash is not None:
+            warnings.warn("`slash` will removed in a future version; "
+                          "pass `folderend` as a keyword argument instead.",
+                          DeprecationWarning)
+            if slash.lower() in ['sep', 'os.sep']:
+                slash = os.sep
+            styleargs['folderend'] = slash
 
         for k in kwargs:
             if k in styleargs:
@@ -769,7 +789,6 @@ class FakeDir(FakeItem):
                             include_files=include_files,
                             exclude_files=exclude_files,
                             regex=regex,
-                            slash=slash,
                             mask=mask,
                             formatter=formatter,
                             sticky_formatter=sticky_formatter,

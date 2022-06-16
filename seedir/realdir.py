@@ -203,7 +203,8 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         The following options can meaningfully be toggled by passing a formatter
         function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
         `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
-        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `folderend`).
+        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `filestart`,
+        'folderend', 'fileend').
 
         Note that in version 0.3.0, formatter could only be used to update
         the style tokens.  It can now be used to udpate those as well as the other
