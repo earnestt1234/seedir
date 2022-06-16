@@ -1,95 +1,92 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 22 22:21:12 2020
 
-@author: earnestt1234
-"""
-
-import getopt, os, sys
+import argparse
+import os
 
 import seedir as sd
 
-help_letters = 'hp:y:d:i:b:s:r:'
+helptxt = """
+Help for the seedir CLI.  Function for printing a folder tree
+structure, similar to UNIX `tree`.  Directs all arguments to `seedir.seedir()`.
 
-long_opts = ['path=', 'style=', 'depthlimit=', 'itemlimit=',
-             'beyond=', 'sort=', 'sort_reverse=']
+Note that this has been revamped for version 0.3.1, and moved from getopts
+to argparse.
 
-help_str = '''Help for command seedir.  Function for printing a folder tree
-structure.
+Options (short/long):
 
-Basically calls seedir.seedir() (with some options removed).
+    -b / --beyond BEYOND
+        Way to represent items past the depthlimit or itemlimit.
+        Options are 'content' (default) or 'ellipsis'.
 
-Options:
+    -d / --depthlimit DEPTHLIMIT
+        Integer limit on depth of folders to enter. Default: None
 
--p --path= <DEFAULT : os.getcwd()>
-    System path (in quotes)
+    -f / --first FIRST
+        Sort the directory so that either files or folders appear first.
+        Options are "folders" or "files".
 
--y --style= <DEFAULT : 'lines'>
-    Style for the folder diagram.  Options are "lines", "spaces", "dash",
-    "arrow", "plus", or "emoji".
+    -h / --help
+        Show this message and exit.
 
--d --depthlimit= <DEFAULT : 3>
-    Limit on depth of folders to enter.
+    -i / --itemlimit ITEMLIMIT
+        Integer limit on the number of items to include per directory.
+        Default: None
 
--i --itemlimit= <DEFAULT : 10>
-    Limit on the number of items to include per directory.
+    -p / --path PATH
+        Dir to see.  Default: current directory (os.getcwd())
 
--b --beyond= <DEFAULT : 'content'>
-    Way to represent items past the depthlimit or itemlimit.  Options are
-    'content' or 'ellipsis'.
+    -r / --sort_reverse
+        Reverse the sort.
 
--s --sort <DEFAULT : False>
-    Sort the contents of each directory (by name).
+    -s / --sort
+        Sort the contents of each directory by name.
 
--r --sort_reverse <DEFAULT : False>
-    Reverse the sort.
-'''
+    -y / --style STYLE
+        seedir style to use.  Default: "lines"
 
-def main(argv=None):
-    if argv is  None:
-        argv = sys.argv[1:]
-    path = os.getcwd()
-    style = 'lines'
-    depthlimit = 3
-    itemlimit = 10
-    beyond = 'content'
-    sort = False
-    sort_reverse = False
-    try:
-       opts, args = getopt.getopt(argv, help_letters, long_opts)
-    except getopt.GetoptError:
-       print(help_str)
-       sys.exit(2)
-    for opt, arg in opts:
-       if opt == '-h':
-           print(help_str)
-           sys.exit()
-       elif opt in ("-p", "--path"):
-           path = arg
-       elif opt in ("-y", "--style"):
-           style = arg
-       elif opt in ("-d", "--depthlimit"):
-           depthlimit = int(arg)
-       elif opt in ("-i", "--itemlimit"):
-           itemlimit = int(arg)
-       elif opt in ("-b", "--beyond"):
-           beyond= arg
-       elif opt in ("-s", "--sort"):
-           sort = bool(arg)
-       elif opt in ("-r", "--sort_reverse"):
-           sort_reverse = bool(arg)
+Options (long only):
 
-    s = sd.seedir(path=path,
-                  style=style,
-                  depthlimit=depthlimit,
-                  itemlimit=itemlimit,
-                  beyond=beyond,
-                  sort=sort,
-                  sort_reverse=sort_reverse,
-                  printout=False)
+    --include_folders, --include_files, --exclude_folders, --exclude_files ...
+        Folder / file names to include or exclude.  Not set by default. Pass
+        multiple items as space-separated values.
 
-    print('\n', s, '\n', sep='')
+    --regex
+        Interpret include/exclude folder/file arguments as Python regex.
+"""
 
-if __name__ == "__main__":
+def parse():
+
+    parser = argparse.ArgumentParser(add_help=False)
+
+    parser.add_argument('-b', '--beyond', default='content')
+    parser.add_argument('-d', '--depthlimit', default=None, type=int)
+    parser.add_argument('-f', '--first', default=None)
+    parser.add_argument('-h', '--help', action='store_true')
+    parser.add_argument('-i', '--itemlimit', default=None, type=int)
+    parser.add_argument('-p', '--path', default=os.getcwd())
+    parser.add_argument('-r', '--sort_reverse', action='store_true')
+    parser.add_argument('-s', '--sort', action='store_true')
+    parser.add_argument('-y', '--style', default='lines')
+
+    parser.add_argument('--include_folders', default=None, nargs='+')
+    parser.add_argument('--exclude_folders', default=None, nargs='+')
+    parser.add_argument('--include_files', default=None, nargs='+')
+    parser.add_argument('--exclude_files', default=None, nargs='+')
+    parser.add_argument('--regex', action='store_true')
+
+    return parser.parse_args()
+
+def main():
+
+    args = parse()
+    if args.help:
+        print(helptxt)
+        return
+
+    kwargs = vars(args)
+    sd.seedir(**kwargs)
+
+if __name__ == '__main__':
     main()
+
