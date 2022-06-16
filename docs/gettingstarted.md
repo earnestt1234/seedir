@@ -243,22 +243,22 @@ Each style is basically a collection of string "tokens" which are combined to fo
 
 ```python
 >>> sd.get_styleargs('emoji')
-{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '📁 ', 'filestart': '📄 '}
+{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '📁 ', 'filestart': '📄 ', 'folderend': '/', 'fileend': ''}
  
 ```
 
 You can pass any of these tokens as `**kwargs` to explicitly customize styles with new symbols (note that passed tokens will not be affected by the `indent` parameter; it assumes you know how long you want them to be):
 
 ```python
->>> sd.seedir(path, space='  ', extend='||', split='-}', final='\\\\', folderstart=' ', filestart=' ')
-exampledir/
+>>> sd.seedir(path, space='  ', extend='||', split='-}', final='\\\\', folderstart=' ', filestart=' ', folderend='%')
+exampledir%
 -} jowly.pdf
 -} monkish.txt
--} pedantic/
+-} pedantic%
 ||\\ cataclysmic.txt
--} scrooge/
+-} scrooge%
 ||-} light.pdf
-||-} paycheck/
+||-} paycheck%
 ||||\\ electrophoresis.txt
 ||\\ reliquary.pdf
 \\ Vogel.txt

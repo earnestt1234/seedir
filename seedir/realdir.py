@@ -241,7 +241,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
 
             >>> import seedir as sd
             >>> sd.get_styleargs('lines')
-            {'split': '', 'extend': ' ', 'space': '  ', 'final': '', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
+            {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
 
         All default style tokens are 2 character strings, except for
         the file/folder start/end tokens.  Style tokens from `**kwargs` are not

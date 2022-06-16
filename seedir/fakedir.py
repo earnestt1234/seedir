@@ -242,9 +242,11 @@ class FakeDir(FakeItem):
     There are various ways to add to it:
 
     ```
-    # using methods
+    # using methods; the created items are returned
     >>> x.create_file(['__init__.py', 'main.py', 'styles.txt'])
+    [FakeFile(myfakedir/__init__.py), FakeFile(myfakedir/main.py), FakeFile(myfakedir/styles.txt)]
     >>> x.create_folder('docs')
+    docs/
 
     # initializing new objects and setting the parent
     >>> y = sd.FakeDir('resources', parent=x)
@@ -255,6 +257,9 @@ class FakeDir(FakeItem):
 
     >>> for n in ['a', 'b', 'c']:
     ...     z.create_file(n + '.png')
+    FakeFile(myfakedir/resources/images/a.png)
+    FakeFile(myfakedir/resources/images/b.png)
+    FakeFile(myfakedir/resources/images/c.png)
 
     >>> x.seedir(sort=True, first='folders')
     myfakedir/
@@ -319,6 +324,7 @@ class FakeDir(FakeItem):
         >>> import seedir as sd
         >>> x = sd.FakeDir('Test')
         >>> x.create_folder("new_folder")
+        new_folder/
         >>> x.seedir()
         Test/
         └─new_folder/
@@ -350,6 +356,7 @@ class FakeDir(FakeItem):
         >>> import seedir as sd
         >>> x = sd.FakeDir('Test')
         >>> x.create_file("new_file.txt")
+        FakeFile(Test/new_file.txt)
         >>> x.seedir()
         Test/
         └─new_file.txt
@@ -717,7 +724,7 @@ class FakeDir(FakeItem):
 
                 >>> import seedir as sd
                 >>> sd.get_styleargs('lines')
-                {'split': '', 'extend': ' ', 'space': '  ', 'final': '', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
+                {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
 
             All default style tokens are 2 character strings, except for
             the file/folder start/end tokens.  Style tokens from `**kwargs` are not
