@@ -587,8 +587,7 @@ class FakeDir(FakeItem):
             if isinstance(f, FakeDir):
                 os.mkdir(joined)
             elif isinstance(f, FakeFile):
-                with open(joined, 'w') as file:
-                    pass
+                with open(joined, 'w'): pass;
         if path is None:
             path = os.getcwd()
         self.walk_apply(create, root=path)
