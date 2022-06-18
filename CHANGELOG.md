@@ -6,10 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.3.1 - PLANNED
 
-- Update the `formatter` parameter to edit additional arguments, besides style keywords
-- Add `folderend` and `fileend` parameters for customizing tokens at end of items
-- Clean up the command line tool.
-- See the "dev" branch for tracking progress
+### Added
+- Additional functionality to the `formatter` parameter: can now dynamically set other seedir arguments as well as styling ones
+- Added a `sticky_formatter` parameter for causing the formatter changes to continue through sub-directories.
+- Additional test cases for `formatter`
+- Add `folderend` & `fileend` tokens for setting characters at end of line.  Default styles have been updated to include these.
+- Additional documentation, specifically for `formatter` but also some smaller tweaks
+
+### Changed
+- The CLI was revamped, now using argparse instead of getopts.  More seedir options were added.
+- The `seedir.printing.format_indent()` method now modifies dictionaries in place, rather than creating a new one
+- the `FakeDir.realize()` method no longer creates a reference to unused file variable
+
+### Fixed
+- Fix the words.txt file not being closed after opening 🤦
+
+### Deprecated
+
+- `slash` is on warning for removal after addition of `folderend`.
 
 ## [0.3.0](https://github.com/earnestt1234/seedir/releases/tag/v0.3.0) - 2021-12-20
 
