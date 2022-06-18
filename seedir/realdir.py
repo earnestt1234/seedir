@@ -11,20 +11,20 @@ The main algorithm for determining the folder structure string is within the
 """
 
 import os
+import warnings
 
 from seedir.folderstructure import RealDirStructure
-
+from seedir.folderstructurehelpers import formatter_update_args
 from seedir.errors import SeedirError
-
 import seedir.printing as printing
 
 
 def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
-           anystart=None, depthlimit=None, itemlimit=None, beyond=None,
-           first=None, sort=False, sort_reverse=False, sort_key=None,
-           include_folders=None, exclude_folders=None, include_files=None,
-           exclude_files=None, regex=False, mask=None, formatter=None,
-           slash='/', **kwargs):
+           anystart=None, anyend=None, depthlimit=None, itemlimit=None,
+           beyond=None, first=None, sort=False, sort_reverse=False,
+           sort_key=None, include_folders=None, exclude_folders=None,
+           include_files=None, exclude_files=None, regex=False, mask=None,
+           formatter=None, sticky_formatter=False, slash=None, **kwargs):
     '''
 
     Primary function of the seedir package: generate folder trees for
@@ -141,8 +141,12 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         final tokens are replaced with `uniform` (the `'spaces'` style is
         essentially `uniform = '  '`).
     anystart : str or None, optional
-        Characters to append before any item (i.e. folder or file).  The
+        Characters to prepend before any item (i.e. folder or file).  The
         default is `None`.  Specific starts for folders and files can be
+        specified (see `**kwargs`).
+    anyend : str or None, optional
+        Characters to append after any item (i.e. folder or file).  The
+        default is `None`.  Specific ends for folders and files can be
         specified (see `**kwargs`).
     depthlimit : int or None, optional
         Limit the depth of folders to traverse.  Folders at the `depthlimit` are
@@ -176,7 +180,9 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         of the builtin `sorted()` or `list.sort()`. The function should take a
         string as an argument. The default is `None`.
     include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
-        Folder / file names to include or exclude. The default is `None`.
+        Folder / file names to include or exclude. The default is `None`.  By
+        default, these are interpreted literally.  Pass `regex=True` for
+        using regular expressions.
     regex : bool, optional
         Interpret the strings of include/exclude file/folder arguments as
         regular expressions. The default is `False`.
@@ -185,24 +191,43 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         are passed to the `mask` function.  If `True` is returned, the
         item is kept.  The default is `None`.
     formatter : function, optional
-        Function for customizing the tokens used for specific items during
-        traversal.
+        Function for customizing the directory printing logic and style
+        based on specific folders & files.  When passed, the formatter
+        is called on each item in the file tree, and the current arguments
+        are updated based what is returned.
 
         The formatter function should accept a system path as a
         single argument (either relative or absolute, depending on what is passed
         to the `path` argument), and it should return either a dictionary or None.
-        The dictionary should have names of seedir tokens as keys ('split',
-        'extend', 'space', 'final', 'folderstart', or 'finalstart') and strings
-        to use for those tokens as values.  Call `seedir.printing.get_styleargs()`
-        for examples.  Though note, not all six tokens need to be specified.
+        The dictionary should have names of arguments as keys and their respective
+        setting as values.
+
+        The following options can meaningfully be toggled by passing a formatter
+        function: `depthlimit`, `itemlimit`, `beyond`, `first`, `sort`, `sort_reverse`,
+        `sort_key`, `include_folders`, `regex`, `mask`, as well as any seedir token
+        keywords (`extend`, `space`, `split`, `final`, `folderstart`, `filestart`,
+        `folderend`, `fileend`).
+
+        Note that in version 0.3.0, formatter could only be used to update
+        the style tokens.  It can now be used to udpate those as well as the other
+        arguments listed above.
 
         If None is returned by formatter, the tokens will be set by `style`.
 
         Note that items exlcuded by the inclusion/exclusion arguments (or the
-        `mask`) *will not* be seen by formatter.  Alternatively, any folder tree
-        entries created by the `beyond` argument *will* be seen by formatter.
+        `mask`) *will not* be seen by formatter.  Similarly, any folder tree
+        entries created by the `beyond` argument *will not* be seen by formatter.
 
+    sticky_formatter : bool, optional
+        When True, updates to argumnts made by the `formatter` (see above)
+        will be permanent.  Thus, if arguments are updated when the `formatter`
+        is called on a folder, its children will (recursively) inherit
+        those new arguments.
     slash : str, option:
+
+        **`DeprecationWarning`**: *With addition of `folderend` in v0.3.1,
+        `slash` is to be deprecated in a future version.*
+
         Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
         default is `'/'`.
     **kwargs : str
@@ -214,18 +239,20 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         directories are completely traversed), `split` (characters to show a
         folder or file within a directory, with more items following),
         `final` (characters to show a folder or file within a directory,
-        with no more items following), `folderstart` (characters to append
-        before any folder), and `filestart` (characters to append beffore any
-        file).  The following shows the default tokens for the `'lines'` style:
+        with no more items following), `folderstart` (characters to prepend
+        before any folder), `filestart` (characters to preppend before any
+        file), `folderend` (characters to append after any folder), and
+        `fileend` (characters to append after any file). The following shows
+        the default tokens for the `'lines'` style:
 
             >>> import seedir as sd
             >>> sd.get_styleargs('lines')
-            {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': ''}
+            {'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '', 'filestart': '', 'folderend': '/', 'fileend': ''}
 
         All default style tokens are 2 character strings, except for
-        `folderstart` and `filestart`.  Style tokens from `**kwargs` are not
-        affected by the indent parameter.  The `uniform` and `anystart`
-        parameters can be used to affect multiple style tokens.
+        the file/folder start/end tokens.  Style tokens from `**kwargs` are not
+        affected by the indent parameter.  The `uniform`, `anystart`, and
+        `anyend` parameters can be used to affect multiple style tokens.
 
     Raises
     ------
@@ -241,15 +268,13 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     '''
 
     accept_kwargs = ['extend', 'split', 'space', 'final',
-                     'folderstart', 'filestart']
+                     'folderstart', 'filestart', 'folderend', 'fileend']
 
     if any(i not in accept_kwargs for i in kwargs.keys()):
         raise SeedirError('kwargs must be any of {}'.format(accept_kwargs))
 
-    if style:
-        styleargs = printing.get_styleargs(style)
-
-    styleargs = printing.format_indent(styleargs, indent=indent)
+    styleargs = printing.get_styleargs(style)
+    printing.format_indent(styleargs, indent=indent)
 
     if uniform is not None:
         for arg in ['extend', 'split', 'final', 'space']:
@@ -259,6 +284,18 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         styleargs['folderstart'] = anystart
         styleargs['filestart'] = anystart
 
+    if anyend is not None:
+        styleargs['folderend'] = anyend
+        styleargs['fileend'] = anyend
+
+    if slash is not None:
+        warnings.warn("`slash` will removed in a future version; "
+                      "pass `folderend` as a keyword argument instead.",
+                      DeprecationWarning)
+        if slash.lower() in ['sep', 'os.sep']:
+            slash = os.sep
+        styleargs['folderend'] = slash
+
     for k in kwargs:
         if k in styleargs:
             styleargs[k] = kwargs[k]
@@ -266,29 +303,39 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     if sort_key is not None or sort_reverse == True:
         sort = True
 
-    if slash.lower() in ['sep', 'os.sep']:
-        slash = os.sep
-
     if path is None:
         path = os.getcwd()
 
+    default_args = dict(depthlimit=depthlimit,
+                        itemlimit=itemlimit,
+                        beyond=beyond,
+                        first=first,
+                        sort=sort,
+                        sort_reverse=sort_reverse,
+                        sort_key=sort_key,
+                        include_folders=include_folders,
+                        exclude_folders=exclude_folders,
+                        include_files=include_files,
+                        exclude_files=exclude_files,
+                        regex=regex,
+                        mask=mask,
+                        formatter=formatter,
+                        sticky_formatter=sticky_formatter,
+                        **styleargs)
+
+    # apply formatter for root folder
+    current_args = default_args.copy()
+
+    if formatter is not None:
+        formatter_update_args(formatter, path, current_args)
+
+    if sticky_formatter:
+        default_args = current_args
+
+    # call
     s = RealDirStructure(path,
-                         depthlimit=depthlimit,
-                         itemlimit=itemlimit,
-                         beyond=beyond,
-                         first=first,
-                         sort=sort,
-                         sort_reverse=sort_reverse,
-                         sort_key=sort_key,
-                         include_folders=include_folders,
-                         exclude_folders=exclude_folders,
-                         include_files=include_files,
-                         exclude_files=exclude_files,
-                         regex=regex,
-                         slash=slash,
-                         mask=mask,
-                         formatter=formatter,
-                         **styleargs)
+                         default_args=default_args,
+                         **current_args)
 
     if printout:
         print(s)

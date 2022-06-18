@@ -60,7 +60,7 @@ exampledir/
 
 ```
 
-These "include" and "exclude" arguments also support regular expressions:
+By passing `regex=True`, these "include" and "exclude" arguments also support regular expressions, :
 
 ```python
 >>> sd.seedir(path, include_files='.*\.pdf$', regex=True) # all PDFs
@@ -188,8 +188,6 @@ exampledir/
 
 ## Styles 💅
 
-### Basic styling
-
 `seedir.realdir.seedir()` has a few builtin styles for formatting the output of the folder tree:
 
 ```python
@@ -243,22 +241,22 @@ Each style is basically a collection of string "tokens" which are combined to fo
 
 ```python
 >>> sd.get_styleargs('emoji')
-{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '📁 ', 'filestart': '📄 '}
+{'split': '├─', 'extend': '│ ', 'space': '  ', 'final': '└─', 'folderstart': '📁 ', 'filestart': '📄 ', 'folderend': '/', 'fileend': ''}
  
 ```
 
 You can pass any of these tokens as `**kwargs` to explicitly customize styles with new symbols (note that passed tokens will not be affected by the `indent` parameter; it assumes you know how long you want them to be):
 
 ```python
->>> sd.seedir(path, space='  ', extend='||', split='-}', final='\\\\', folderstart=' ', filestart=' ')
-exampledir/
+>>> sd.seedir(path, space='  ', extend='||', split='-}', final='\\\\', folderstart=' ', filestart=' ', folderend='%')
+exampledir%
 -} jowly.pdf
 -} monkish.txt
--} pedantic/
+-} pedantic%
 ||\\ cataclysmic.txt
--} scrooge/
+-} scrooge%
 ||-} light.pdf
-||-} paycheck/
+||-} paycheck%
 ||||\\ electrophoresis.txt
 ||\\ reliquary.pdf
 \\ Vogel.txt
@@ -283,9 +281,11 @@ There are also `uniform` and `anystart` arguments for customizing multiple token
 
 ```
 
-### Functional styling
+## Programmatic formatting
 
-[Following a user-raised issue](https://github.com/earnestt1234/seedir/issues/4), seedir has added a `formatter` parameter for enabling some programmatic styling of the folder tree.  This can be useful when you want to alter the style of the diagram based on things like the depth, item name, file extension, etc.  The path of each item (relative to the root) is passed to `formatter`, which returns new style tokens to use for that item.
+[Following a user-raised issue](https://github.com/earnestt1234/seedir/issues/4), seedir has added a `formatter` parameter for enabling some programmatic editing of the folder tree.  This can be useful when you want to alter the style of the diagram based on things like the depth, item name, file extension, etc.  The path of each item (relative to the root) is passed to `formatter`, which returns new settings to use for that item.
+
+The following example edits the style tokens for items with particular names or file extensions:
 
 ```python
 >>> import os
@@ -319,6 +319,75 @@ exampledir/
 └─✏️Vogel.txt
 
 ```
+
+The `formatter` parameter can also dynamically set other options, such as the filtering arguments outlined above.  The following example sets a mask that removes files, but only in the root directory:
+
+```python
+>>> import os
+>>> def no_root_files(item):
+... 	if os.path.basename(item) == 'exampledir':
+...     	mask = lambda x: os.path.isdir(x)
+...     	return {'mask': mask}
+
+>>> sd.seedir(path, formatter=no_root_files)
+exampledir/
+├─pedantic/
+│ └─cataclysmic.txt
+└─scrooge/
+  ├─light.pdf
+  ├─paycheck/
+  │ └─electrophoresis.txt
+  └─reliquary.pdf
+
+```
+
+Note that by default, any changes set by the `formatter` are unset for sub-directories.  You can turn on the `sticky_formatter` option to make changes persist:
+
+```
+>>> def mark(item):
+... 	d = {}
+... 	parent = os.path.basename(os.path.dirname(item))
+... 	if parent == 'pedantic':
+...     	d['folderstart'] = '✔️ '
+...     	d['filestart'] = '✔️ '
+... 	if parent == 'scrooge':
+...     	d['folderstart'] = '❌ '
+...     	d['filestart'] = '❌ '
+...
+... 	return d
+
+# The function only makes changes to items in the 'pedantic' and 'scrooge'
+# folders explicilty.
+>>> sd.seedir(path, formatter=mark)
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─pedantic/
+│ └─✔️ cataclysmic.txt
+├─scrooge/
+│ ├─❌ light.pdf
+│ ├─❌ paycheck/
+│ │ └─electrophoresis.txt
+│ └─❌ reliquary.pdf
+└─Vogel.txt
+
+# By passing `sticky_formatter`, changes are also applied to subdirectories
+>>> sd.seedir(path, formatter=mark, sticky_formatter=True)
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─pedantic/
+│ └─✔️ cataclysmic.txt
+├─scrooge/
+│ ├─❌ light.pdf
+│ ├─❌ paycheck/
+│ │ └─❌ electrophoresis.txt
+│ └─❌ reliquary.pdf
+└─Vogel.txt
+
+```
+
+
 
 Some properties (e.g., the depth of the folder relative to the parent) are a little more difficult to determine with a system paths.  However, switching to object-oriented FakeDirs (introduced in the following section) make accessing interfolder relations a little easier:
 

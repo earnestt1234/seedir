@@ -15,7 +15,7 @@ from seedir.folderstructurehelpers import (listdir_fullpath,
                                            beyond_depth_str,
                                            beyond_fakedepth_str,
                                            get_base_header,
-                                           formatter_update_styleargs)
+                                           formatter_update_args)
 
 class FolderStructure:
     '''General class for determining folder strctures.'''
@@ -57,31 +57,29 @@ class FolderStructure:
         self.getname = getname_func
         self.beyondstr = beyondstr_func
 
-    def _folderstructure(self, folder, depth=0, incomplete=None, extend='│ ',
-                         space='  ', split='├─', final='└─',
-                         filestart='', folderstart='', depthlimit=None,
-                         itemlimit=None, beyond=None, first=None,
+    def _folderstructure(self, folder, default_args, depth=0, incomplete=None,
+                         extend='│ ', space='  ', split='├─', final='└─',
+                         filestart='', folderstart='', fileend='', folderend='/',
+                         depthlimit=None, itemlimit=None, beyond=None, first=None,
                          sort=True, sort_reverse=False, sort_key=None,
                          include_folders=None, exclude_folders=None,
                          include_files=None, exclude_files=None,
-                         regex=False, mask=None, formatter=None, slash='/'):
+                         regex=False, mask=None, formatter=None, sticky_formatter=False):
         '''
         Main algorithm for creating folder structure string.  See
         `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
         for a description of the parameters.
 
-        '''
+        Note that since the expansion of the formatter parameter
+        (version 0.3.1), the call & logic has been slightly updated.
+        Primarily, the `default_args` parameter has been added, to represent
+        arguments to default to when the formatter is not in use.  The actual
+        keyword arguments are treated as the options to be used for `folder`,
+        and can change between iterations.  The `default_args` stay the same,
+        unless `sticky_formatter` is used in combination with `formatter` to
+        permanently update the default arguments.
 
-        # collect style arguments
-        styleargs = {
-            'extend': extend,
-            'space': space,
-            'split': split,
-            'final': final,
-            'filestart': filestart,
-            'folderstart': folderstart
-            }
-        backup = styleargs.copy()
+        '''
 
         # initialize
         output = ''
@@ -90,19 +88,31 @@ class FolderStructure:
             incomplete = []
 
         if depth == 0:
+
+            d0args = {
+                'extend': extend,
+                'space': space,
+                'split': split,
+                'final': final,
+                'filestart': filestart,
+                'folderstart': folderstart,
+                'fileend' : fileend,
+                'folderend': folderend
+                }
+
             if formatter is not None:
-                formatter_update_styleargs(formatter, folder, styleargs)
-            output += (styleargs['folderstart'] +
+                formatter_update_args(formatter, folder, d0args)
+            output += (d0args['folderstart'] +
                        self.getname(folder) +
-                       slash +
+                       d0args['folderend'] +
                        '\n')
-            styleargs = backup
+
 
         current_itemlimit = itemlimit
         beyond_added = False
 
         # handle when depthlimit is reached
-        if depth == depthlimit:
+        if isinstance(depthlimit, int) and depth >= depthlimit:
             if beyond is None:
                 return output
             else:
@@ -155,56 +165,52 @@ class FolderStructure:
         # get output for each item in folder
         for i, f in enumerate(finalpaths):
 
+            current_args = default_args.copy() # used in this iteration
+            next_default_args = default_args   # passed to child
+
             lastitem = (i == (len(finalpaths) - 1))
             isbeyondstr = lastitem and beyond_added
             name = f if isbeyondstr else self.getname(f)
 
             # update tokens with formatter if passed
-            if formatter is not None:
-                formatter_update_styleargs(formatter, f, styleargs)
+            if not isbeyondstr and formatter is not None:
+                formatter_update_args(formatter, f, current_args)
+
+            if sticky_formatter:
+                next_default_args = current_args
 
             # create header for the item
             base_header = get_base_header(incomplete,
-                                          styleargs['extend'],
-                                          styleargs['space'])
+                                          current_args['extend'],
+                                          current_args['space'])
 
             if lastitem:
-                branch = styleargs['final']
+                branch = current_args['final']
                 incomplete.remove(depth)
             else:
-                branch = styleargs['split']
+                branch = current_args['split']
 
             header = base_header + branch
 
             # concat to output and recurse if item is folder
             if not isbeyondstr and self.isdir(f):
-                output += header + styleargs['folderstart'] + name + slash +'\n'
+                output += (header +
+                           current_args['folderstart'] +
+                           name +
+                           current_args['folderend'] +
+                           '\n')
                 output += self._folderstructure(f, depth=depth + 1,
                                                 incomplete=incomplete,
-                                                split=split, extend=extend,
-                                                space=space,
-                                                final=final,
-                                                filestart=filestart,
-                                                folderstart=folderstart,
-                                                depthlimit=depthlimit,
-                                                itemlimit=itemlimit,
-                                                beyond=beyond,
-                                                first=first,
-                                                sort=sort,
-                                                sort_reverse=sort_reverse,
-                                                sort_key=sort_key,
-                                                include_folders=include_folders,
-                                                exclude_folders=exclude_folders,
-                                                include_files=include_files,
-                                                exclude_files=exclude_files,
-                                                regex=regex,
-                                                mask=mask,
-                                                formatter=formatter,
-                                                slash=slash)
+                                                default_args=next_default_args,
+                                                **current_args)
 
             # only concat to output if file
             else:
-                output += header + styleargs['filestart'] + name + '\n'
+                output += (header +
+                           current_args['filestart'] +
+                           name +
+                           current_args['fileend'] +
+                           '\n')
 
         return output
 
