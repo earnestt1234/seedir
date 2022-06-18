@@ -78,7 +78,7 @@ exampledir/
 └─Vogel.txt
 
 </code></pre>
-<p>These "include" and "exclude" arguments also support regular expressions:</p>
+<p>By passing <code>regex=True</code>, these "include" and "exclude" arguments also support regular expressions, :</p>
 <pre><code class="language-python">&gt;&gt;&gt; sd.seedir(path, include_files='.*\.pdf$', regex=True) # all PDFs
 exampledir/
 ├─jowly.pdf
@@ -181,7 +181,6 @@ exampledir/
 
 </code></pre>
 <h2 id="styles">Styles 💅</h2>
-<h3 id="basic-styling">Basic styling</h3>
 <p><code><a title="seedir.realdir.seedir" href="realdir.html#seedir.realdir.seedir">seedir()</a></code> has a few builtin styles for formatting the output of the folder tree:</p>
 <pre><code class="language-python">&gt;&gt;&gt; sd.seedir(path, style='emoji')
 📁 exampledir/
@@ -260,10 +259,11 @@ exampledir%
 ----&gt;Vogel.txt
 
 </code></pre>
-<h3 id="functional-styling">Functional styling</h3>
-<p><a href="https://github.com/earnestt1234/seedir/issues/4">Following a user-raised issue</a>, seedir has added a <code>formatter</code> parameter for enabling some programmatic styling of the folder tree.
+<h2 id="programmatic-formatting">Programmatic formatting</h2>
+<p><a href="https://github.com/earnestt1234/seedir/issues/4">Following a user-raised issue</a>, seedir has added a <code>formatter</code> parameter for enabling some programmatic editing of the folder tree.
 This can be useful when you want to alter the style of the diagram based on things like the depth, item name, file extension, etc.
-The path of each item (relative to the root) is passed to <code>formatter</code>, which returns new style tokens to use for that item.</p>
+The path of each item (relative to the root) is passed to <code>formatter</code>, which returns new settings to use for that item.</p>
+<p>The following example edits the style tokens for items with particular names or file extensions:</p>
 <pre><code class="language-python">&gt;&gt;&gt; import os
 
 &gt;&gt;&gt; def my_style(item):
@@ -293,6 +293,69 @@ exampledir/
 │ │ └─✏️electrophoresis.txt
 │ └─reliquary.pdf
 └─✏️Vogel.txt
+
+</code></pre>
+<p>The <code>formatter</code> parameter can also dynamically set other options, such as the filtering arguments outlined above.
+The following example sets a mask that removes files, but only in the root directory:</p>
+<pre><code class="language-python">&gt;&gt;&gt; import os
+&gt;&gt;&gt; def no_root_files(item):
+...     if os.path.basename(item) == 'exampledir':
+...         mask = lambda x: os.path.isdir(x)
+...         return {'mask': mask}
+
+&gt;&gt;&gt; sd.seedir(path, formatter=no_root_files)
+exampledir/
+├─pedantic/
+│ └─cataclysmic.txt
+└─scrooge/
+  ├─light.pdf
+  ├─paycheck/
+  │ └─electrophoresis.txt
+  └─reliquary.pdf
+
+</code></pre>
+<p>Note that by default, any changes set by the <code>formatter</code> are unset for sub-directories.
+You can turn on the <code>sticky_formatter</code> option to make changes persist:</p>
+<pre><code>&gt;&gt;&gt; def mark(item):
+...     d = {}
+...     parent = os.path.basename(os.path.dirname(item))
+...     if parent == 'pedantic':
+...         d['folderstart'] = '✔️ '
+...         d['filestart'] = '✔️ '
+...     if parent == 'scrooge':
+...         d['folderstart'] = '❌ '
+...         d['filestart'] = '❌ '
+...
+...     return d
+
+# The function only makes changes to items in the 'pedantic' and 'scrooge'
+# folders explicilty.
+&gt;&gt;&gt; sd.seedir(path, formatter=mark)
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─pedantic/
+│ └─✔️ cataclysmic.txt
+├─scrooge/
+│ ├─❌ light.pdf
+│ ├─❌ paycheck/
+│ │ └─electrophoresis.txt
+│ └─❌ reliquary.pdf
+└─Vogel.txt
+
+# By passing `sticky_formatter`, changes are also applied to subdirectories
+&gt;&gt;&gt; sd.seedir(path, formatter=mark, sticky_formatter=True)
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─pedantic/
+│ └─✔️ cataclysmic.txt
+├─scrooge/
+│ ├─❌ light.pdf
+│ ├─❌ paycheck/
+│ │ └─❌ electrophoresis.txt
+│ └─❌ reliquary.pdf
+└─Vogel.txt
 
 </code></pre>
 <p>Some properties (e.g., the depth of the folder relative to the parent) are a little more difficult to determine with a system paths.
@@ -727,11 +790,8 @@ Currently, the only tool here is <code><a title="seedir" href="#seedir">seedir</
 <li><a href="#sorting">Sorting</a></li>
 </ul>
 </li>
-<li><a href="#styles">Styles 💅</a><ul>
-<li><a href="#basic-styling">Basic styling</a></li>
-<li><a href="#functional-styling">Functional styling</a></li>
-</ul>
-</li>
+<li><a href="#styles">Styles 💅</a></li>
+<li><a href="#programmatic-formatting">Programmatic formatting</a></li>
 <li><a href="#fake-directories">Fake directories</a><ul>
 <li><a href="#making-from-scratch">Making from scratch</a></li>
 <li><a href="#turn-existing-directories-into-fakes">Turn existing directories into fakes</a></li>

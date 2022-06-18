@@ -698,7 +698,9 @@ class FakeDir(FakeItem):
             of the builtin `sorted()` or `list.sort()`. The function should take a
             string as an argument. The default is `None`.
         include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
-            Folder / file names to include or exclude. The default is `None`.
+            Folder / file names to include or exclude. The default is `None`.  By
+            default, these are interpreted literally.  Pass `regex=True` for
+            using regular expressions.
         regex : bool, optional
             Interpret the strings of include/exclude file/folder arguments as
             regular expressions. The default is `False`.
@@ -2682,7 +2684,9 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             of the builtin `sorted()` or `list.sort()`. The function should take a
             string as an argument. The default is `None`.
         include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
-            Folder / file names to include or exclude. The default is `None`.
+            Folder / file names to include or exclude. The default is `None`.  By
+            default, these are interpreted literally.  Pass `regex=True` for
+            using regular expressions.
         regex : bool, optional
             Interpret the strings of include/exclude file/folder arguments as
             regular expressions. The default is `False`.
@@ -3590,7 +3594,11 @@ The default is <code>False</code>.</dd>
 of the builtin <code>sorted()</code> or <code>list.sort()</code>. The function should take a
 string as an argument. The default is <code>None</code>.</dd>
 <dt><strong><code>include_folders</code></strong>, <strong><code>exclude_folders</code></strong>, <strong><code>include_files</code></strong>, <strong><code>exclude_files</code></strong> :&ensp;<code>str, list-like,</code> or <code>None</code>, optional</dt>
-<dd>Folder / file names to include or exclude. The default is <code>None</code>.</dd>
+<dd>Folder / file names to include or exclude. The default is <code>None</code>.
+By
+default, these are interpreted literally.
+Pass <code>regex=True</code> for
+using regular expressions.</dd>
 <dt><strong><code>regex</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>Interpret the strings of include/exclude file/folder arguments as
 regular expressions. The default is <code>False</code>.</dd>
@@ -3756,7 +3764,9 @@ case the tree diagram is printed in the console.</dd>
         of the builtin `sorted()` or `list.sort()`. The function should take a
         string as an argument. The default is `None`.
     include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
-        Folder / file names to include or exclude. The default is `None`.
+        Folder / file names to include or exclude. The default is `None`.  By
+        default, these are interpreted literally.  Pass `regex=True` for
+        using regular expressions.
     regex : bool, optional
         Interpret the strings of include/exclude file/folder arguments as
         regular expressions. The default is `False`.
