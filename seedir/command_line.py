@@ -22,7 +22,8 @@ Options (short/long):
 
     -b / --beyond BEYOND
         Way to represent items past the depthlimit or itemlimit.
-        Options are 'content' (default) or 'ellipsis'.
+        Options are 'content', 'ellipsis', or explicit string starting
+        with an underscore.  Not set by default.
 
     -d / --depthlimit DEPTHLIMIT
         Integer limit on depth of folders to enter. Default: None
@@ -69,7 +70,7 @@ def parse():
 
     parser = argparse.ArgumentParser(add_help=False)
 
-    parser.add_argument('-b', '--beyond', default='content')
+    parser.add_argument('-b', '--beyond', default=None)
     parser.add_argument('-d', '--depthlimit', default=None, type=int)
     parser.add_argument('-f', '--first', default=None)
     parser.add_argument('-h', '--help', action='store_true')
