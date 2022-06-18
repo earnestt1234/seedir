@@ -60,7 +60,7 @@ exampledir/
 
 ```
 
-These "include" and "exclude" arguments also support regular expressions:
+By passing `regex=True`, these "include" and "exclude" arguments also support regular expressions, :
 
 ```python
 >>> sd.seedir(path, include_files='.*\.pdf$', regex=True) # all PDFs

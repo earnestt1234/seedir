@@ -180,7 +180,9 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         of the builtin `sorted()` or `list.sort()`. The function should take a
         string as an argument. The default is `None`.
     include_folders, exclude_folders, include_files, exclude_files : str, list-like, or None, optional
-        Folder / file names to include or exclude. The default is `None`.
+        Folder / file names to include or exclude. The default is `None`.  By
+        default, these are interpreted literally.  Pass `regex=True` for
+        using regular expressions.
     regex : bool, optional
         Interpret the strings of include/exclude file/folder arguments as
         regular expressions. The default is `False`.
