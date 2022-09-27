@@ -640,7 +640,7 @@ class FakeDir(FakeItem):
             `itemlimit` can be expressed using the `beyond` parameter.  The files and
             folders left out are determined by the sorting parameters
             (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
-        beyond : str ('ellipsis', 'cotent' or a string starting with an underscore) or None, optional
+        beyond : str ('ellipsis', 'content' or a string starting with an underscore) or None, optional
             String to indicate directory contents beyond the `itemlimit` or the
             `depthlimit`.  The default is `None`.  Options are: `'ellipsis'` (`'...'`),
             `'content'` or `'contents'` (the number of files and folders beyond), or
