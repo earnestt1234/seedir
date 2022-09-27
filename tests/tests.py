@@ -218,13 +218,22 @@ class TestSeedirStringFormatting(unittest.TestCase):
             get_base_header([], a, b)
 
     def test_STYLE_DICT_members(self):
+        styles = ['lines', 'dash', 'spaces', 'arrow', 'plus']
+        try:
+            import emoji
+            styles.append('emoji')
+        except ImportError:
+            pass
         keys = set(sd.STYLE_DICT.keys())
-        self.assertEqual(keys, set(['lines', 'dash', 'spaces',
-                                    'arrow', 'plus', 'emoji']))
+        self.assertEqual(keys, set(styles))
 
     def test_get_style_args_all_accessible(self):
-        styles = ['lines', 'dash', 'spaces',
-                  'arrow', 'plus', 'emoji']
+        styles = ['lines', 'dash', 'spaces', 'arrow', 'plus']
+        try:
+            import emoji
+            styles.append('emoji')
+        except ImportError:
+            pass
         for s in styles:
             d = sd.get_styleargs(s)
             self.assertTrue(isinstance(d, dict))
