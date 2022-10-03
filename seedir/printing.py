@@ -15,12 +15,9 @@ import copy
 import os
 import re
 
-import emoji
 
 from seedir.errors import SeedirError
 
-FILE = emoji.emojize(':page_facing_up:' + ' ')
-FOLDER = emoji.emojize(':file_folder:' + ' ')
 
 STYLE_DICT = {
     'lines': {'split':'├─',
@@ -62,17 +59,25 @@ STYLE_DICT = {
               'folderstart':'>',
               'filestart':'>',
               'folderend': '/',
-              'fileend': ''},
-    'emoji': {'split':'├─',
-              'extend':'│ ',
-              'space':'  ',
-              'final':'└─',
-              'folderstart':FOLDER,
-              'filestart':FILE,
-              'folderend': '/',
               'fileend': ''}
     }
 '''"Tokens" used to create folder trees in different styles'''
+
+try:
+    import emoji
+    STYLE_DICT["emoji"] = {
+        'split':'├─',
+        'extend':'│ ',
+        'space':'  ',
+        'final':'└─',
+        'folderstart':emoji.emojize(':page_facing_up:' + ' '),
+        'filestart':emoji.emojize(':page_facing_up:' + ' '),
+        'folderend': '/',
+        'fileend': ''
+    }
+except ImportError:
+    pass
+
 
 filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, 'words.txt')
@@ -112,7 +117,11 @@ def get_styleargs(style):
         Dictionary of tokens for the given style.
 
     '''
-    if style not in STYLE_DICT:
+    if style not in STYLE_DICT and style == 'emoji':
+        error_text = 'style "emoji" requires "emoji" to be installed'
+        error_text += ' (pip install emoji) '
+        raise SeedirError(error_text)
+    elif style not in STYLE_DICT:
         error_text = 'style "{}" not recognized, must be '.format(style)
         error_text += 'lines, spaces, arrow, plus, dash, or emoji'
         raise SeedirError(error_text)

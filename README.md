@@ -42,6 +42,8 @@ Available with [`pip`](https://pypi.org/project/seedir/):
 pip install seedir
 ```
 
+To make use of the 'emoji' style, install [emoji](https://pypi.org/project/emoji/) (`pip install emoji`) or use `pip install seedir[emoji]`.
+
 ## Usage
 
 See the [API documentation](https://earnestt1234.github.io/seedir/seedir/index.html) (generated with [pdoc3](https://pdoc3.github.io/pdoc/)).
