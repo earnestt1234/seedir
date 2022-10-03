@@ -4,7 +4,18 @@ This document will serve as a record for past and future changes to seedir.  It 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.3.1 - PLANNED
+## 0.4.0 - in development
+
+### Changed
+
+- [emoji is now an optional dependency](https://github.com/earnestt1234/seedir/issues/12).  It can be installed with `pip install seedir[emoji]`.  An error is raised if the emoji style is requested without emoji installed.
+
+### Fixed
+
+- Typos in documentation
+- Removal of IPYNB checkpoints
+
+## [0.3.1](https://github.com/earnestt1234/seedir/releases/tag/v0.3.1)
 
 ### Added
 - Additional functionality to the `formatter` parameter: can now dynamically set other seedir arguments as well as styling ones

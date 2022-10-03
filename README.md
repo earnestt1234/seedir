@@ -42,7 +42,7 @@ Available with [`pip`](https://pypi.org/project/seedir/):
 pip install seedir
 ```
 
-To make use of the 'emoji' style, install [emoji](https://pypi.org/project/emoji/) (`pip install emoji`) or use `pip install seedir[emoji]`.
+*The following change is not yet reflected on PyPI, but will be upon release of next version:* To make use of the 'emoji' style, install [emoji](https://pypi.org/project/emoji/) (`pip install emoji`) or use `pip install seedir[emoji]`.
 
 ## Usage
 
