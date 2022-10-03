@@ -61,6 +61,7 @@ STYLE_DICT = {
               'folderend': '/',
               'fileend': ''}
     }
+'''"Tokens" used to create folder trees in different styles'''
 
 try:
     import emoji
@@ -77,8 +78,6 @@ try:
 except ImportError:
     pass
 
-
-'''"Tokens" used to create folder trees in different styles'''
 
 filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, 'words.txt')
