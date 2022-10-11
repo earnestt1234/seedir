@@ -19,11 +19,9 @@ import warnings
 import random
 
 from seedir.errors import FakedirError
-from seedir.folderstructure import FakeDirStructure
-from seedir.folderstructurehelpers import (sort_dir,
-                                           filter_item_names,
-                                           formatter_update_args,
-                                           listdir_fullpath,)
+from seedir.folderstructure import FakeDirStructure, RealDirStructure
+from seedir.folderstructurehelpers import (formatter_update_args,
+                                           listdir_fullpath)
 
 import seedir.printing as printing
 
@@ -1194,21 +1192,21 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
     depth +=1
     listdir = listdir_fullpath(path)
     if sort or first is not None:
-        listdir = sort_dir(listdir, first=first,
-                           sort_reverse=sort_reverse, sort_key=sort_key)
+        listdir = RealDirStructure.sort_dir(listdir, first=first,
+                                            sort_reverse=sort_reverse, sort_key=sort_key)
     if any(arg is not None for arg in [
             include_folders,
             exclude_folders,
             include_files,
             exclude_files,
             mask]):
-        listdir = filter_item_names(listdir,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex,
-                                    mask=mask)
+        listdir = RealDirStructure.filter_items(listdir,
+                                                include_folders=include_folders,
+                                                exclude_folders=exclude_folders,
+                                                include_files=include_files,
+                                                exclude_files=exclude_files,
+                                                regex=regex,
+                                                mask=mask)
     for i, f in enumerate(listdir):
         name = os.path.basename(f)
         if i == itemlimit:

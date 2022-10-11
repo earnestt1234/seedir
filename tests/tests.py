@@ -24,10 +24,7 @@ import os
 import unittest
 
 import seedir as sd
-from seedir.folderstructurehelpers import (get_base_header,
-                                           count_fakedirs,
-                                           count_fakefiles,
-                                           sort_fakedir)
+from seedir.folderstructure import FakeDirStructure as FDS
 
 # ---- Test seedir strings
 
@@ -122,10 +119,12 @@ complex_sort = '''MyFakeDir/
 └─Uganda/'''
 
 complex_inclusion = '''MyFakeDir/
+├─Vogel.txt
 ├─monkish.txt
 ├─jowly.txt
 ├─scrooge/
-│ └─light.txt
+│ ├─light.txt
+│ └─sandal/
 └─pedantic/'''
 
 fmt_expand_single = '''MyFakeDir/
@@ -212,10 +211,10 @@ class TestSeedirStringFormatting(unittest.TestCase):
     def test_get_base_header(self):
         a = '| '
         b = '  '
-        self.assertEqual('', get_base_header([0], a, b))
-        self.assertEqual('| |   ', get_base_header([0, 1, 3], a, b))
+        self.assertEqual('', FDS.get_base_header([0], a, b))
+        self.assertEqual('| |   ', FDS.get_base_header([0, 1, 3], a, b))
         with self.assertRaises(ValueError):
-            get_base_header([], a, b)
+            FDS.get_base_header([], a, b)
 
     def test_STYLE_DICT_members(self):
         styles = ['lines', 'dash', 'spaces', 'arrow', 'plus']
@@ -273,12 +272,12 @@ class TestFakeDirReading(unittest.TestCase):
 class TestFakeDir(unittest.TestCase):
     def test_count_fake_items(self):
         x = sd.fakedir_fromstring(example)
-        self.assertEqual(count_fakedirs(x.listdir()), 1)
-        self.assertEqual(count_fakefiles(x.listdir()), 3)
+        self.assertEqual(FDS.count_folders(x.listdir()), 1)
+        self.assertEqual(FDS.count_files(x.listdir()), 3)
 
     def test_sort_fakedir(self):
         x = sd.fakedir_fromstring(example).listdir()
-        sort = sort_fakedir(x, sort_reverse=True, sort_key=lambda x : x[1])
+        sort = FDS.sort_dir(x, sort_reverse=True, sort_key=lambda x : x[1])
         sort = [f.name for f in sort]
         correct = ['app.py', 'view.py', 'test', '__init__.py']
         self.assertEqual(sort, correct)
