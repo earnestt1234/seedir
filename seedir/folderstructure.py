@@ -19,6 +19,7 @@ from seedir.folderstructurehelpers import (listdir_fullpath,
                                            beyond_fakedepth_str,
                                            get_base_header,
                                            formatter_update_args)
+import seedir.printing as printing
 
 class FolderStructure:
     '''General class for determining folder strctures.'''
@@ -87,9 +88,48 @@ class FolderStructure:
         folders = sum([self.isdir(i) for i in items])
         return folders
 
-    # def _filter_items(listdir, include_folders=None,
-    #                   exclude_folders=None, include_files=None,
-    #                   exclude_files=None, regex=False, mask=None):
+    def _filter_items(self, listdir, include_folders=None,
+                      exclude_folders=None, include_files=None,
+                      exclude_files=None, regex=False, mask=None):
+
+        filtered = []
+        for item in listdir:
+
+            name = self.getname(item)
+
+            if self.isdir(item):
+                inc = [include_folders] if isinstance(include_folders, str) else include_folders
+                exc = [exclude_folders] if isinstance(exclude_folders, str) else exclude_folders
+            else:
+                inc = [include_files] if isinstance(include_files, str) else include_files
+                exc = [exclude_files] if isinstance(exclude_files, str) else exclude_files
+
+            # 1. check mask - which trumps include/exclude arguments
+            if mask is not None:
+                if mask(item):
+                    filtered.append(item)
+                continue
+
+            # 2. apply exclusion
+            keep = True
+            for pat in exc:
+                if pat is not None:
+                    match = printing.ismatch(pattern=pat, string=name, regex=regex)
+                    if not match:
+                        keep = False
+
+            # 3. apply inclusion (trumps exclusion)
+            for pat in inc:
+                if pat is not None:
+                    match = printing.ismatch(pattern=pat, string=name, regex=regex)
+                    if match:
+                        keep = True
+
+            if keep:
+                filtered.append(item)
+
+        return filtered
+
 
     def _folderstructure(self, folder, default_args, depth=0, incomplete=None,
                          extend='│ ', space='  ', split='├─', final='└─',
