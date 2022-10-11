@@ -22,24 +22,15 @@ class FolderStructure:
 
         Parameters
         ----------
+        getname_func : function
+            Returns the name of the object.
+        isdir_func : function
+            Returns boolean of whether child object is a folder.
         listdir_func : function
             Function for returning the children of an object, given it is a
             "folder" as determined by `isdir_func`.  The child objects returned
             should be of similar type to `self`, such that the functions can
             be recursively applied.
-        sort_func : function
-            Function for sorting the output of `listdir_func`.  Should handle
-            the `first`, `sort_key`, and `sort_reverse` parameters.
-        filter_func : function
-            Function for filtering the output of `listdir_func`.  Should handle
-            the include/exclude folder/file paramters, as well as `mask`.
-        isdir_func : function
-            Returns boolean of whether child object is a folder.
-        getname_func : function
-            Returns the name of the object.
-        beyondstr_func : function
-            Determines the "beyond" string based on a list of objects.
-            See `seedir.folderstructurehelpers.py` for example.
 
         Returns
         -------
