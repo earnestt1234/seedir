@@ -67,7 +67,7 @@ try:
         'extend':'│ ',
         'space':'  ',
         'final':'└─',
-        'folderstart':emoji.emojize(':page_facing_up:' + ' '),
+        'folderstart':emoji.emojize(':file_folder:' + ' '),
         'filestart':emoji.emojize(':page_facing_up:' + ' '),
         'folderend': '/',
         'fileend': ''
