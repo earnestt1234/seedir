@@ -31,7 +31,5 @@ from .fakedir import (fakedir,
 from .fakedir import FakeDir
 from .fakedir import FakeFile
 
-from .errors import SeedirError, FakedirError
-
 from .printing import (get_styleargs,
                        STYLE_DICT,)

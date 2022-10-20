@@ -16,9 +16,6 @@ import os
 import re
 
 
-from seedir.errors import SeedirError
-
-
 STYLE_DICT = {
     'lines': {'split':'├─',
               'extend':'│ ',
@@ -108,8 +105,11 @@ def get_styleargs(style):
 
     Raises
     ------
-    SeedirError
+    ValueError
         Style not recognized.
+
+    ImportError
+        'emoji' style requested but emoji package not installed.
 
     Returns
     -------
@@ -120,11 +120,11 @@ def get_styleargs(style):
     if style not in STYLE_DICT and style == 'emoji':
         error_text = 'style "emoji" requires "emoji" to be installed'
         error_text += ' (pip install emoji) '
-        raise SeedirError(error_text)
+        raise ImportError(error_text)
     elif style not in STYLE_DICT:
         error_text = 'style "{}" not recognized, must be '.format(style)
         error_text += 'lines, spaces, arrow, plus, dash, or emoji'
-        raise SeedirError(error_text)
+        raise ValueError(error_text)
     else:
         return copy.deepcopy(STYLE_DICT[style])
 
@@ -148,11 +148,6 @@ def format_indent(style_dict, indent=2):
         are extened n - indent times, to give a string whose
         length is equal to indent.
 
-    Raises
-    ------
-    SeedirError
-        Indent is not a positive integer.
-
     Returns
     -------
     output : dict
@@ -161,7 +156,7 @@ def format_indent(style_dict, indent=2):
     '''
     indentable = ['split', 'extend', 'space', 'final']
     if indent < 0 or not isinstance(indent, int):
-        raise SeedirError('indent must be a non-negative integer')
+        raise ValueError('indent must be a non-negative integer')
     elif indent == 0:
         for key in indentable:
             style_dict[key] = ''

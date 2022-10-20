@@ -11,13 +11,8 @@ The main algorithm for determining the folder structure string is within the
 """
 
 import os
-import warnings
 
 from seedir.folderstructure import RealDirStructure
-from seedir.folderstructurehelpers import formatter_update_args
-from seedir.errors import SeedirError
-import seedir.printing as printing
-
 
 def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
            anystart=None, anyend=None, depthlimit=None, itemlimit=None,
@@ -254,11 +249,6 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         affected by the indent parameter.  The `uniform`, `anystart`, and
         `anyend` parameters can be used to affect multiple style tokens.
 
-    Raises
-    ------
-    SeedirError
-        Improperly formatted arguments.
-
     Returns
     -------
     s (str) or None
@@ -291,6 +281,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
                 regex=regex,
                 mask=mask,
                 formatter=formatter,
-                sticky_formatter=sticky_formatter)
+                sticky_formatter=sticky_formatter,
+                **kwargs)
 
     return RealDirStructure(path, **args)

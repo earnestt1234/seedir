@@ -14,16 +14,12 @@ for key in ['get_random_int',
 import os
 import string
 import re
-import warnings
 
 import random
 
 from seedir.errors import FakedirError
 from seedir.folderstructure import FakeDirStructure, RealDirStructure
-from seedir.folderstructurehelpers import (formatter_update_args,
-                                           listdir_fullpath)
-
-import seedir.printing as printing
+from seedir.folderstructurehelpers import listdir_fullpath
 
 from seedir.printing import words
 
@@ -85,9 +81,12 @@ class FakeItem:
 
         Raises
         ------
+        TypeError
+            other is not a `seedir.fakedir.Fakedir`.
+
         FakedirError
-            When other is not `seedir.fakedir.FakeDir` or when `self.name` is in
-            the child names of other.
+            Name collision: `self.name` is in the child names of other.
+
 
         Returns
         -------
@@ -96,7 +95,7 @@ class FakeItem:
         '''
         if other:
             if not isinstance(other, FakeDir):
-                raise FakedirError('other parameter must be instance of FakeDir')
+                raise TypeError('other parameter must be instance of FakeDir')
             if self.name in other.get_child_names():
                 raise FakedirError('FakeDirs must have unique file/folder names')
             other._children.append(self)
@@ -301,8 +300,8 @@ class FakeDir(FakeItem):
     def __getitem__(self, path):
         """Use path-like strings to index `FakeDir` objects."""
         if not isinstance(path, str):
-            raise FakedirError("Can only index FakeDir with int or str, "
-                               "not {}".format(type(path)))
+            raise TypeError("Can only index FakeDir with int or str, "
+                            "not {}".format(type(path)))
         paths = path.split('/')
         current = self
         for p in paths:
@@ -733,11 +732,6 @@ class FakeDir(FakeItem):
             affected by the indent parameter.  The `uniform`, `anystart`, and
             `anyend` parameters can be used to affect multiple style tokens.
 
-        Raises
-        ------
-        SeedirError
-            Improperly formatted arguments.
-
         Returns
         -------
         s (str) or None
@@ -767,7 +761,8 @@ class FakeDir(FakeItem):
                     regex=regex,
                     mask=mask,
                     formatter=formatter,
-                    sticky_formatter=sticky_formatter)
+                    sticky_formatter=sticky_formatter,
+                    **kwargs)
 
         return FakeDirStructure(self, **args)
 
@@ -822,7 +817,7 @@ class FakeDir(FakeItem):
 
         Raises
         ------
-        FakedirError
+        ValueError
             `depthlimit` is not a non-negative int
 
         Returns
@@ -832,7 +827,7 @@ class FakeDir(FakeItem):
         """
         depthlimit = int(depthlimit)
         if depthlimit < 0:
-            raise FakedirError('depthlimit must be non-negative int')
+            raise ValueError('depthlimit must be non-negative int')
         depthlimit += self.depth
         def trim_apply(f, depthlimit):
             if depthlimit is not None and f.depth == depthlimit:
@@ -976,7 +971,7 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
 
     Raises
     ------
-    FakedirError
+    ValueError
         Issue selecting int from folders or files.
 
     Returns
@@ -989,14 +984,14 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
         try:
             fold_num = get_random_int(folders, seed=seed)
         except:
-            raise FakedirError('folders must be an int or collection of int')
+            raise ValueError('folders must be an int or collection of int')
     else:
         fold_num = folders
     if not isinstance(files, int):
         try:
             file_num = get_random_int(files, seed=seed)
         except:
-            raise FakedirError('files must be an int or collection of int')
+            raise ValueError('files must be an int or collection of int')
     else:
         file_num = files
     for i in range(file_num):

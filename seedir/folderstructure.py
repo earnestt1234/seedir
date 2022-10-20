@@ -10,7 +10,6 @@ import warnings
 
 import natsort
 
-from seedir.errors import SeedirError
 from seedir.folderstructurehelpers import formatter_update_args, listdir_fullpath
 import seedir.printing as printing
 
@@ -53,7 +52,9 @@ class FolderStructure:
                          'folderstart', 'filestart', 'folderend', 'fileend']
 
         if any(i not in accept_kwargs for i in kwargs.keys()):
-            raise ValueError('kwargs must be any of {}'.format(accept_kwargs))
+            bad_kwargs = [i for i in kwargs.keys() if i not in accept_kwargs]
+            raise ValueError(f'kwargs must be any of {accept_kwargs}; '
+                             f'unrecognized kwargs: {bad_kwargs}')
 
         styleargs = printing.get_styleargs(style)
         printing.format_indent(styleargs, indent=indent)
@@ -136,10 +137,6 @@ class FolderStructure:
             Path items of the items beyond the limit, used when the 'beyond'
             argeument is 'content' or 'contents'. The default is None.
 
-        Raises
-        ------
-        SeedirError
-            Raised when the 'beyond' argument is not recognized.
 
         Returns
         -------
@@ -158,7 +155,7 @@ class FolderStructure:
         else:
             s1 = '"beyond" must be "ellipsis", "content", or '
             s2 = 'a string starting with "_"'
-            raise SeedirError(s1 + s2)
+            raise ValueError(s1 + s2)
 
     def count_files(self, items):
         '''
@@ -227,12 +224,6 @@ class FolderStructure:
             Function for filtering items.  Absolute paths of each individual item
             are passed to the mask function.  If True is returned, the
             item is kept.  The default is None.
-
-        Raises
-        ------
-        SeedirError
-            When the exlcusion or inclusion arguments are not strings or
-            iterables.
 
         Returns
         -------

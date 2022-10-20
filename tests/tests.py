@@ -204,7 +204,7 @@ class PrintSomeDirs(unittest.TestCase):
         sd.seedir(testdir, itemlimit=1, beyond='content')
 
     def test_improper_kwargs(self):
-        with self.assertRaises(sd.SeedirError):
+        with self.assertRaises(ValueError):
             sd.seedir(testdir, spacing=False)
 
 class TestSeedirStringFormatting(unittest.TestCase):
@@ -236,7 +236,7 @@ class TestSeedirStringFormatting(unittest.TestCase):
         for s in styles:
             d = sd.get_styleargs(s)
             self.assertTrue(isinstance(d, dict))
-        with self.assertRaises(sd.SeedirError):
+        with self.assertRaises(ValueError):
             d = sd.get_styleargs('missing_style')
 
     def test_get_style_args_deepcopy(self):
