@@ -6,6 +6,7 @@ The primary algorithm for determining the folder structure returned by
 """
 
 import os
+import warnings
 
 import natsort
 
@@ -41,8 +42,81 @@ class FolderStructure:
         self.isdir = isdir_func
         self.getname = getname_func
 
-    def __call__(self, folder, **kwargs):
-        return self._folderstructure(folder, **kwargs).strip()
+    def __call__(self, folder, style='lines', printout=True, indent=2, uniform=None,
+                 anystart=None, anyend=None, depthlimit=None, itemlimit=None,
+                 beyond=None, first=None, sort=False, sort_reverse=False,
+                 sort_key=None, include_folders=None, exclude_folders=None,
+                 include_files=None, exclude_files=None, regex=False, mask=None,
+                 formatter=None, sticky_formatter=False, slash=None, **kwargs):
+
+        accept_kwargs = ['extend', 'split', 'space', 'final',
+                         'folderstart', 'filestart', 'folderend', 'fileend']
+
+        if any(i not in accept_kwargs for i in kwargs.keys()):
+            raise ValueError('kwargs must be any of {}'.format(accept_kwargs))
+
+        styleargs = printing.get_styleargs(style)
+        printing.format_indent(styleargs, indent=indent)
+
+        if uniform is not None:
+            for arg in ['extend', 'split', 'final', 'space']:
+                styleargs[arg] = uniform
+
+        if anystart is not None:
+            styleargs['folderstart'] = anystart
+            styleargs['filestart'] = anystart
+
+        if anyend is not None:
+            styleargs['folderend'] = anyend
+            styleargs['fileend'] = anyend
+
+        if slash is not None:
+            warnings.warn("`slash` will removed in a future version; "
+                          "pass `folderend` as a keyword argument instead.",
+                          DeprecationWarning)
+            if slash.lower() in ['sep', 'os.sep']:
+                slash = os.sep
+            styleargs['folderend'] = slash
+
+        for k in kwargs:
+            if k in styleargs:
+                styleargs[k] = kwargs[k]
+
+        if sort_key is not None or sort_reverse == True:
+            sort = True
+
+        default_args = dict(depthlimit=depthlimit,
+                            itemlimit=itemlimit,
+                            beyond=beyond,
+                            first=first,
+                            sort=sort,
+                            sort_reverse=sort_reverse,
+                            sort_key=sort_key,
+                            include_folders=include_folders,
+                            exclude_folders=exclude_folders,
+                            include_files=include_files,
+                            exclude_files=exclude_files,
+                            regex=regex,
+                            mask=mask,
+                            formatter=formatter,
+                            sticky_formatter=sticky_formatter,
+                            **styleargs)
+
+        current_args = default_args.copy()
+
+        # apply formatter to top level
+        if formatter is not None:
+            formatter_update_args(formatter, folder, current_args)
+
+        if sticky_formatter:
+            default_args = current_args
+
+        s = self._folderstructure_recurse(folder, default_args, **current_args).strip()
+
+        if printout:
+            print(s)
+        else:
+            return s
 
     def beyond_depth_str(self, items, beyond):
         '''
@@ -212,14 +286,14 @@ class FolderStructure:
         return filtered
 
 
-    def _folderstructure(self, folder, default_args, depth=0, incomplete=None,
-                         extend='│ ', space='  ', split='├─', final='└─',
-                         filestart='', folderstart='', fileend='', folderend='/',
-                         depthlimit=None, itemlimit=None, beyond=None, first=None,
-                         sort=True, sort_reverse=False, sort_key=None,
-                         include_folders=None, exclude_folders=None,
-                         include_files=None, exclude_files=None,
-                         regex=False, mask=None, formatter=None, sticky_formatter=False):
+    def _folderstructure_recurse(self, folder, default_args, depth=0, incomplete=None,
+                                 extend='│ ', space='  ', split='├─', final='└─',
+                                 filestart='', folderstart='', fileend='', folderend='/',
+                                 depthlimit=None, itemlimit=None, beyond=None, first=None,
+                                 sort=True, sort_reverse=False, sort_key=None,
+                                 include_folders=None, exclude_folders=None,
+                                 include_files=None, exclude_files=None,
+                                 regex=False, mask=None, formatter=None, sticky_formatter=False):
         '''
         Main algorithm for creating folder structure string.  See
         `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
@@ -242,6 +316,7 @@ class FolderStructure:
         if incomplete is None:
             incomplete = []
 
+        # root string
         if depth == 0:
 
             d0args = {
@@ -354,10 +429,10 @@ class FolderStructure:
                            name +
                            current_args['folderend'] +
                            '\n')
-                output += self._folderstructure(f, depth=depth + 1,
-                                                incomplete=incomplete,
-                                                default_args=next_default_args,
-                                                **current_args)
+                output += self._folderstructure_recurse(f, depth=depth + 1,
+                                                        incomplete=incomplete,
+                                                        default_args=next_default_args,
+                                                        **current_args)
 
             # only concat to output if file
             else:

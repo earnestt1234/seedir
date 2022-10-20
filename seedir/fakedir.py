@@ -746,81 +746,30 @@ class FakeDir(FakeItem):
 
         '''
 
-        accept_kwargs = ['extend', 'split', 'space', 'final',
-                         'folderstart', 'filestart', 'folderend', 'fileend']
-
-        if any(i not in accept_kwargs for i in kwargs.keys()):
-            raise FakedirError('kwargs must be any of {}'.format(accept_kwargs))
-
-
-        styleargs = printing.get_styleargs(style)
-        printing.format_indent(styleargs, indent=indent)
-
-        if uniform is not None:
-            for arg in ['extend', 'split', 'final', 'space']:
-                styleargs[arg] = uniform
-
-        if anystart is not None:
-            styleargs['folderstart'] = anystart
-            styleargs['filestart'] = anystart
-
-        if anyend is not None:
-            styleargs['folderend'] = anyend
-            styleargs['fileend'] = anyend
-
-        if slash is not None:
-            warnings.warn("`slash` will removed in a future version; "
-                          "pass `folderend` as a keyword argument instead.",
-                          DeprecationWarning)
-            if slash.lower() in ['sep', 'os.sep']:
-                slash = os.sep
-            styleargs['folderend'] = slash
-
-        for k in kwargs:
-            if k in styleargs:
-                styleargs[k] = kwargs[k]
-
-        if sort_key is not None or sort_reverse == True:
-            sort = True
-
-        if slash.lower() in ['sep', 'os.sep']:
-            slash = os.sep
-
-        default_args = dict(depthlimit=depthlimit,
-                            itemlimit=itemlimit,
-                            beyond=beyond,
-                            first=first,
-                            sort=sort,
-                            sort_reverse=sort_reverse,
-                            sort_key=sort_key,
-                            include_folders=include_folders,
-                            exclude_folders=exclude_folders,
-                            include_files=include_files,
-                            exclude_files=exclude_files,
-                            regex=regex,
-                            mask=mask,
-                            formatter=formatter,
-                            sticky_formatter=sticky_formatter,
-                            **styleargs)
-
-        # apply formatter for root folder
-        current_args = default_args.copy()
-
-        if formatter is not None:
-            formatter_update_args(formatter, self, current_args)
-
-        if sticky_formatter:
-            default_args = current_args
-
         # call
-        s = FakeDirStructure(self,
-                             default_args=default_args,
-                             **current_args)
+        args = dict(style=style,
+                    printout=printout,
+                    indent=indent,
+                    uniform=uniform,
+                    anystart=anystart,
+                    anyend=anyend,
+                    depthlimit=depthlimit,
+                    itemlimit=itemlimit,
+                    beyond=beyond,
+                    first=first,
+                    sort=sort,
+                    sort_reverse=sort_reverse,
+                    sort_key=sort_key,
+                    include_folders=include_folders,
+                    exclude_folders=exclude_folders,
+                    include_files=include_files,
+                    exclude_files=exclude_files,
+                    regex=regex,
+                    mask=mask,
+                    formatter=formatter,
+                    sticky_formatter=sticky_formatter)
 
-        if printout:
-            print(s)
-        else:
-            return s
+        return FakeDirStructure(self, **args)
 
     def set_child_depths(self):
         '''Recursively set depths of `self` and its children.
