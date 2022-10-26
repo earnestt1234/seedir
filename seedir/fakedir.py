@@ -19,7 +19,7 @@ import random
 
 from seedir.errors import FakedirError
 from seedir.folderstructure import FakeDirStructure, RealDirStructure
-from seedir.folderstructurehelpers import listdir_fullpath
+from seedir.folderstructure import listdir_fullpath
 
 from seedir.printing import words
 
