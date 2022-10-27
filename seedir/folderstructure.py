@@ -53,7 +53,8 @@ def formatter_update_args(formatter, item, args):
     return args
 
 class FolderStructure:
-    '''General class for determining folder strctures.'''
+    '''General class for determining folder strctures.  Implements
+    the seedir folder-tree generating algorithm over arbitrary objects.'''
 
     def __init__(self, getname_func, isdir_func, listdir_func):
         '''
@@ -86,6 +87,8 @@ class FolderStructure:
                  sort_key=None, include_folders=None, exclude_folders=None,
                  include_files=None, exclude_files=None, regex=False, mask=None,
                  formatter=None, sticky_formatter=False, slash=None, **kwargs):
+        '''Call this on a folder object to generate the seedir output
+        for that object.'''
 
         accept_kwargs = ['extend', 'split', 'space', 'final',
                          'folderstart', 'filestart', 'folderend', 'fileend']
@@ -337,6 +340,10 @@ class FolderStructure:
         and can change between iterations.  The `default_args` stay the same,
         unless `sticky_formatter` is used in combination with `formatter` to
         permanently update the default arguments.
+
+        **In almost all cases, users should not need to call this function
+        to generate diagrams**.  Rather, they should use the `__call__`
+        method of a `FolderStructure` instance.
 
         '''
 

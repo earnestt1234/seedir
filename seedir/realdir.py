@@ -51,7 +51,7 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     Make a basic tree diagram:
 
     ```
-    >>> c = 'example/folder/path'
+    >>> c = 'path/to/doc'
     >>> sd.seedir(c)
     doc/
     ├─_static/
@@ -131,9 +131,11 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
 
     Parameters
     ----------
-    path : str or None, optional
+    path : str, pathlib.Path, or None, optional
         System path of a directory.  If None, current working directory is
-        used.
+        used.  The path can be either a string path or a pathlib object.
+        In both cases, the path is converted to an absolute path, and the
+        tilde (~) is expanded.
     style : 'lines', 'dash', 'arrow', 'spaces', 'plus', or 'emoji', optional
         Style to use. The default is `'lines'`.  A style determines the set
         of characters ("tokens") used to represent the base structure of
@@ -200,7 +202,9 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     mask : function, optional
         Function for filtering items.  Absolute paths of each individual item
         are passed to the `mask` function.  If `True` is returned, the
-        item is kept.  The default is `None`.
+        item is kept.  The default is `None`.  The type of the object
+        passed to `mask` corresponds with that passed as input:
+        `str` or `pathlib.Path`.
     formatter : function, optional
         Function for customizing the directory printing logic and style
         based on specific folders & files.  When passed, the formatter
@@ -228,6 +232,9 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
         Note that items exlcuded by the inclusion/exclusion arguments (or the
         `mask`) *will not* be seen by formatter.  Similarly, any folder tree
         entries created by the `beyond` argument *will not* be seen by formatter.
+
+        The type of the object passed to `formatter` corresponds with that
+        passed as input: `str` or `pathlib.Path`.
 
     sticky_formatter : bool, optional
         When True, updates to argumnts made by the `formatter` (see above)
