@@ -415,6 +415,53 @@ exampledir/
 
 ```
 
+## Pathlib
+
+As of version 0.4.0, `sd.realdir.seedir()` also accepts [pathlib](https://docs.python.org/3/library/pathlib.html) objects:
+
+```python
+>>> import pathlib
+>>> p = pathlib.Path(path)
+>>> p
+PosixPath('exampledir')
+
+>>> sd.seedir(p)
+exampledir/
+├─jowly.pdf
+├─monkish.txt
+├─pedantic/
+│ └─cataclysmic.txt
+├─scrooge/
+│ ├─light.pdf
+│ ├─paycheck/
+│ │ └─electrophoresis.txt
+│ └─reliquary.pdf
+└─Vogel.txt
+
+```
+
+Most of the features demonstrated above apply as usual.  The only major difference is that arguments accepting callables (`mask` & `fromatter`) will now be passed `pathlib.Path` objects, instead of strings:
+
+```python
+>>> mask = lambda x: x.is_dir() or x.suffix == '.txt'
+>>> sd.seedir(p, mask=mask)
+exampledir/
+├─scrooge/
+│ └─paycheck/
+│   └─electrophoresis.txt
+├─monkish.txt
+├─pedantic/
+│ └─cataclysmic.txt
+└─Vogel.txt
+
+```
+
+
+
+
+
+
+
 
 
 ## Fake directories
@@ -787,3 +834,60 @@ x.realize(path='where/to/create/it/')
 ```
 
 All files created will be empty.
+
+## Extending seedir
+
+It is also possible to use seedir to generate folder tree diagrams for other types of Python objects that have directory-like structures. This can be done by initializing a new instance of the `seedir.folderstructure.FolderStructure` class, which implements the main algorithm:
+
+```python
+>>> from seedir.folderstructure import FolderStructure
+
+```
+
+Initialization requires three arguments.  All of these are callables, which accept (as a single argument) the folder/file type objects of interest:
+
+1. `getname_func`: returns a string name for the object
+2. `isdir_func`: returns a boolean indicating whether the object passed is a folder or not
+3. `listidr_func`: when called on the folder-like object, returns a list of child objects
+
+Once the `FolderStructure` is initialized, it can be called on inputs to create folder structures.  The following example demonstrates creating a "folder" structure for factorizing numbers:
+
+```python
+>>> def factors(n):
+...     return [i for i in range(2, n) if n % i == 0]
+
+# note that the isdir_func always returns true, treating all numbers as "folders"
+>>> FactorStructure = FolderStructure(getname_func = lambda x : str(x),
+...                                   isdir_func = lambda x : True,
+...                                   listdir_func = lambda x : factors(x))
+
+>>> FactorStructure(36, folderend='')
+36
+├─2
+├─3
+├─4
+│ └─2
+├─6
+│ ├─2
+│ └─3
+├─9
+│ └─3
+├─12
+│ ├─2
+│ ├─3
+│ ├─4
+│ │ └─2
+│ └─6
+│   ├─2
+│   └─3
+└─18
+  ├─2
+  ├─3
+  ├─6
+  │ ├─2
+  │ └─3
+  └─9
+    └─3
+    
+```
+
