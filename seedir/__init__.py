@@ -16,9 +16,19 @@ tools for going in between these formats.
 
 """
 
-__pdoc__ = {'command_line' : False,
-            'folderstructure': False,
-            'folderstructurehelpers': False}
+__all__ = [
+    'seedir',
+    'fakedir',
+    'fakedir_fromstring',
+    'populate',
+    'randomdir',
+    'FakeDir',
+    'FakeFile',
+    'get_styleargs',
+    'STYLE_DICT'
+    ]
+
+__pdoc__ = {'command_line' : False}
 
 #imports for package namespace
 from .realdir import seedir

@@ -4,12 +4,17 @@ General module of resources and helpers for printing and making folder trees
 in seedir.
 
 """
-__pdoc__ = {}
 
-for key in ['is_match',
-            'format_indent',
-            'words']:
-    __pdoc__[key] = False
+__all__ = [
+    'STYLE_DICT',
+    'get_styleargs'
+    ]
+
+__pdoc__ = {'is_match': False,
+            'format_indent': False,
+            'words': False}
+
+
 
 import copy
 import os

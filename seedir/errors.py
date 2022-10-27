@@ -4,6 +4,8 @@ Custom exceptions for seedir.
 
 """
 
+__all__ = ['FakedirError']
+
 # NOTE: SeedirError removed for 0.4.0
 
 # class SeedirError(Exception):

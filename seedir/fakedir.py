@@ -5,11 +5,17 @@ i.e. Python folder tree objects.  This module can be used
 to make example folder tree diagrams, read folder tree strings, or convert
 abstract folder trees into real directories on a computer.
 """
-__pdoc__ = {}
 
-for key in ['get_random_int',
-            'recursive_add_fakes',]:
-    __pdoc__[key] = False
+__all__ = ['FakeDir',
+           'FakeFile',
+           'FakeItem',
+           'fakedir',
+           'fakedir_fromstring',
+           'populate',
+           'randomdir']
+
+__pdoc__ = {'get_random_int': False,
+            'recursive_add_fakes': False}
 
 import os
 import string
