@@ -11,8 +11,22 @@ The main algorithm for determining the folder structure string is within the
 """
 
 import os
+import pathlib
 
-from seedir.folderstructure import RealDirStructure
+from seedir.folderstructure import PathlibStructure, RealDirStructure
+
+def _parse_path(path):
+    '''Helper function added to parse the input to `seedir.realdir.seedir()`.
+    Detects strings (paths) or pathlib objects.'''
+
+    if isinstance(path, str):
+        path = os.path.abspath(os.path.expanduser(path))
+    elif isinstance(path, pathlib.Path):
+        path = path.expanduser().resolve()
+    else:
+        raise TypeError(f"Can only parse str or pathlib.Path, not {type(path)}.")
+
+    return path
 
 def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
            anystart=None, anyend=None, depthlimit=None, itemlimit=None,
@@ -260,6 +274,8 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
     if path is None:
         path = os.getcwd()
 
+    path = _parse_path(path)
+
     # call
     args = dict(style=style,
                 printout=printout,
@@ -284,4 +300,6 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
                 sticky_formatter=sticky_formatter,
                 **kwargs)
 
-    return RealDirStructure(path, **args)
+    structure = PathlibStructure if isinstance(path, pathlib.Path) else RealDirStructure
+
+    return structure(path, **args)

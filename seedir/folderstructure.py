@@ -567,16 +567,17 @@ class FolderStructure:
 
 slashes = os.sep + '/' + '//'
 
-realdir_params = dict(getname_func = lambda x: os.path.basename(x.rstrip(slashes)),
-                      isdir_func = lambda x: os.path.isdir(x),
-                      listdir_func = listdir_fullpath)
+RealDirStructure = FolderStructure(getname_func = lambda x: os.path.basename(x.rstrip(slashes)),
+                                   isdir_func = lambda x: os.path.isdir(x),
+                                   listdir_func = listdir_fullpath)
+"""Object for making real folder structures from string paths."""
 
-fakedir_params = dict(getname_func = lambda x: x.name,
-                      isdir_func = lambda x: x.isdir(),
-                      listdir_func = lambda x: x.listdir())
+PathlibStructure = FolderStructure(getname_func = lambda x: x.name,
+                                   isdir_func = lambda x: x.is_dir(),
+                                   listdir_func = lambda x: list(x.iterdir()))
+"""Object for making real folder structures from pathlib objects."""
 
-RealDirStructure = FolderStructure(**realdir_params)
-"""Object for making real folder structures."""
-
-FakeDirStructure = FolderStructure(**fakedir_params)
+FakeDirStructure = FolderStructure(getname_func = lambda x: x.name,
+                                   isdir_func = lambda x: x.isdir(),
+                                   listdir_func = lambda x: x.listdir())
 """Object for making fake folder structures."""
