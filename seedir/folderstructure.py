@@ -5,13 +5,6 @@ The primary algorithm for determining the folder structure returned by
 
 """
 
-__all__ = [
-    'FolderStructure',
-    'RealDirStructure',
-    'PathlibStructure',
-    'FakeDirStructure'
-    ]
-
 import os
 import warnings
 

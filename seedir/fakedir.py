@@ -6,14 +6,6 @@ to make example folder tree diagrams, read folder tree strings, or convert
 abstract folder trees into real directories on a computer.
 """
 
-__all__ = ['FakeDir',
-           'FakeFile',
-           'FakeItem',
-           'fakedir',
-           'fakedir_fromstring',
-           'populate',
-           'randomdir']
-
 __pdoc__ = {'get_random_int': False,
             'recursive_add_fakes': False}
 

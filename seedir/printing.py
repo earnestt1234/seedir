@@ -5,11 +5,6 @@ in seedir.
 
 """
 
-__all__ = [
-    'STYLE_DICT',
-    'get_styleargs'
-    ]
-
 __pdoc__ = {'is_match': False,
             'format_indent': False,
             'words': False}

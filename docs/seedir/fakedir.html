@@ -41,27 +41,19 @@ i.e. Python folder tree objects.  This module can be used
 to make example folder tree diagrams, read folder tree strings, or convert
 abstract folder trees into real directories on a computer.
 &#34;&#34;&#34;
-__pdoc__ = {}
 
-for key in [&#39;get_random_int&#39;,
-            &#39;recursive_add_fakes&#39;,]:
-    __pdoc__[key] = False
+__pdoc__ = {&#39;get_random_int&#39;: False,
+            &#39;recursive_add_fakes&#39;: False}
 
 import os
 import string
 import re
-import warnings
 
 import random
 
 from seedir.errors import FakedirError
-from seedir.folderstructure import FakeDirStructure
-from seedir.folderstructurehelpers import (sort_dir,
-                                           filter_item_names,
-                                           formatter_update_args,
-                                           listdir_fullpath,)
-
-import seedir.printing as printing
+from seedir.folderstructure import FakeDirStructure, RealDirStructure
+from seedir.folderstructure import listdir_fullpath
 
 from seedir.printing import words
 
@@ -123,9 +115,12 @@ class FakeItem:
 
         Raises
         ------
+        TypeError
+            other is not a `seedir.fakedir.Fakedir`.
+
         FakedirError
-            When other is not `seedir.fakedir.FakeDir` or when `self.name` is in
-            the child names of other.
+            Name collision: `self.name` is in the child names of other.
+
 
         Returns
         -------
@@ -134,7 +129,7 @@ class FakeItem:
         &#39;&#39;&#39;
         if other:
             if not isinstance(other, FakeDir):
-                raise FakedirError(&#39;other parameter must be instance of FakeDir&#39;)
+                raise TypeError(&#39;other parameter must be instance of FakeDir&#39;)
             if self.name in other.get_child_names():
                 raise FakedirError(&#39;FakeDirs must have unique file/folder names&#39;)
             other._children.append(self)
@@ -339,8 +334,8 @@ class FakeDir(FakeItem):
     def __getitem__(self, path):
         &#34;&#34;&#34;Use path-like strings to index `FakeDir` objects.&#34;&#34;&#34;
         if not isinstance(path, str):
-            raise FakedirError(&#34;Can only index FakeDir with int or str, &#34;
-                               &#34;not {}&#34;.format(type(path)))
+            raise TypeError(&#34;Can only index FakeDir with int or str, &#34;
+                            &#34;not {}&#34;.format(type(path)))
         paths = path.split(&#39;/&#39;)
         current = self
         for p in paths:
@@ -676,7 +671,7 @@ class FakeDir(FakeItem):
             `itemlimit` can be expressed using the `beyond` parameter.  The files and
             folders left out are determined by the sorting parameters
             (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
-        beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
+        beyond : str (&#39;ellipsis&#39;, &#39;content&#39; or a string starting with an underscore) or None, optional
             String to indicate directory contents beyond the `itemlimit` or the
             `depthlimit`.  The default is `None`.  Options are: `&#39;ellipsis&#39;` (`&#39;...&#39;`),
             `&#39;content&#39;` or `&#39;contents&#39;` (the number of files and folders beyond), or
@@ -771,11 +766,6 @@ class FakeDir(FakeItem):
             affected by the indent parameter.  The `uniform`, `anystart`, and
             `anyend` parameters can be used to affect multiple style tokens.
 
-        Raises
-        ------
-        SeedirError
-            Improperly formatted arguments.
-
         Returns
         -------
         s (str) or None
@@ -784,81 +774,31 @@ class FakeDir(FakeItem):
 
         &#39;&#39;&#39;
 
-        accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
-                         &#39;folderstart&#39;, &#39;filestart&#39;, &#39;folderend&#39;, &#39;fileend&#39;]
-
-        if any(i not in accept_kwargs for i in kwargs.keys()):
-            raise FakedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
-
-
-        styleargs = printing.get_styleargs(style)
-        printing.format_indent(styleargs, indent=indent)
-
-        if uniform is not None:
-            for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
-                styleargs[arg] = uniform
-
-        if anystart is not None:
-            styleargs[&#39;folderstart&#39;] = anystart
-            styleargs[&#39;filestart&#39;] = anystart
-
-        if anyend is not None:
-            styleargs[&#39;folderend&#39;] = anyend
-            styleargs[&#39;fileend&#39;] = anyend
-
-        if slash is not None:
-            warnings.warn(&#34;`slash` will removed in a future version; &#34;
-                          &#34;pass `folderend` as a keyword argument instead.&#34;,
-                          DeprecationWarning)
-            if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-                slash = os.sep
-            styleargs[&#39;folderend&#39;] = slash
-
-        for k in kwargs:
-            if k in styleargs:
-                styleargs[k] = kwargs[k]
-
-        if sort_key is not None or sort_reverse == True:
-            sort = True
-
-        if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-            slash = os.sep
-
-        default_args = dict(depthlimit=depthlimit,
-                            itemlimit=itemlimit,
-                            beyond=beyond,
-                            first=first,
-                            sort=sort,
-                            sort_reverse=sort_reverse,
-                            sort_key=sort_key,
-                            include_folders=include_folders,
-                            exclude_folders=exclude_folders,
-                            include_files=include_files,
-                            exclude_files=exclude_files,
-                            regex=regex,
-                            mask=mask,
-                            formatter=formatter,
-                            sticky_formatter=sticky_formatter,
-                            **styleargs)
-
-        # apply formatter for root folder
-        current_args = default_args.copy()
-
-        if formatter is not None:
-            formatter_update_args(formatter, self, current_args)
-
-        if sticky_formatter:
-            default_args = current_args
-
         # call
-        s = FakeDirStructure(self,
-                             default_args=default_args,
-                             **current_args)
+        args = dict(style=style,
+                    printout=printout,
+                    indent=indent,
+                    uniform=uniform,
+                    anystart=anystart,
+                    anyend=anyend,
+                    depthlimit=depthlimit,
+                    itemlimit=itemlimit,
+                    beyond=beyond,
+                    first=first,
+                    sort=sort,
+                    sort_reverse=sort_reverse,
+                    sort_key=sort_key,
+                    include_folders=include_folders,
+                    exclude_folders=exclude_folders,
+                    include_files=include_files,
+                    exclude_files=exclude_files,
+                    regex=regex,
+                    mask=mask,
+                    formatter=formatter,
+                    sticky_formatter=sticky_formatter,
+                    **kwargs)
 
-        if printout:
-            print(s)
-        else:
-            return s
+        return FakeDirStructure(self, **args)
 
     def set_child_depths(self):
         &#39;&#39;&#39;Recursively set depths of `self` and its children.
@@ -911,7 +851,7 @@ class FakeDir(FakeItem):
 
         Raises
         ------
-        FakedirError
+        ValueError
             `depthlimit` is not a non-negative int
 
         Returns
@@ -921,7 +861,7 @@ class FakeDir(FakeItem):
         &#34;&#34;&#34;
         depthlimit = int(depthlimit)
         if depthlimit &lt; 0:
-            raise FakedirError(&#39;depthlimit must be non-negative int&#39;)
+            raise ValueError(&#39;depthlimit must be non-negative int&#39;)
         depthlimit += self.depth
         def trim_apply(f, depthlimit):
             if depthlimit is not None and f.depth == depthlimit:
@@ -1065,7 +1005,7 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
 
     Raises
     ------
-    FakedirError
+    ValueError
         Issue selecting int from folders or files.
 
     Returns
@@ -1078,14 +1018,14 @@ def populate(fakedir, depth=3, folders=2, files=2, stopchance=.5, seed=None,
         try:
             fold_num = get_random_int(folders, seed=seed)
         except:
-            raise FakedirError(&#39;folders must be an int or collection of int&#39;)
+            raise ValueError(&#39;folders must be an int or collection of int&#39;)
     else:
         fold_num = folders
     if not isinstance(files, int):
         try:
             file_num = get_random_int(files, seed=seed)
         except:
-            raise FakedirError(&#39;files must be an int or collection of int&#39;)
+            raise ValueError(&#39;files must be an int or collection of int&#39;)
     else:
         file_num = files
     for i in range(file_num):
@@ -1230,21 +1170,21 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
     depth +=1
     listdir = listdir_fullpath(path)
     if sort or first is not None:
-        listdir = sort_dir(listdir, first=first,
-                           sort_reverse=sort_reverse, sort_key=sort_key)
+        listdir = RealDirStructure.sort_dir(listdir, first=first,
+                                            sort_reverse=sort_reverse, sort_key=sort_key)
     if any(arg is not None for arg in [
             include_folders,
             exclude_folders,
             include_files,
             exclude_files,
             mask]):
-        listdir = filter_item_names(listdir,
-                                    include_folders=include_folders,
-                                    exclude_folders=exclude_folders,
-                                    include_files=include_files,
-                                    exclude_files=exclude_files,
-                                    regex=regex,
-                                    mask=mask)
+        listdir = RealDirStructure.filter_items(listdir,
+                                                include_folders=include_folders,
+                                                exclude_folders=exclude_folders,
+                                                include_files=include_files,
+                                                exclude_files=exclude_files,
+                                                regex=regex,
+                                                mask=mask)
     for i, f in enumerate(listdir):
         name = os.path.basename(f)
         if i == itemlimit:
@@ -1954,7 +1894,7 @@ Leading period can be included or omitted.</dd>
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><code>FakedirError</code></dt>
+<dt><code>ValueError</code></dt>
 <dd>Issue selecting int from folders or files.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -1993,7 +1933,7 @@ Leading period can be included or omitted.</dd>
 
     Raises
     ------
-    FakedirError
+    ValueError
         Issue selecting int from folders or files.
 
     Returns
@@ -2006,14 +1946,14 @@ Leading period can be included or omitted.</dd>
         try:
             fold_num = get_random_int(folders, seed=seed)
         except:
-            raise FakedirError(&#39;folders must be an int or collection of int&#39;)
+            raise ValueError(&#39;folders must be an int or collection of int&#39;)
     else:
         fold_num = folders
     if not isinstance(files, int):
         try:
             file_num = get_random_int(files, seed=seed)
         except:
-            raise FakedirError(&#39;files must be an int or collection of int&#39;)
+            raise ValueError(&#39;files must be an int or collection of int&#39;)
     else:
         file_num = files
     for i in range(file_num):
@@ -2325,8 +2265,8 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
     def __getitem__(self, path):
         &#34;&#34;&#34;Use path-like strings to index `FakeDir` objects.&#34;&#34;&#34;
         if not isinstance(path, str):
-            raise FakedirError(&#34;Can only index FakeDir with int or str, &#34;
-                               &#34;not {}&#34;.format(type(path)))
+            raise TypeError(&#34;Can only index FakeDir with int or str, &#34;
+                            &#34;not {}&#34;.format(type(path)))
         paths = path.split(&#39;/&#39;)
         current = self
         for p in paths:
@@ -2662,7 +2602,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             `itemlimit` can be expressed using the `beyond` parameter.  The files and
             folders left out are determined by the sorting parameters
             (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
-        beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
+        beyond : str (&#39;ellipsis&#39;, &#39;content&#39; or a string starting with an underscore) or None, optional
             String to indicate directory contents beyond the `itemlimit` or the
             `depthlimit`.  The default is `None`.  Options are: `&#39;ellipsis&#39;` (`&#39;...&#39;`),
             `&#39;content&#39;` or `&#39;contents&#39;` (the number of files and folders beyond), or
@@ -2757,11 +2697,6 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
             affected by the indent parameter.  The `uniform`, `anystart`, and
             `anyend` parameters can be used to affect multiple style tokens.
 
-        Raises
-        ------
-        SeedirError
-            Improperly formatted arguments.
-
         Returns
         -------
         s (str) or None
@@ -2770,81 +2705,31 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
 
         &#39;&#39;&#39;
 
-        accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
-                         &#39;folderstart&#39;, &#39;filestart&#39;, &#39;folderend&#39;, &#39;fileend&#39;]
-
-        if any(i not in accept_kwargs for i in kwargs.keys()):
-            raise FakedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
-
-
-        styleargs = printing.get_styleargs(style)
-        printing.format_indent(styleargs, indent=indent)
-
-        if uniform is not None:
-            for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
-                styleargs[arg] = uniform
-
-        if anystart is not None:
-            styleargs[&#39;folderstart&#39;] = anystart
-            styleargs[&#39;filestart&#39;] = anystart
-
-        if anyend is not None:
-            styleargs[&#39;folderend&#39;] = anyend
-            styleargs[&#39;fileend&#39;] = anyend
-
-        if slash is not None:
-            warnings.warn(&#34;`slash` will removed in a future version; &#34;
-                          &#34;pass `folderend` as a keyword argument instead.&#34;,
-                          DeprecationWarning)
-            if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-                slash = os.sep
-            styleargs[&#39;folderend&#39;] = slash
-
-        for k in kwargs:
-            if k in styleargs:
-                styleargs[k] = kwargs[k]
-
-        if sort_key is not None or sort_reverse == True:
-            sort = True
-
-        if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-            slash = os.sep
-
-        default_args = dict(depthlimit=depthlimit,
-                            itemlimit=itemlimit,
-                            beyond=beyond,
-                            first=first,
-                            sort=sort,
-                            sort_reverse=sort_reverse,
-                            sort_key=sort_key,
-                            include_folders=include_folders,
-                            exclude_folders=exclude_folders,
-                            include_files=include_files,
-                            exclude_files=exclude_files,
-                            regex=regex,
-                            mask=mask,
-                            formatter=formatter,
-                            sticky_formatter=sticky_formatter,
-                            **styleargs)
-
-        # apply formatter for root folder
-        current_args = default_args.copy()
-
-        if formatter is not None:
-            formatter_update_args(formatter, self, current_args)
-
-        if sticky_formatter:
-            default_args = current_args
-
         # call
-        s = FakeDirStructure(self,
-                             default_args=default_args,
-                             **current_args)
+        args = dict(style=style,
+                    printout=printout,
+                    indent=indent,
+                    uniform=uniform,
+                    anystart=anystart,
+                    anyend=anyend,
+                    depthlimit=depthlimit,
+                    itemlimit=itemlimit,
+                    beyond=beyond,
+                    first=first,
+                    sort=sort,
+                    sort_reverse=sort_reverse,
+                    sort_key=sort_key,
+                    include_folders=include_folders,
+                    exclude_folders=exclude_folders,
+                    include_files=include_files,
+                    exclude_files=exclude_files,
+                    regex=regex,
+                    mask=mask,
+                    formatter=formatter,
+                    sticky_formatter=sticky_formatter,
+                    **kwargs)
 
-        if printout:
-            print(s)
-        else:
-            return s
+        return FakeDirStructure(self, **args)
 
     def set_child_depths(self):
         &#39;&#39;&#39;Recursively set depths of `self` and its children.
@@ -2897,7 +2782,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
 
         Raises
         ------
-        FakedirError
+        ValueError
             `depthlimit` is not a non-negative int
 
         Returns
@@ -2907,7 +2792,7 @@ the <code>_children</code> attribute for keeping track of items inside the fake 
         &#34;&#34;&#34;
         depthlimit = int(depthlimit)
         if depthlimit &lt; 0:
-            raise FakedirError(&#39;depthlimit must be non-negative int&#39;)
+            raise ValueError(&#39;depthlimit must be non-negative int&#39;)
         depthlimit += self.depth
         def trim_apply(f, depthlimit):
             if depthlimit is not None and f.depth == depthlimit:
@@ -3570,7 +3455,7 @@ The files and
 folders left out are determined by the sorting parameters
 (<code>sort</code>, <code>sort_reverse</code>, <code>sort_key</code>).
 The default is <code>None</code>.</dd>
-<dt><strong><code>beyond</code></strong> :&ensp;<code>str ('ellipsis', 'cotent'</code> or <code>a string starting with an underscore)</code> or <code>None</code>, optional</dt>
+<dt><strong><code>beyond</code></strong> :&ensp;<code>str ('ellipsis', 'content'</code> or <code>a string starting with an underscore)</code> or <code>None</code>, optional</dt>
 <dd>String to indicate directory contents beyond the <code>itemlimit</code> or the
 <code>depthlimit</code>.
 The default is <code>None</code>.
@@ -3679,11 +3564,6 @@ The <code>uniform</code>, <code>anystart</code>, and
 <code>anyend</code> parameters can be used to affect multiple style tokens.</p>
 </dd>
 </dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>SeedirError</code></dt>
-<dd>Improperly formatted arguments.</dd>
-</dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>s (str)</code> or <code>None</code></dt>
@@ -3742,7 +3622,7 @@ case the tree diagram is printed in the console.</dd>
         `itemlimit` can be expressed using the `beyond` parameter.  The files and
         folders left out are determined by the sorting parameters
         (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
-    beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
+    beyond : str (&#39;ellipsis&#39;, &#39;content&#39; or a string starting with an underscore) or None, optional
         String to indicate directory contents beyond the `itemlimit` or the
         `depthlimit`.  The default is `None`.  Options are: `&#39;ellipsis&#39;` (`&#39;...&#39;`),
         `&#39;content&#39;` or `&#39;contents&#39;` (the number of files and folders beyond), or
@@ -3837,11 +3717,6 @@ case the tree diagram is printed in the console.</dd>
         affected by the indent parameter.  The `uniform`, `anystart`, and
         `anyend` parameters can be used to affect multiple style tokens.
 
-    Raises
-    ------
-    SeedirError
-        Improperly formatted arguments.
-
     Returns
     -------
     s (str) or None
@@ -3850,81 +3725,31 @@ case the tree diagram is printed in the console.</dd>
 
     &#39;&#39;&#39;
 
-    accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
-                     &#39;folderstart&#39;, &#39;filestart&#39;, &#39;folderend&#39;, &#39;fileend&#39;]
-
-    if any(i not in accept_kwargs for i in kwargs.keys()):
-        raise FakedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
-
-
-    styleargs = printing.get_styleargs(style)
-    printing.format_indent(styleargs, indent=indent)
-
-    if uniform is not None:
-        for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
-            styleargs[arg] = uniform
-
-    if anystart is not None:
-        styleargs[&#39;folderstart&#39;] = anystart
-        styleargs[&#39;filestart&#39;] = anystart
-
-    if anyend is not None:
-        styleargs[&#39;folderend&#39;] = anyend
-        styleargs[&#39;fileend&#39;] = anyend
-
-    if slash is not None:
-        warnings.warn(&#34;`slash` will removed in a future version; &#34;
-                      &#34;pass `folderend` as a keyword argument instead.&#34;,
-                      DeprecationWarning)
-        if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-            slash = os.sep
-        styleargs[&#39;folderend&#39;] = slash
-
-    for k in kwargs:
-        if k in styleargs:
-            styleargs[k] = kwargs[k]
-
-    if sort_key is not None or sort_reverse == True:
-        sort = True
-
-    if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-        slash = os.sep
-
-    default_args = dict(depthlimit=depthlimit,
-                        itemlimit=itemlimit,
-                        beyond=beyond,
-                        first=first,
-                        sort=sort,
-                        sort_reverse=sort_reverse,
-                        sort_key=sort_key,
-                        include_folders=include_folders,
-                        exclude_folders=exclude_folders,
-                        include_files=include_files,
-                        exclude_files=exclude_files,
-                        regex=regex,
-                        mask=mask,
-                        formatter=formatter,
-                        sticky_formatter=sticky_formatter,
-                        **styleargs)
-
-    # apply formatter for root folder
-    current_args = default_args.copy()
-
-    if formatter is not None:
-        formatter_update_args(formatter, self, current_args)
-
-    if sticky_formatter:
-        default_args = current_args
-
     # call
-    s = FakeDirStructure(self,
-                         default_args=default_args,
-                         **current_args)
+    args = dict(style=style,
+                printout=printout,
+                indent=indent,
+                uniform=uniform,
+                anystart=anystart,
+                anyend=anyend,
+                depthlimit=depthlimit,
+                itemlimit=itemlimit,
+                beyond=beyond,
+                first=first,
+                sort=sort,
+                sort_reverse=sort_reverse,
+                sort_key=sort_key,
+                include_folders=include_folders,
+                exclude_folders=exclude_folders,
+                include_files=include_files,
+                exclude_files=exclude_files,
+                regex=regex,
+                mask=mask,
+                formatter=formatter,
+                sticky_formatter=sticky_formatter,
+                **kwargs)
 
-    if printout:
-        print(s)
-    else:
-        return s</code></pre>
+    return FakeDirStructure(self, **args)</code></pre>
 </details>
 </dd>
 <dt id="seedir.fakedir.FakeDir.set_child_depths"><code class="name flex">
@@ -3987,7 +3812,7 @@ MyFakeDir/
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><code>FakedirError</code></dt>
+<dt><code>ValueError</code></dt>
 <dd><code>depthlimit</code> is not a non-negative int</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -4040,7 +3865,7 @@ MyFakeDir/
 
     Raises
     ------
-    FakedirError
+    ValueError
         `depthlimit` is not a non-negative int
 
     Returns
@@ -4050,7 +3875,7 @@ MyFakeDir/
     &#34;&#34;&#34;
     depthlimit = int(depthlimit)
     if depthlimit &lt; 0:
-        raise FakedirError(&#39;depthlimit must be non-negative int&#39;)
+        raise ValueError(&#39;depthlimit must be non-negative int&#39;)
     depthlimit += self.depth
     def trim_apply(f, depthlimit):
         if depthlimit is not None and f.depth == depthlimit:
@@ -4408,9 +4233,12 @@ be the "root" of the directory.</dd>
 
         Raises
         ------
+        TypeError
+            other is not a `seedir.fakedir.Fakedir`.
+
         FakedirError
-            When other is not `seedir.fakedir.FakeDir` or when `self.name` is in
-            the child names of other.
+            Name collision: `self.name` is in the child names of other.
+
 
         Returns
         -------
@@ -4419,7 +4247,7 @@ be the "root" of the directory.</dd>
         &#39;&#39;&#39;
         if other:
             if not isinstance(other, FakeDir):
-                raise FakedirError(&#39;other parameter must be instance of FakeDir&#39;)
+                raise TypeError(&#39;other parameter must be instance of FakeDir&#39;)
             if self.name in other.get_child_names():
                 raise FakedirError(&#39;FakeDirs must have unique file/folder names&#39;)
             other._children.append(self)

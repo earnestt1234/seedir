@@ -10,8 +10,6 @@ The main algorithm for determining the folder structure string is within the
 <code>seedir.folderstructure.FolderStructure</code> class.
 """
 
-__all__ = ['seedir']
-
 import os
 import pathlib
 

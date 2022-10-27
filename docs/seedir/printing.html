@@ -35,23 +35,17 @@ General module of resources and helpers for printing and making folder trees
 in seedir.
 
 &#34;&#34;&#34;
-__pdoc__ = {}
 
-for key in [&#39;is_match&#39;,
-            &#39;format_indent&#39;,
-            &#39;words&#39;]:
-    __pdoc__[key] = False
+__pdoc__ = {&#39;is_match&#39;: False,
+            &#39;format_indent&#39;: False,
+            &#39;words&#39;: False}
+
+
 
 import copy
 import os
 import re
 
-import emoji
-
-from seedir.errors import SeedirError
-
-FILE = emoji.emojize(&#39;:page_facing_up:&#39; + &#39; &#39;)
-FOLDER = emoji.emojize(&#39;:file_folder:&#39; + &#39; &#39;)
 
 STYLE_DICT = {
     &#39;lines&#39;: {&#39;split&#39;:&#39;├─&#39;,
@@ -93,17 +87,25 @@ STYLE_DICT = {
               &#39;folderstart&#39;:&#39;&gt;&#39;,
               &#39;filestart&#39;:&#39;&gt;&#39;,
               &#39;folderend&#39;: &#39;/&#39;,
-              &#39;fileend&#39;: &#39;&#39;},
-    &#39;emoji&#39;: {&#39;split&#39;:&#39;├─&#39;,
-              &#39;extend&#39;:&#39;│ &#39;,
-              &#39;space&#39;:&#39;  &#39;,
-              &#39;final&#39;:&#39;└─&#39;,
-              &#39;folderstart&#39;:FOLDER,
-              &#39;filestart&#39;:FILE,
-              &#39;folderend&#39;: &#39;/&#39;,
               &#39;fileend&#39;: &#39;&#39;}
     }
 &#39;&#39;&#39;&#34;Tokens&#34; used to create folder trees in different styles&#39;&#39;&#39;
+
+try:
+    import emoji
+    STYLE_DICT[&#34;emoji&#34;] = {
+        &#39;split&#39;:&#39;├─&#39;,
+        &#39;extend&#39;:&#39;│ &#39;,
+        &#39;space&#39;:&#39;  &#39;,
+        &#39;final&#39;:&#39;└─&#39;,
+        &#39;folderstart&#39;:emoji.emojize(&#39;:file_folder:&#39; + &#39; &#39;),
+        &#39;filestart&#39;:emoji.emojize(&#39;:page_facing_up:&#39; + &#39; &#39;),
+        &#39;folderend&#39;: &#39;/&#39;,
+        &#39;fileend&#39;: &#39;&#39;
+    }
+except ImportError:
+    pass
+
 
 filepath = os.path.dirname(os.path.abspath(__file__))
 wordpath = os.path.join(filepath, &#39;words.txt&#39;)
@@ -134,8 +136,11 @@ def get_styleargs(style):
 
     Raises
     ------
-    SeedirError
+    ValueError
         Style not recognized.
+
+    ImportError
+        &#39;emoji&#39; style requested but emoji package not installed.
 
     Returns
     -------
@@ -143,10 +148,14 @@ def get_styleargs(style):
         Dictionary of tokens for the given style.
 
     &#39;&#39;&#39;
-    if style not in STYLE_DICT:
+    if style not in STYLE_DICT and style == &#39;emoji&#39;:
+        error_text = &#39;style &#34;emoji&#34; requires &#34;emoji&#34; to be installed&#39;
+        error_text += &#39; (pip install emoji) &#39;
+        raise ImportError(error_text)
+    elif style not in STYLE_DICT:
         error_text = &#39;style &#34;{}&#34; not recognized, must be &#39;.format(style)
         error_text += &#39;lines, spaces, arrow, plus, dash, or emoji&#39;
-        raise SeedirError(error_text)
+        raise ValueError(error_text)
     else:
         return copy.deepcopy(STYLE_DICT[style])
 
@@ -170,11 +179,6 @@ def format_indent(style_dict, indent=2):
         are extened n - indent times, to give a string whose
         length is equal to indent.
 
-    Raises
-    ------
-    SeedirError
-        Indent is not a positive integer.
-
     Returns
     -------
     output : dict
@@ -183,7 +187,7 @@ def format_indent(style_dict, indent=2):
     &#39;&#39;&#39;
     indentable = [&#39;split&#39;, &#39;extend&#39;, &#39;space&#39;, &#39;final&#39;]
     if indent &lt; 0 or not isinstance(indent, int):
-        raise SeedirError(&#39;indent must be a non-negative integer&#39;)
+        raise ValueError(&#39;indent must be a non-negative integer&#39;)
     elif indent == 0:
         for key in indentable:
             style_dict[key] = &#39;&#39;
@@ -228,8 +232,10 @@ Current options are <code>'lines'</code>, <code>'spaces'</code>, <code>'arrow'</
 </dl>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><code>SeedirError</code></dt>
+<dt><code>ValueError</code></dt>
 <dd>Style not recognized.</dd>
+<dt><code>ImportError</code></dt>
+<dd>'emoji' style requested but emoji package not installed.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -253,8 +259,11 @@ Current options are <code>'lines'</code>, <code>'spaces'</code>, <code>'arrow'</
 
     Raises
     ------
-    SeedirError
+    ValueError
         Style not recognized.
+
+    ImportError
+        &#39;emoji&#39; style requested but emoji package not installed.
 
     Returns
     -------
@@ -262,10 +271,14 @@ Current options are <code>'lines'</code>, <code>'spaces'</code>, <code>'arrow'</
         Dictionary of tokens for the given style.
 
     &#39;&#39;&#39;
-    if style not in STYLE_DICT:
+    if style not in STYLE_DICT and style == &#39;emoji&#39;:
+        error_text = &#39;style &#34;emoji&#34; requires &#34;emoji&#34; to be installed&#39;
+        error_text += &#39; (pip install emoji) &#39;
+        raise ImportError(error_text)
+    elif style not in STYLE_DICT:
         error_text = &#39;style &#34;{}&#34; not recognized, must be &#39;.format(style)
         error_text += &#39;lines, spaces, arrow, plus, dash, or emoji&#39;
-        raise SeedirError(error_text)
+        raise ValueError(error_text)
     else:
         return copy.deepcopy(STYLE_DICT[style])</code></pre>
 </details>

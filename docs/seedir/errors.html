@@ -33,8 +33,10 @@ Custom exceptions for seedir.
 
 &#34;&#34;&#34;
 
-class SeedirError(Exception):
-    &#34;&#34;&#34;Class for representing errors from module `seedir.realdir`&#34;&#34;&#34;
+# NOTE: SeedirError removed for 0.4.0
+
+# class SeedirError(Exception):
+#     &#34;&#34;&#34;Class for representing errors from module `seedir.realdir`&#34;&#34;&#34;
 
 class FakedirError(Exception):
     &#34;&#34;&#34;Class for handling errors from module `seedir.fakedir`&#34;&#34;&#34;</code></pre>
@@ -68,25 +70,6 @@ class FakedirError(Exception):
 <li>builtins.BaseException</li>
 </ul>
 </dd>
-<dt id="seedir.errors.SeedirError"><code class="flex name class">
-<span>class <span class="ident">SeedirError</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Class for representing errors from module <code><a title="seedir.realdir" href="realdir.html">seedir.realdir</a></code></p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class SeedirError(Exception):
-    &#34;&#34;&#34;Class for representing errors from module `seedir.realdir`&#34;&#34;&#34;</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.Exception</li>
-<li>builtins.BaseException</li>
-</ul>
-</dd>
 </dl>
 </section>
 </article>
@@ -105,9 +88,6 @@ class FakedirError(Exception):
 <ul>
 <li>
 <h4><code><a title="seedir.errors.FakedirError" href="#seedir.errors.FakedirError">FakedirError</a></code></h4>
-</li>
-<li>
-<h4><code><a title="seedir.errors.SeedirError" href="#seedir.errors.SeedirError">SeedirError</a></code></h4>
 </li>
 </ul>
 </li>

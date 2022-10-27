@@ -46,13 +46,22 @@ The main algorithm for determining the folder structure string is within the
 &#34;&#34;&#34;
 
 import os
-import warnings
+import pathlib
 
-from seedir.folderstructure import RealDirStructure
-from seedir.folderstructurehelpers import formatter_update_args
-from seedir.errors import SeedirError
-import seedir.printing as printing
+from seedir.folderstructure import PathlibStructure, RealDirStructure
 
+def _parse_path(path):
+    &#39;&#39;&#39;Helper function added to parse the input to `seedir.realdir.seedir()`.
+    Detects strings (paths) or pathlib objects.&#39;&#39;&#39;
+
+    if isinstance(path, str):
+        path = os.path.abspath(os.path.expanduser(path))
+    elif isinstance(path, pathlib.Path):
+        path = path.expanduser().resolve()
+    else:
+        raise TypeError(f&#34;Can only parse str or pathlib.Path, not {type(path)}.&#34;)
+
+    return path
 
 def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
            anystart=None, anyend=None, depthlimit=None, itemlimit=None,
@@ -75,7 +84,7 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
     Make a basic tree diagram:
 
     ```
-    &gt;&gt;&gt; c = &#39;example/folder/path&#39;
+    &gt;&gt;&gt; c = &#39;path/to/doc&#39;
     &gt;&gt;&gt; sd.seedir(c)
     doc/
     ├─_static/
@@ -155,9 +164,11 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 
     Parameters
     ----------
-    path : str or None, optional
+    path : str, pathlib.Path, or None, optional
         System path of a directory.  If None, current working directory is
-        used.
+        used.  The path can be either a string path or a pathlib object.
+        In both cases, the path is converted to an absolute path, and the
+        tilde (~) is expanded.
     style : &#39;lines&#39;, &#39;dash&#39;, &#39;arrow&#39;, &#39;spaces&#39;, &#39;plus&#39;, or &#39;emoji&#39;, optional
         Style to use. The default is `&#39;lines&#39;`.  A style determines the set
         of characters (&#34;tokens&#34;) used to represent the base structure of
@@ -193,7 +204,7 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         `itemlimit` can be expressed using the `beyond` parameter.  The files and
         folders left out are determined by the sorting parameters
         (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
-    beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
+    beyond : str (&#39;ellipsis&#39;, &#39;content&#39; or a string starting with an underscore) or None, optional
         String to indicate directory contents beyond the `itemlimit` or the
         `depthlimit`.  The default is `None`.  Options are: `&#39;ellipsis&#39;` (`&#39;...&#39;`),
         `&#39;content&#39;` or `&#39;contents&#39;` (the number of files and folders beyond), or
@@ -224,7 +235,9 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
     mask : function, optional
         Function for filtering items.  Absolute paths of each individual item
         are passed to the `mask` function.  If `True` is returned, the
-        item is kept.  The default is `None`.
+        item is kept.  The default is `None`.  The type of the object
+        passed to `mask` corresponds with that passed as input:
+        `str` or `pathlib.Path`.
     formatter : function, optional
         Function for customizing the directory printing logic and style
         based on specific folders &amp; files.  When passed, the formatter
@@ -252,6 +265,9 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         Note that items exlcuded by the inclusion/exclusion arguments (or the
         `mask`) *will not* be seen by formatter.  Similarly, any folder tree
         entries created by the `beyond` argument *will not* be seen by formatter.
+
+        The type of the object passed to `formatter` corresponds with that
+        passed as input: `str` or `pathlib.Path`.
 
     sticky_formatter : bool, optional
         When True, updates to argumnts made by the `formatter` (see above)
@@ -289,11 +305,6 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
         affected by the indent parameter.  The `uniform`, `anystart`, and
         `anyend` parameters can be used to affect multiple style tokens.
 
-    Raises
-    ------
-    SeedirError
-        Improperly formatted arguments.
-
     Returns
     -------
     s (str) or None
@@ -302,80 +313,38 @@ def seedir(path=None, style=&#39;lines&#39;, printout=True, indent=2, uniform=No
 
     &#39;&#39;&#39;
 
-    accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
-                     &#39;folderstart&#39;, &#39;filestart&#39;, &#39;folderend&#39;, &#39;fileend&#39;]
-
-    if any(i not in accept_kwargs for i in kwargs.keys()):
-        raise SeedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
-
-    styleargs = printing.get_styleargs(style)
-    printing.format_indent(styleargs, indent=indent)
-
-    if uniform is not None:
-        for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
-            styleargs[arg] = uniform
-
-    if anystart is not None:
-        styleargs[&#39;folderstart&#39;] = anystart
-        styleargs[&#39;filestart&#39;] = anystart
-
-    if anyend is not None:
-        styleargs[&#39;folderend&#39;] = anyend
-        styleargs[&#39;fileend&#39;] = anyend
-
-    if slash is not None:
-        warnings.warn(&#34;`slash` will removed in a future version; &#34;
-                      &#34;pass `folderend` as a keyword argument instead.&#34;,
-                      DeprecationWarning)
-        if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-            slash = os.sep
-        styleargs[&#39;folderend&#39;] = slash
-
-    for k in kwargs:
-        if k in styleargs:
-            styleargs[k] = kwargs[k]
-
-    if sort_key is not None or sort_reverse == True:
-        sort = True
-
     if path is None:
         path = os.getcwd()
 
-    default_args = dict(depthlimit=depthlimit,
-                        itemlimit=itemlimit,
-                        beyond=beyond,
-                        first=first,
-                        sort=sort,
-                        sort_reverse=sort_reverse,
-                        sort_key=sort_key,
-                        include_folders=include_folders,
-                        exclude_folders=exclude_folders,
-                        include_files=include_files,
-                        exclude_files=exclude_files,
-                        regex=regex,
-                        mask=mask,
-                        formatter=formatter,
-                        sticky_formatter=sticky_formatter,
-                        **styleargs)
-
-    # apply formatter for root folder
-    current_args = default_args.copy()
-
-    if formatter is not None:
-        formatter_update_args(formatter, path, current_args)
-
-    if sticky_formatter:
-        default_args = current_args
+    path = _parse_path(path)
 
     # call
-    s = RealDirStructure(path,
-                         default_args=default_args,
-                         **current_args)
+    args = dict(style=style,
+                printout=printout,
+                indent=indent,
+                uniform=uniform,
+                anystart=anystart,
+                anyend=anyend,
+                depthlimit=depthlimit,
+                itemlimit=itemlimit,
+                beyond=beyond,
+                first=first,
+                sort=sort,
+                sort_reverse=sort_reverse,
+                sort_key=sort_key,
+                include_folders=include_folders,
+                exclude_folders=exclude_folders,
+                include_files=include_files,
+                exclude_files=exclude_files,
+                regex=regex,
+                mask=mask,
+                formatter=formatter,
+                sticky_formatter=sticky_formatter,
+                **kwargs)
 
-    if printout:
-        print(s)
-    else:
-        return s</code></pre>
+    structure = PathlibStructure if isinstance(path, pathlib.Path) else RealDirStructure
+
+    return structure(path, **args)</code></pre>
 </details>
 </section>
 <section>
@@ -396,7 +365,7 @@ computer directories.</p>
 
 </code></pre>
 <p>Make a basic tree diagram:</p>
-<pre><code>&gt;&gt;&gt; c = 'example/folder/path'
+<pre><code>&gt;&gt;&gt; c = 'path/to/doc'
 &gt;&gt;&gt; sd.seedir(c)
 doc/
 ├─_static/
@@ -463,10 +432,13 @@ doc/
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>path</code></strong> :&ensp;<code>str</code> or <code>None</code>, optional</dt>
+<dt><strong><code>path</code></strong> :&ensp;<code>str, pathlib.Path,</code> or <code>None</code>, optional</dt>
 <dd>System path of a directory.
 If None, current working directory is
-used.</dd>
+used.
+The path can be either a string path or a pathlib object.
+In both cases, the path is converted to an absolute path, and the
+tilde (~) is expanded.</dd>
 <dt><strong><code>style</code></strong> :&ensp;<code>'lines', 'dash', 'arrow', 'spaces', 'plus',</code> or <code>'emoji'</code>, optional</dt>
 <dd>Style to use. The default is <code>'lines'</code>.
 A style determines the set
@@ -516,7 +488,7 @@ The files and
 folders left out are determined by the sorting parameters
 (<code>sort</code>, <code>sort_reverse</code>, <code>sort_key</code>).
 The default is <code>None</code>.</dd>
-<dt><strong><code>beyond</code></strong> :&ensp;<code>str ('ellipsis', 'cotent'</code> or <code>a string starting with an underscore)</code> or <code>None</code>, optional</dt>
+<dt><strong><code>beyond</code></strong> :&ensp;<code>str ('ellipsis', 'content'</code> or <code>a string starting with an underscore)</code> or <code>None</code>, optional</dt>
 <dd>String to indicate directory contents beyond the <code>itemlimit</code> or the
 <code>depthlimit</code>.
 The default is <code>None</code>.
@@ -554,7 +526,10 @@ Absolute paths of each individual item
 are passed to the <code>mask</code> function.
 If <code>True</code> is returned, the
 item is kept.
-The default is <code>None</code>.</dd>
+The default is <code>None</code>.
+The type of the object
+passed to <code>mask</code> corresponds with that passed as input:
+<code>str</code> or <code>pathlib.Path</code>.</dd>
 <dt><strong><code>formatter</code></strong> :&ensp;<code>function</code>, optional</dt>
 <dd>
 <p>Function for customizing the directory printing logic and style
@@ -581,6 +556,8 @@ arguments listed above.</p>
 <code>mask</code>) <em>will not</em> be seen by formatter.
 Similarly, any folder tree
 entries created by the <code>beyond</code> argument <em>will not</em> be seen by formatter.</p>
+<p>The type of the object passed to <code>formatter</code> corresponds with that
+passed as input: <code>str</code> or <code>pathlib.Path</code>.</p>
 </dd>
 <dt><strong><code>sticky_formatter</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>When True, updates to argumnts made by the <code>formatter</code> (see above)
@@ -625,11 +602,6 @@ The <code>uniform</code>, <code>anystart</code>, and
 <code>anyend</code> parameters can be used to affect multiple style tokens.</p>
 </dd>
 </dl>
-<h2 id="raises">Raises</h2>
-<dl>
-<dt><code>SeedirError</code></dt>
-<dd>Improperly formatted arguments.</dd>
-</dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>s (str)</code> or <code>None</code></dt>
@@ -661,7 +633,7 @@ case the tree diagram is printed in the console.</dd>
     Make a basic tree diagram:
 
     ```
-    &gt;&gt;&gt; c = &#39;example/folder/path&#39;
+    &gt;&gt;&gt; c = &#39;path/to/doc&#39;
     &gt;&gt;&gt; sd.seedir(c)
     doc/
     ├─_static/
@@ -741,9 +713,11 @@ case the tree diagram is printed in the console.</dd>
 
     Parameters
     ----------
-    path : str or None, optional
+    path : str, pathlib.Path, or None, optional
         System path of a directory.  If None, current working directory is
-        used.
+        used.  The path can be either a string path or a pathlib object.
+        In both cases, the path is converted to an absolute path, and the
+        tilde (~) is expanded.
     style : &#39;lines&#39;, &#39;dash&#39;, &#39;arrow&#39;, &#39;spaces&#39;, &#39;plus&#39;, or &#39;emoji&#39;, optional
         Style to use. The default is `&#39;lines&#39;`.  A style determines the set
         of characters (&#34;tokens&#34;) used to represent the base structure of
@@ -779,7 +753,7 @@ case the tree diagram is printed in the console.</dd>
         `itemlimit` can be expressed using the `beyond` parameter.  The files and
         folders left out are determined by the sorting parameters
         (`sort`, `sort_reverse`, `sort_key`).  The default is `None`.
-    beyond : str (&#39;ellipsis&#39;, &#39;cotent&#39; or a string starting with an underscore) or None, optional
+    beyond : str (&#39;ellipsis&#39;, &#39;content&#39; or a string starting with an underscore) or None, optional
         String to indicate directory contents beyond the `itemlimit` or the
         `depthlimit`.  The default is `None`.  Options are: `&#39;ellipsis&#39;` (`&#39;...&#39;`),
         `&#39;content&#39;` or `&#39;contents&#39;` (the number of files and folders beyond), or
@@ -810,7 +784,9 @@ case the tree diagram is printed in the console.</dd>
     mask : function, optional
         Function for filtering items.  Absolute paths of each individual item
         are passed to the `mask` function.  If `True` is returned, the
-        item is kept.  The default is `None`.
+        item is kept.  The default is `None`.  The type of the object
+        passed to `mask` corresponds with that passed as input:
+        `str` or `pathlib.Path`.
     formatter : function, optional
         Function for customizing the directory printing logic and style
         based on specific folders &amp; files.  When passed, the formatter
@@ -838,6 +814,9 @@ case the tree diagram is printed in the console.</dd>
         Note that items exlcuded by the inclusion/exclusion arguments (or the
         `mask`) *will not* be seen by formatter.  Similarly, any folder tree
         entries created by the `beyond` argument *will not* be seen by formatter.
+
+        The type of the object passed to `formatter` corresponds with that
+        passed as input: `str` or `pathlib.Path`.
 
     sticky_formatter : bool, optional
         When True, updates to argumnts made by the `formatter` (see above)
@@ -875,11 +854,6 @@ case the tree diagram is printed in the console.</dd>
         affected by the indent parameter.  The `uniform`, `anystart`, and
         `anyend` parameters can be used to affect multiple style tokens.
 
-    Raises
-    ------
-    SeedirError
-        Improperly formatted arguments.
-
     Returns
     -------
     s (str) or None
@@ -888,80 +862,38 @@ case the tree diagram is printed in the console.</dd>
 
     &#39;&#39;&#39;
 
-    accept_kwargs = [&#39;extend&#39;, &#39;split&#39;, &#39;space&#39;, &#39;final&#39;,
-                     &#39;folderstart&#39;, &#39;filestart&#39;, &#39;folderend&#39;, &#39;fileend&#39;]
-
-    if any(i not in accept_kwargs for i in kwargs.keys()):
-        raise SeedirError(&#39;kwargs must be any of {}&#39;.format(accept_kwargs))
-
-    styleargs = printing.get_styleargs(style)
-    printing.format_indent(styleargs, indent=indent)
-
-    if uniform is not None:
-        for arg in [&#39;extend&#39;, &#39;split&#39;, &#39;final&#39;, &#39;space&#39;]:
-            styleargs[arg] = uniform
-
-    if anystart is not None:
-        styleargs[&#39;folderstart&#39;] = anystart
-        styleargs[&#39;filestart&#39;] = anystart
-
-    if anyend is not None:
-        styleargs[&#39;folderend&#39;] = anyend
-        styleargs[&#39;fileend&#39;] = anyend
-
-    if slash is not None:
-        warnings.warn(&#34;`slash` will removed in a future version; &#34;
-                      &#34;pass `folderend` as a keyword argument instead.&#34;,
-                      DeprecationWarning)
-        if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-            slash = os.sep
-        styleargs[&#39;folderend&#39;] = slash
-
-    for k in kwargs:
-        if k in styleargs:
-            styleargs[k] = kwargs[k]
-
-    if sort_key is not None or sort_reverse == True:
-        sort = True
-
     if path is None:
         path = os.getcwd()
 
-    default_args = dict(depthlimit=depthlimit,
-                        itemlimit=itemlimit,
-                        beyond=beyond,
-                        first=first,
-                        sort=sort,
-                        sort_reverse=sort_reverse,
-                        sort_key=sort_key,
-                        include_folders=include_folders,
-                        exclude_folders=exclude_folders,
-                        include_files=include_files,
-                        exclude_files=exclude_files,
-                        regex=regex,
-                        mask=mask,
-                        formatter=formatter,
-                        sticky_formatter=sticky_formatter,
-                        **styleargs)
-
-    # apply formatter for root folder
-    current_args = default_args.copy()
-
-    if formatter is not None:
-        formatter_update_args(formatter, path, current_args)
-
-    if sticky_formatter:
-        default_args = current_args
+    path = _parse_path(path)
 
     # call
-    s = RealDirStructure(path,
-                         default_args=default_args,
-                         **current_args)
+    args = dict(style=style,
+                printout=printout,
+                indent=indent,
+                uniform=uniform,
+                anystart=anystart,
+                anyend=anyend,
+                depthlimit=depthlimit,
+                itemlimit=itemlimit,
+                beyond=beyond,
+                first=first,
+                sort=sort,
+                sort_reverse=sort_reverse,
+                sort_key=sort_key,
+                include_folders=include_folders,
+                exclude_folders=exclude_folders,
+                include_files=include_files,
+                exclude_files=exclude_files,
+                regex=regex,
+                mask=mask,
+                formatter=formatter,
+                sticky_formatter=sticky_formatter,
+                **kwargs)
 
-    if printout:
-        print(s)
-    else:
-        return s</code></pre>
+    structure = PathlibStructure if isinstance(path, pathlib.Path) else RealDirStructure
+
+    return structure(path, **args)</code></pre>
 </details>
 </dd>
 </dl>
