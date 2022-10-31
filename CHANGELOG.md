@@ -6,14 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.4.0 - in development
 
+### Added
+
+- pathlib Path objects now accepted by `sd.seedir()`.  All other arguments apply as normal; arguments accepting callables (`mask` and `formatter`) will see pathlib objects.
+
 ### Changed
 
 - [emoji is now an optional dependency](https://github.com/earnestt1234/seedir/issues/12).  It can be installed with `pip install seedir[emoji]`.  An error is raised if the emoji style is requested without emoji installed.
+- Reorganization of `folderstructure.py` and the `FolderStructure` class
+  - `folderstructurehelpers.py` has been removed.  Most of the functions implemented there have become methods of `FolderStucture`.
+  - FolderStructure has been made more user-friendly, and can now be initialized with less functions.  
+  - There are no longer separate "real dir"/"fake dir" functions for handing item filtering/sorting.  
+
+- Item inclusion is now prioritized above exclusion for include/exclude folders/files.  The order of precedence now is mask (1), inclusion (2), exclusion (3).  The code in this function was generally rewritten to be more concise (`FolderStructure._filter_items()`).
+- More examples in the getting started readme. 
 
 ### Fixed
 
 - Typos in documentation
 - Removal of IPYNB checkpoints
+
+### Removed
+
+- The `SeedirError` has been removed.  All uses have been replaced with more appropriate errors, mainly `ValueError` or `TypeError`
 
 ## [0.3.1](https://github.com/earnestt1234/seedir/releases/tag/v0.3.1)
 
