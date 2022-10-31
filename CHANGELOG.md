@@ -4,7 +4,7 @@ This document will serve as a record for past and future changes to seedir.  It 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.4.0 - in development
+## [0.4.0](https://github.com/earnestt1234/seedir/releases/tag/v0.4.0)
 
 ### Added
 
@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - There are no longer separate "real dir"/"fake dir" functions for handing item filtering/sorting.  
 
 - Item inclusion is now prioritized above exclusion for include/exclude folders/files.  The order of precedence now is mask (1), inclusion (2), exclusion (3).  The code in this function was generally rewritten to be more concise (`FolderStructure._filter_items()`).
+- The `~` in paths is now resolved, as well as `.` and `..`
 - More examples in the getting started readme. 
 
 ### Fixed
