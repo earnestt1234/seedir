@@ -4,7 +4,7 @@
 import argparse
 import os
 
-import seedir as sd
+from .realdir import seedir
 
 helptxt = """
 Help for the seedir CLI.  Function for printing a folder tree
@@ -100,7 +100,7 @@ def main():
 
     kwargs = vars(args)
     del kwargs['help']
-    sd.seedir(**kwargs)
+    seedir(**kwargs)
 
 if __name__ == '__main__':
     main()
