@@ -30,5 +30,5 @@ setup(name='seedir',
       long_description=long_description,
       long_description_content_type='text/markdown',
       entry_points = {
-        'console_scripts': ['seedir=seedir.command_line:main'],
+        'console_scripts': ['seedir=seedir.__main__:main'],
         })
