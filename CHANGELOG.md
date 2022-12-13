@@ -4,7 +4,7 @@ This document will serve as a record for past and future changes to seedir.  It 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.4.1
+## 0.4.2
 
 ### Changed
 
