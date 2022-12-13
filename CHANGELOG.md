@@ -4,6 +4,12 @@ This document will serve as a record for past and future changes to seedir.  It 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.4.1
+
+### Changed
+
+- Syntax for accessing the CLI is updated.  Now, you can do `seedir` or `python -m seedir`; `seedir.command_line` is renamed to enable this change.
+
 ## [0.4.0](https://github.com/earnestt1234/seedir/releases/tag/v0.4.0)
 
 ### Added

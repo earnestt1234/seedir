@@ -16,7 +16,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='seedir',
-      version='0.4.0',
+      version='0.4.1',
       description='Package for creating, editing, and reading folder tree diagrams.',
       url='https://github.com/earnestt1234/seedir',
       author='Tom Earnest',
