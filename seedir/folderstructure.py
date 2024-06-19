@@ -155,8 +155,8 @@ class FolderStructure:
                                    **styleargs)
 
 
-        s = self._folder_structure_recurse_v2(ITEM=folder,
-                                              FSARGS=args).strip()
+        s = self._folder_structure_recurse(ITEM=folder,
+                                           FSARGS=args).strip()
 
         if printout:
             print(s)
@@ -389,10 +389,10 @@ class FolderStructure:
 
         return filtered
 
-    def _folder_structure_recurse_v2(self, ITEM, FSARGS, DEPTH=0,
-                                     INDEX=0, INCOMPLETE=None,
-                                     IS_LASTITEM=False,
-                                     IS_RAWSTRING=False):
+    def _folder_structure_recurse(self, ITEM, FSARGS, DEPTH=0,
+                                  INDEX=0, INCOMPLETE=None,
+                                  IS_LASTITEM=False,
+                                  IS_RAWSTRING=False):
 
         # initialization
         OUTPUT = ''
@@ -525,12 +525,12 @@ class FolderStructure:
         for i, x in enumerate(finalitems):
             last = i == (total - 1)
             IS_RAWSTRING = (beyond_added and last)
-            OUTPUT += self._folder_structure_recurse_v2(x, DEPTH=DEPTH+1,
-                                                        INCOMPLETE=INCOMPLETE,
-                                                        FSARGS=next_args,
-                                                        INDEX=i,
-                                                        IS_LASTITEM=last,
-                                                        IS_RAWSTRING=IS_RAWSTRING)
+            OUTPUT += self._folder_structure_recurse(x, DEPTH=DEPTH+1,
+                                                     INCOMPLETE=INCOMPLETE,
+                                                     FSARGS=next_args,
+                                                     INDEX=i,
+                                                     IS_LASTITEM=last,
+                                                     IS_RAWSTRING=IS_RAWSTRING)
 
 
         # RETURN
