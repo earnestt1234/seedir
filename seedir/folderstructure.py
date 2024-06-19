@@ -6,6 +6,7 @@ The primary algorithm for determining the folder structure returned by
 """
 
 import copy
+import math
 import os
 import warnings
 
@@ -161,6 +162,75 @@ class FolderStructure:
             print(s)
         else:
             return s
+
+    def apply_itemlimit(self, items, itemlimit):
+        '''
+        Limit the number of children in a folder.
+
+        Parameters
+        ----------
+        items : list
+            Child items.
+        itemlimit : int, tuple, or None
+            Limit.  If int, limits the number of items regardless of if they
+            are folders or file.  If a 2-tuple, the first number is treated
+            as a limit on the number of folders and the second number
+            is treated as a limit on the number of files.  If None,
+            no limit is applied.
+
+        Returns
+        -------
+        finalitems : list
+            Kept times.
+        rem : list
+            Omitted items.
+
+        '''
+
+        # all items included when None
+        if itemlimit is None:
+            itemlimit = len(items)
+
+        # if int, take the first itemlimit items
+        if isinstance(itemlimit, int):
+            itemlimit = min(itemlimit, len(items))
+            finalitems = items[:itemlimit]
+            rem = items[itemlimit:]
+
+        # if tuple, interpret as limits for folders and files
+        else:
+            finalitems, rem = self._apply_tuple_itemlimit(items, itemlimit)
+
+        return finalitems, rem
+
+    def _apply_tuple_itemlimit(self, items, itemlimit):
+        '''Apply the itemlimit when it is a 2-tuple of
+        (folderlimit, filelimit).'''
+        folderlimit, filelimit = itemlimit
+
+        folderlimit = math.inf if folderlimit is None else folderlimit
+        filelimit = math.inf if filelimit is None else filelimit
+
+        finalitems = []
+        rem = []
+        foldercount = 0
+        filecount = 0
+
+        for item in items:
+            isdir = self.isdir(item)
+
+            if isdir and (foldercount < folderlimit):
+                finalitems.append(item)
+                foldercount += 1
+            elif isdir:
+                rem.append(item)
+            elif not isdir and (filecount < filelimit):
+                finalitems.append(item)
+                filecount += 1
+            else:
+                rem.append(item)
+
+        return finalitems, rem
 
     def beyond_depth_str(self, items, beyond):
         '''
@@ -403,7 +473,8 @@ class FolderStructure:
             return OUTPUT
 
         # FILTER/SORT CHILDREN
-        # # # # # # # # # # # # # #
+        # # # # # # # # # # # # #
+
         current_itemlimit = args.itemlimit
 
         # handle when depthlimit is reached
@@ -433,15 +504,8 @@ class FolderStructure:
         if any(arg is not None for arg in filterargs.values()):
             listdir = self.filter_items(listdir, **filterargs, regex=args.regex)
 
-        # set current_itemlimit based on listdir size
-        if current_itemlimit is None:
-            current_itemlimit = len(listdir)
-        else:
-            current_itemlimit = min(current_itemlimit, len(listdir))
-
-        # segment output into what can be included
-        finalitems = listdir[:current_itemlimit]
-        rem = listdir[current_itemlimit:]
+        # apply itemlimit
+        finalitems, rem = self.apply_itemlimit(listdir, current_itemlimit)
 
         # append beyond string if being used
         beyond_added = False
