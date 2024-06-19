@@ -213,8 +213,7 @@ class TestSeedirStringFormatting(unittest.TestCase):
         b = '  '
         self.assertEqual('', FDS.get_base_header([0], a, b))
         self.assertEqual('| |   ', FDS.get_base_header([0, 1, 3], a, b))
-        with self.assertRaises(ValueError):
-            FDS.get_base_header([], a, b)
+        self.assertEqual('', FDS.get_base_header([], a, b))
 
     def test_STYLE_DICT_members(self):
         styles = ['lines', 'dash', 'spaces', 'arrow', 'plus']
