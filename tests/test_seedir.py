@@ -1,27 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Unittests for seedir.
+Unit tests for seedir.
 
-Run from PARENT directory on command line, i.e.:
-
-seedir\  < here!
-├─.git\
-├─.gitignore
-├─LICENSE
-├─README.md
-├─seedir\
-├─seedirpackagetesting.py
-├─stackoverflow.txt
-└─tests\
-
-With the command:
-    python -m tests.tests
+Previously written for unittests, and updated for pytest.
 
 Test methods MUST start with "test"
 """
 
 import os
-import unittest
+
+import pytest
 
 import seedir as sd
 from seedir.folderstructure import FakeDirStructure as FDS
@@ -167,12 +155,20 @@ fmt_with_mask = '''MyFakeDir/
 └─pedantic/
   └─cataclysmic.txt'''
 
+# variables
+styles = ['lines', 'dash', 'spaces', 'arrow', 'plus', 'emoji']
+try:
+    import emoji
+except ImportError:
+    styles.remove('emoji')
+
 # realdir for testing on
 testdir = os.path.dirname(os.path.abspath(__file__))
 
 # ---- Test cases
 
-class PrintSomeDirs(unittest.TestCase):
+class PrintSomeDirs:
+
     print('\n--------------------'
           '\n\nTesting seedir.seedir() against {}:\n\n'
           '--------------------'
@@ -207,141 +203,154 @@ class PrintSomeDirs(unittest.TestCase):
         with self.assertRaises(ValueError):
             sd.seedir(testdir, spacing=False)
 
-class TestSeedirStringFormatting(unittest.TestCase):
-    def test_get_base_header(self):
+class TestSeedirStringFormatting:
+    def test_get_base_header_0(self):
         a = '| '
         b = '  '
-        self.assertEqual('', FDS.get_base_header([0], a, b))
-        self.assertEqual('| |   ', FDS.get_base_header([0, 1, 3], a, b))
-        self.assertEqual('', FDS.get_base_header([], a, b))
+        assert FDS.get_base_header([0], a, b) == ''
+
+    def test_get_base_header_013(self):
+        a = '| '
+        b = '  '
+        assert FDS.get_base_header([0, 1, 3], a, b) == '| |   '
+
+    def test_get_base_header_empty(self):
+        a = '| '
+        b = '  '
+        assert FDS.get_base_header([], a, b) == ''
 
     def test_STYLE_DICT_members(self):
-        styles = ['lines', 'dash', 'spaces', 'arrow', 'plus']
-        try:
-            import emoji
-            styles.append('emoji')
-        except ImportError:
-            pass
         keys = set(sd.STYLE_DICT.keys())
-        self.assertEqual(keys, set(styles))
+        assert keys == set(styles)
 
-    def test_get_style_args_all_accessible(self):
-        styles = ['lines', 'dash', 'spaces', 'arrow', 'plus']
-        try:
-            import emoji
-            styles.append('emoji')
-        except ImportError:
-            pass
-        for s in styles:
-            d = sd.get_styleargs(s)
-            self.assertTrue(isinstance(d, dict))
-        with self.assertRaises(ValueError):
-            d = sd.get_styleargs('missing_style')
+    @pytest.mark.parametrize('style', styles)
+    def test_get_style_args_all_accessible(self, style):
+        d = sd.get_styleargs(style)
+        assert isinstance(d, dict)
+
+    def test_access_missing_style(self):
+        with pytest.raises(ValueError):
+            _ = sd.get_styleargs('missing_style')
 
     def test_get_style_args_deepcopy(self):
         x = sd.STYLE_DICT['lines']
         y = sd.get_styleargs('lines')
-        self.assertTrue(x is not y)
+        assert x is not y
 
-    def test_format_indent(self):
+    def test_format_indent_4(self):
         a = sd.get_styleargs('lines')
-        b = sd.get_styleargs('lines')
         sd.printing.format_indent(a, indent=4)
-        sd.printing.format_indent(b, indent=1)
         chars = ['extend', 'space', 'split', 'final']
-        self.assertTrue(all(len(a[c])==4 for c in chars))
-        self.assertTrue(all(len(b[c])==1 for c in chars))
+        assert all(len(a[c])==4 for c in chars)
 
-    def test_words_list(self):
-        self.assertTrue(sd.printing.words[0] == 'a')
-        self.assertTrue(len(sd.printing.words) == 25487)
+    def test_format_indent_1(self):
+        a = sd.get_styleargs('lines')
+        sd.printing.format_indent(a, indent=1)
+        chars = ['extend', 'space', 'split', 'final']
+        assert all(len(a[c])==1 for c in chars)
 
-class TestFakeDirReading(unittest.TestCase):
+    def test_words_list_start(self):
+        assert sd.printing.words[0] == 'a'
+
+    def test_words_list_length(self):
+        assert len(sd.printing.words) == 25487
+
+class TestFakeDirReading:
     def test_read_string(self):
         x = sd.fakedir_fromstring(example)
-        self.assertTrue(isinstance(x, sd.FakeDir))
+        assert isinstance(x, sd.FakeDir)
 
-    def test_parse_comments(self):
+    def test_parse_comments_on(self):
         x = sd.fakedir_fromstring(example)
         y = sd.fakedir_fromstring(example_with_comments)
-        z = sd.fakedir_fromstring(example_with_comments, parse_comments=False)
-        self.assertEqual(x.get_child_names(), y.get_child_names())
-        self.assertNotEqual(x.get_child_names(), z.get_child_names())
+        assert x.get_child_names() == y.get_child_names()
 
-class TestFakeDir(unittest.TestCase):
-    def test_count_fake_items(self):
+    def test_parse_comments_off(self):
         x = sd.fakedir_fromstring(example)
-        self.assertEqual(FDS.count_folders(x.listdir()), 1)
-        self.assertEqual(FDS.count_files(x.listdir()), 3)
+        y = sd.fakedir_fromstring(example_with_comments, parse_comments=False)
+        assert x.get_child_names() != y.get_child_names()
+
+class TestFakeDir:
+    def test_count_fake_folders(self):
+        x = sd.fakedir_fromstring(example)
+        assert FDS.count_folders(x.listdir()) == 1
+
+    def test_count_fake_files(self):
+        x = sd.fakedir_fromstring(example)
+        assert FDS.count_files(x.listdir()) == 3
 
     def test_sort_fakedir(self):
         x = sd.fakedir_fromstring(example).listdir()
         sort = FDS.sort_dir(x, sort_reverse=True, sort_key=lambda x : x[1])
         sort = [f.name for f in sort]
         correct = ['app.py', 'view.py', 'test', '__init__.py']
-        self.assertEqual(sort, correct)
+        assert sort == correct
 
     def test_exclude_files_and_reread(self):
         x = sd.fakedir_fromstring(example)
-        y = x.seedir(printout=False, exclude_files='.*\..*', regex=True)
+        y = x.seedir(printout=False, exclude_files=r'.*\..*', regex=True)
         z = sd.fakedir_fromstring(y)
-        self.assertEqual(set(z.get_child_names()), set(['test']))
+        assert set(z.get_child_names()) == set(['test'])
 
     def test_include_files_and_reread(self):
         x = sd.fakedir_fromstring(example)
         y = x.seedir(printout=False, include_files=['app.py', 'view.py'],
-                     regex=False)
+                      regex=False)
         z = sd.fakedir_fromstring(y)
-        self.assertEqual(set(z.get_child_names()),
-                         set(['app.py', 'view.py', 'test', ]))
+        assert set(z.get_child_names()) == set(['app.py', 'view.py', 'test', ])
 
     def test_delete_string_names(self):
         x = sd.randomdir()
         x.delete(x.get_child_names())
-        self.assertTrue(len(x.listdir()) == 0)
+        assert len(x.listdir()) == 0
 
     def test_delete_objects(self):
         x = sd.randomdir()
         x.delete(x.listdir())
-        self.assertTrue(len(x.listdir()) == 0)
+        assert len(x.listdir()) == 0
 
     def test_set_parent(self):
         x = sd.fakedir_fromstring(example)
         x['test/test_app.py'].parent = x
-        self.assertTrue('test_app.py' in x.get_child_names())
+        assert 'test_app.py' in x.get_child_names()
 
     def test_walk_apply(self):
         def add_0(f):
             f.name += ' 0'
         x = sd.fakedir_fromstring(example)
         x.walk_apply(add_0)
-        for f in x.get_child_names():
-            self.assertEqual(f[-1], '0')
+        last_chars = [f[-1] for f in x.get_child_names()]
+        assert set(last_chars) == set('0')
 
     def test_depth_setting(self):
         x = sd.fakedir_fromstring(example)
         x['test'].create_folder('A')
         x['test/A'].create_folder('B')
         x['test/A/B'].create_file('boris.txt')
-        self.assertEqual(x['test/A/B/boris.txt'].depth, 4)
-        x['test/A/B/boris.txt'].parent = x
-        self.assertEqual(x['boris.txt'].depth, 1)
+        obj = x['test/A/B/boris.txt']
+        depth_a = obj.depth
+        obj.parent = x
+        depth_b = obj.depth
+        assert (depth_a, depth_b) == (4, 1)
 
     def test_randomdir_seed(self):
         x = sd.randomdir(seed=4.21)
         y = sd.randomdir(seed=4.21)
-        self.assertEqual(x.get_child_names(), y.get_child_names())
+        assert x.get_child_names() == y.get_child_names()
 
-    def test_populate_fakedir(self):
+    def test_empty_fakedir_has_no_children(self):
         x = sd.FakeDir('BORIS')
-        self.assertFalse(x.get_child_names())
+        assert len(x.get_child_names()) == 0
+
+    def test_populate_adds_children(self):
+        x = sd.FakeDir('BORIS')
         sd.populate(x)
-        self.assertTrue(x.get_child_names())
+        assert len(x.get_child_names()) > 0
 
     def test_copy_equal(self):
         x = sd.randomdir(seed=7)
         y = x.copy()
-        self.assertEqual(x.seedir(printout=False), y.seedir(printout=False))
+        assert x.seedir(printout=False) == y.seedir(printout=False)
 
     def test_copy_unlinked(self):
         def pallindrome(f):
@@ -354,9 +363,9 @@ class TestFakeDir(unittest.TestCase):
         y.walk_apply(pallindrome)
 
         after = x.seedir(printout=False)
-        self.assertEqual(before, after)
+        assert before == after
 
-class TestMask(unittest.TestCase):
+class TestMask:
     def test_mask_no_folders_or_files(self):
         def foo(x):
             if os.path.isdir(x) or os.path.isfile(x):
@@ -364,75 +373,85 @@ class TestMask(unittest.TestCase):
 
         s = sd.seedir(testdir, printout=False, depthlimit=2, itemlimit=10, mask=foo,)
         s = s.split('\n')
-        self.assertEqual(len(s), 1)
+        assert len(s) == 1
 
     def test_mask_always_false(self):
         def bar(x):
             return False
         s = sd.seedir(testdir, printout=False, depthlimit=2, itemlimit=10, mask=bar)
         s = s.split('\n')
-        self.assertEqual(len(s), 1)
+        assert len(s) == 1
 
     def test_mask_fakedir_fromstring(self):
         x = sd.fakedir_fromstring(example)
         s = x.seedir(printout=False, mask=lambda x : not x.name[0] == '_',
                      style='spaces', indent=4)
-        self.assertEqual(no_init, s)
+        assert no_init == s
 
     def test_mask_fakedir(self):
         def foo(x):
             if os.path.isdir(x) or os.path.isfile(x):
                 return False
         f = sd.fakedir(testdir, mask=foo)
-        self.assertEqual(len(f.listdir()), 0)
+        assert len(f.listdir()) == 0
 
-class TestFolderStructure(unittest.TestCase):
+class TestFolderStructure:
 
     def test_many_randomdirs(self):
         seeds = range(1000)
+        results = []
         for i in seeds:
             r = sd.randomdir(seed=i)
             s = r.seedir(printout=False)
             f = sd.fakedir_fromstring(s)
-            self.assertEqual(s, f.seedir(printout=False))
+            results.append(s == f.seedir(printout=False))
+        assert all(results)
 
-    def test_limit0_nobeyond(self):
+    def test_itemlimit0_nobeyond(self):
         ans = limit0_nobeyond
         f = sd.fakedir_fromstring(large_example)
-        s1 = f.seedir(printout=False, itemlimit=0)
-        s2 = f.seedir(printout=False, depthlimit=0)
-        self.assertEqual(ans, s1)
-        self.assertEqual(ans, s2)
+        s = f.seedir(printout=False, itemlimit=0)
+        assert ans == s
 
-    def test_limit0_beyond_content(self):
+    def test_depthlimit0_nobeyond(self):
+        ans = limit0_nobeyond
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(printout=False, depthlimit=0)
+        assert ans == s
+
+    def test_itemlimit0_beyond_content(self):
         ans = limit0_beyond_content
         f = sd.fakedir_fromstring(large_example)
-        s1 = f.seedir(printout=False, itemlimit=0, beyond='content')
-        s2 = f.seedir(printout=False, depthlimit=0, beyond='content')
-        self.assertEqual(ans, s1)
-        self.assertEqual(ans, s2)
+        s = f.seedir(printout=False, itemlimit=0, beyond='content')
+        assert ans == s
+
+    def test_depthlimit0_beyond_content(self):
+        ans = limit0_beyond_content
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(printout=False, depthlimit=0, beyond='content')
+        assert ans == s
 
     def test_depthlimit1(self):
         ans = depthlimit1
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(printout=False, depthlimit=1)
-        self.assertEqual(ans, s)
+        assert ans == s
 
     def test_depthlimit1_beyond_content(self):
         ans = depthlimit1_beyond_content
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(printout=False, depthlimit=1, beyond='content')
-        self.assertEqual(ans, s)
+        assert ans == s
 
     def test_depthlimit1_beyond_content_exclude(self):
         ans = depthlimit1_beyond_content_exclude
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(printout=False,
-                     depthlimit=1,
-                     beyond='content',
-                     exclude_files='.*\.txt',
-                     regex=True)
-        self.assertEqual(ans, s)
+                      depthlimit=1,
+                      beyond='content',
+                      exclude_files=r'.*\.txt',
+                      regex=True)
+        assert ans == s
 
     def test_complex_sort(self):
         ans = complex_sort
@@ -440,7 +459,7 @@ class TestFolderStructure(unittest.TestCase):
                       sort_key = lambda x: len(x), first='files')
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(printout=False,**params)
-        self.assertEqual(ans, s)
+        assert ans == s
 
     def test_complex_inclusion(self):
         ans = complex_inclusion
@@ -451,9 +470,9 @@ class TestFolderStructure(unittest.TestCase):
                       regex=True)
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(printout=False,**params)
-        self.assertEqual(ans, s)
+        assert ans == s
 
-class TestFormatter(unittest.TestCase):
+class TestFormatter:
 
     def test_formatter_beyond(self):
 
@@ -466,14 +485,14 @@ class TestFormatter(unittest.TestCase):
         ans = fmt_notbeyond
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(formatter=fmt, itemlimit=1, beyond='content', printout=False)
-        self.assertEqual(s, ans)
+        assert s == ans
 
 
     def test_formatter_no_return(self):
 
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(formatter=lambda x: None, printout=False)
-        self.assertEqual(s, large_example)
+        assert s == large_example
 
     def test_expand_one_folder_sticky(self):
 
@@ -488,7 +507,7 @@ class TestFormatter(unittest.TestCase):
         ans = fmt_expand_single
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(formatter=fmt, depthlimit=1, sticky_formatter=True, printout=False)
-        self.assertEqual(ans, s)
+        assert ans == s
 
     def test_expand_one_folder_nosticky(self):
 
@@ -503,7 +522,7 @@ class TestFormatter(unittest.TestCase):
         ans = fmt_expand_single_partial
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(formatter=fmt, depthlimit=1, printout=False)
-        self.assertEqual(ans, s)
+        assert ans == s
 
     def test_mask_with_fmt(self):
 
@@ -528,7 +547,4 @@ class TestFormatter(unittest.TestCase):
         ans = fmt_with_mask
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(formatter=fmt, printout=False)
-        self.assertEqual(s, ans)
-
-if __name__ == '__main__':
-    unittest.main()
+        assert s == ans
