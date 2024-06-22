@@ -95,7 +95,7 @@ class FolderStructure:
                  beyond=None, first=None, sort=False, sort_reverse=False,
                  sort_key=None, include_folders=None, exclude_folders=None,
                  include_files=None, exclude_files=None, regex=False, mask=None,
-                 formatter=None, sticky_formatter=False, slash=None, **kwargs):
+                 formatter=None, sticky_formatter=False, **kwargs):
         '''Call this on a folder object to generate the seedir output
         for that object.'''
 
@@ -121,14 +121,6 @@ class FolderStructure:
         if anyend is not None:
             styleargs['folderend'] = anyend
             styleargs['fileend'] = anyend
-
-        if slash is not None:
-            warnings.warn("`slash` will removed in a future version; "
-                          "pass `folderend` as a keyword argument instead.",
-                          DeprecationWarning)
-            if slash.lower() in ['sep', 'os.sep']:
-                slash = os.sep
-            styleargs['folderend'] = slash
 
         for k in kwargs:
             if k in styleargs:

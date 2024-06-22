@@ -591,7 +591,7 @@ class FakeDir(FakeItem):
                anystart=None, anyend=None, depthlimit=None, itemlimit=None,
                beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
-               exclude_files=None, regex=False, slash='/', mask=None,
+               exclude_files=None, regex=False, mask=None,
                formatter=None, sticky_formatter=False, **kwargs):
         '''
 
@@ -700,12 +700,6 @@ class FakeDir(FakeItem):
             will be permanent.  Thus, if arguments are updated when the `formatter`
             is called on a folder, its children will (recursively) inherit
             those new arguments.
-        slash : str, option:
-            **`DeprecationWarning`**: *With addition of `folderend` in v0.3.1,
-            `slash` is to be deprecated in a future version.*
-
-            Slash character to follow folders.  If `'sep'`, uses `os.sep`.  The
-            default is `'/'`.
         **kwargs : str
             Specific tokens to use for creating the file tree diagram.  The tokens
             use by each builtin style can be seen with `seedir.printing.get_styleargs()`.
@@ -729,6 +723,12 @@ class FakeDir(FakeItem):
             the file/folder start/end tokens.  Style tokens from `**kwargs` are not
             affected by the indent parameter.  The `uniform`, `anystart`, and
             `anyend` parameters can be used to affect multiple style tokens.
+
+        Notes
+        -------
+
+        The parameter `slash` was deprecated in 0.5.0.  Pass `folderend` as
+        an additional keyword argument instead.
 
         Returns
         -------
