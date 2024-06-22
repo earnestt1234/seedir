@@ -8,7 +8,6 @@ The primary algorithm for determining the folder structure returned by
 import copy
 import math
 import os
-import warnings
 
 import natsort
 
