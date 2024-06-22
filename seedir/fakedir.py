@@ -762,7 +762,8 @@ class FakeDir(FakeItem):
                     sticky_formatter=sticky_formatter,
                     **kwargs)
 
-        return FakeDirStructure(self, **args)
+        FDS = FakeDirStructure()
+        return FDS(self, **args)
 
     def set_child_depths(self):
         '''Recursively set depths of `self` and its children.
@@ -1129,26 +1130,27 @@ def recursive_add_fakes(path, parent, depth=0, depthlimit=None,
     None.
 
     '''
+    RDS = RealDirStructure()
     if depthlimit is not None and depth >= depthlimit:
         return
     depth +=1
     listdir = listdir_fullpath(path)
     if sort or first is not None:
-        listdir = RealDirStructure.sort_dir(listdir, first=first,
-                                            sort_reverse=sort_reverse, sort_key=sort_key)
+        listdir = RDS.sort_dir(listdir, first=first,
+                               sort_reverse=sort_reverse, sort_key=sort_key)
     if any(arg is not None for arg in [
             include_folders,
             exclude_folders,
             include_files,
             exclude_files,
             mask]):
-        listdir = RealDirStructure.filter_items(listdir,
-                                                include_folders=include_folders,
-                                                exclude_folders=exclude_folders,
-                                                include_files=include_files,
-                                                exclude_files=exclude_files,
-                                                regex=regex,
-                                                mask=mask)
+        listdir = RDS.filter_items(listdir,
+                                   include_folders=include_folders,
+                                   exclude_folders=exclude_folders,
+                                   include_files=include_files,
+                                   exclude_files=exclude_files,
+                                   regex=regex,
+                                   mask=mask)
     for i, f in enumerate(listdir):
         name = os.path.basename(f)
         if i == itemlimit:

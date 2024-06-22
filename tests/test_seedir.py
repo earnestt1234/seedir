@@ -207,17 +207,17 @@ class TestSeedirStringFormatting:
     def test_get_base_header_0(self):
         a = '| '
         b = '  '
-        assert FDS.get_base_header([0], a, b) == ''
+        assert FDS().get_base_header([0], a, b) == ''
 
     def test_get_base_header_013(self):
         a = '| '
         b = '  '
-        assert FDS.get_base_header([0, 1, 3], a, b) == '| |   '
+        assert FDS().get_base_header([0, 1, 3], a, b) == '| |   '
 
     def test_get_base_header_empty(self):
         a = '| '
         b = '  '
-        assert FDS.get_base_header([], a, b) == ''
+        assert FDS().get_base_header([], a, b) == ''
 
     def test_STYLE_DICT_members(self):
         keys = set(sd.STYLE_DICT.keys())
@@ -273,15 +273,15 @@ class TestFakeDirReading:
 class TestFakeDir:
     def test_count_fake_folders(self):
         x = sd.fakedir_fromstring(example)
-        assert FDS.count_folders(x.listdir()) == 1
+        assert FDS().count_folders(x.listdir()) == 1
 
     def test_count_fake_files(self):
         x = sd.fakedir_fromstring(example)
-        assert FDS.count_files(x.listdir()) == 3
+        assert FDS().count_files(x.listdir()) == 3
 
     def test_sort_fakedir(self):
         x = sd.fakedir_fromstring(example).listdir()
-        sort = FDS.sort_dir(x, sort_reverse=True, sort_key=lambda x : x[1])
+        sort = FDS().sort_dir(x, sort_reverse=True, sort_key=lambda x : x[1])
         sort = [f.name for f in sort]
         correct = ['app.py', 'view.py', 'test', '__init__.py']
         assert sort == correct

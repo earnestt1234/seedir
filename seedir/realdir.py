@@ -306,6 +306,6 @@ def seedir(path=None, style='lines', printout=True, indent=2, uniform=None,
                 sticky_formatter=sticky_formatter,
                 **kwargs)
 
-    structure = PathlibStructure if isinstance(path, pathlib.Path) else RealDirStructure
+    structure = PathlibStructure() if isinstance(path, pathlib.Path) else RealDirStructure()
 
     return structure(path, **args)

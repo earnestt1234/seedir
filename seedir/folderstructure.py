@@ -5,6 +5,7 @@ The primary algorithm for determining the folder structure returned by
 
 """
 
+from abc import ABC, abstractmethod
 import copy
 import math
 import os
@@ -60,34 +61,109 @@ class FolderStructureArgs:
         for k, v in newstyle.items():
             setattr(self, k, v)
 
-class FolderStructure:
+class FolderStructure(ABC):
     '''General class for determining folder strctures.  Implements
-    the seedir folder-tree generating algorithm over arbitrary objects.'''
+    the seedir folder-tree generating algorithm over arbitrary objects.
 
-    def __init__(self, getname_func, isdir_func, listdir_func):
+    **This is an abstract class that cannot be instantiated directly.**  It must
+    be subclassed, and the user must imeplement three abstract methods:
+
+        - `getname(self, item)`: Return the string name of a folder or file object.
+        - `isdir(self, item)`: Return a boolean indicating whether an object is
+        a folder (i.e., can be further travesed) or not.
+        - `listdir(self, item)`: For a folder-like object, return its children,
+        such that these same three methods can be called on each child again
+        (recursively).
+
+    Details on each of these functions are provided below.  In each case,
+    `item` is a folder-like or file-like object that can be listed in the
+    diagram.
+
+    Seedir provides implementations for string paths (`RealDirStructure`),
+    pathlib objects (`PathibStucture`), and "fakedir" objects (`FakeDirStucture`).
+
+    *Note: Prior to v0.5.0, you could initialize a FolderStructure by passing
+    these three functions as arguments to the constructor.  This is now
+    deprecated and will throw an error.*
+    '''
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # ABSTRACT METHODS WHICH REQUIRE IMPLEMENTATION
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    @abstractmethod
+    def getname(self, item):
         '''
-        Defines the functions used by `self` for generating folder structures.
+        Generate a string name for an item to put in the tree diagram.
 
         Parameters
         ----------
-        getname_func : function
-            Returns the name of the object.
-        isdir_func : function
-            Returns boolean of whether child object is a folder.
-        listdir_func : function
-            Function for returning the children of an object, given it is a
-            "folder" as determined by `isdir_func`.  The child objects returned
-            should be of similar type to `self`, such that the functions can
-            be recursively applied.
+        item : user-specified
+            Folder-like or file-like object.
 
         Returns
         -------
-        None.
+        name : str
+            Name to show in the diagram.
 
         '''
-        self.listdir = listdir_func
-        self.isdir = isdir_func
-        self.getname = getname_func
+        ...
+
+    @abstractmethod
+    def isdir(self, item):
+        '''
+        Returns True if an object is folder-like.
+
+        This function determines whether to treat objects as a folder or a
+        file.  Some key differences of note are:
+
+            - Folders **will** be passed to `listdir()` to retrieve their
+            children.  Files are instead not passed to this function.
+            - Some arguments are unique to folders or files, e.g.
+            `exclude_folders` and `exclude_files`.
+            - Folders and files are (by default) represented differently
+            in diagrams, with folders usually ending with a slash.
+
+        Parameters
+        ----------
+        item : user-specified
+            Folder-like or file-like object.
+
+        Returns
+        -------
+        result : bool
+            True if item is folder; False if not.
+
+        '''
+        ...
+
+    @abstractmethod
+    def listdir(self, item):
+        '''
+        Return the children of a folder-type object.
+
+        Children should always be more objects which can be passed to
+        `getname()`, `isdir()`, or (in the case of folder-like objects)
+        `listdir()`.
+
+        This function is not called on objects which are not folders,
+        as determined by `isdir()`.
+
+        Parameters
+        ----------
+        item : user-specified
+            Folder-like or file-like object.
+
+        Returns
+        -------
+        children : list
+            List of child objects for further traversal.  Can be empty
+            for a folder with no children.
+
+        '''
+        ...
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def __call__(self, folder, style='lines', printout=True, indent=2, uniform=None,
                  anystart=None, anyend=None, depthlimit=None, itemlimit=None,
@@ -629,19 +705,42 @@ class FolderStructure:
 
         return output
 
-slashes = os.sep + '/' + '//'
+class RealDirStructure(FolderStructure):
+    """Make folder structures from string paths."""
 
-RealDirStructure = FolderStructure(getname_func = lambda x: os.path.basename(x.rstrip(slashes)),
-                                   isdir_func = lambda x: os.path.isdir(x),
-                                   listdir_func = listdir_fullpath)
-"""Object for making real folder structures from string paths."""
+    def __init__(self):
+        super().__init__()
+        self.slashes = os.sep + '/' + '//'
 
-PathlibStructure = FolderStructure(getname_func = lambda x: x.name,
-                                   isdir_func = lambda x: x.is_dir(),
-                                   listdir_func = lambda x: list(x.iterdir()))
-"""Object for making real folder structures from pathlib objects."""
+    def getname(self, item):
+        return os.path.basename(item.rstrip(self.slashes))
 
-FakeDirStructure = FolderStructure(getname_func = lambda x: x.name,
-                                   isdir_func = lambda x: x.isdir(),
-                                   listdir_func = lambda x: x.listdir())
-"""Object for making fake folder structures."""
+    def isdir(self, item):
+        return os.path.isdir(item)
+
+    def listdir(self, item):
+        return listdir_fullpath(item)
+
+class PathlibStructure(FolderStructure):
+    """Make folder structures from pathlib objects."""
+
+    def getname(self, item):
+        return item.name
+
+    def isdir(self, item):
+        return item.is_dir()
+
+    def listdir(self, item):
+        return list(item.iterdir())
+
+class FakeDirStructure(FolderStructure):
+    """Make `seedir.fakedir.FakeDir` folder structures."""
+
+    def getname(self, item):
+        return item.name
+
+    def isdir(self, item):
+        return item.isdir()
+
+    def listdir(self, item):
+        return item.listdir()
