@@ -12,6 +12,7 @@ import os
 import pytest
 
 import seedir as sd
+from seedir.errors import FakedirError
 from seedir.folderstructure import FakeDirStructure as FDS
 
 # ---- Test seedir strings
@@ -57,6 +58,22 @@ large_example = """MyFakeDir/
 ├─Uganda/
 └─pedantic/
   └─cataclysmic.txt"""
+
+large_example_access_denied = """MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/ [ACCESS DENIED]
+├─Uganda/ [ACCESS DENIED]
+└─pedantic/ [ACCESS DENIED]"""
+
+large_example_bummer = """MyFakeDir/
+├─Vogel.txt
+├─monkish.txt
+├─jowly.txt
+├─scrooge/<- BUMMER!
+├─Uganda/<- BUMMER!
+└─pedantic/<- BUMMER!"""
 
 limit0_nobeyond = 'MyFakeDir/'
 
@@ -165,6 +182,15 @@ except ImportError:
 # realdir for testing on
 testdir = os.path.dirname(os.path.abspath(__file__))
 
+# custom FakeDirStructure for testing errors
+class ErrorRaisingFDS(FDS):
+
+    def listdir(self, item):
+        if self.isdir(item) and item.depth != 0:
+            raise FakedirError('Oops!!!')
+        else:
+            return item.listdir()
+
 # ---- Test cases
 
 class PrintSomeDirs:
@@ -200,7 +226,7 @@ class PrintSomeDirs:
         sd.seedir(testdir, itemlimit=1, beyond='content')
 
     def test_improper_kwargs(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             sd.seedir(testdir, spacing=False)
 
 class TestSeedirStringFormatting:
@@ -627,5 +653,45 @@ class TestTupleItemLimit:
         endswithtxt = [x.endswith('txt') for x in split[1:]]
         assert all(endswithtxt)
 
+class TestErrorHandlingArgs:
 
+    def test_handle_errors_correct_type(self):
+        x = ErrorRaisingFDS()
+        f = sd.fakedir_fromstring(large_example)
+        s = x(f, printout=False,
+              acceptable_listdir_errors=FakedirError,
+              denied_string=' [ACCESS DENIED]')
+        assert s == large_example_access_denied
+
+    def test_handle_errors_incorrect_type(self):
+        x = ErrorRaisingFDS()
+        f = sd.fakedir_fromstring(large_example)
+        with pytest.raises(sd.errors.FakedirError):
+            _ = x(f, printout=False,
+                  acceptable_listdir_errors=PermissionError,
+                  denied_string=' [ACCESS DENIED]')
+
+    def test_handle_errors_None(self):
+        x = ErrorRaisingFDS()
+        f = sd.fakedir_fromstring(large_example)
+        with pytest.raises(sd.errors.FakedirError):
+            _ = x(f, printout=False,
+                  acceptable_listdir_errors=None,
+                  denied_string=' [ACCESS DENIED]')
+
+    def test_handle_errors_tuple(self):
+        x = ErrorRaisingFDS()
+        f = sd.fakedir_fromstring(large_example)
+        s = x(f, printout=False,
+              acceptable_listdir_errors=(FakedirError, PermissionError),
+              denied_string=' [ACCESS DENIED]')
+        assert s == large_example_access_denied
+
+    def test_handle_errors_different_string(self):
+        x = ErrorRaisingFDS()
+        f = sd.fakedir_fromstring(large_example)
+        s = x(f, printout=False,
+              acceptable_listdir_errors=FakedirError,
+              denied_string='<- BUMMER!')
+        assert s == large_example_bummer
 
