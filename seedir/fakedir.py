@@ -592,7 +592,8 @@ class FakeDir(FakeItem):
                beyond=None, first=None, sort=False, sort_reverse=False, sort_key=None,
                include_folders=None, exclude_folders=None, include_files=None,
                exclude_files=None, regex=False, mask=None,
-               formatter=None, sticky_formatter=False, **kwargs):
+               formatter=None, sticky_formatter=False,
+               acceptable_listdir_errors=None, denied_string=' [ACCESS DENIED]', **kwargs):
         '''
 
         Create a folder tree diagram for `self`.  `seedir.fakedir.FakeDir` version of
@@ -700,6 +701,36 @@ class FakeDir(FakeItem):
             will be permanent.  Thus, if arguments are updated when the `formatter`
             is called on a folder, its children will (recursively) inherit
             those new arguments.
+
+        acceptable_listdir_errors : Exception, tuple, or None
+
+            **New in v0.5.0**
+
+            Set errors which, when raised when listing the contents of a folder,
+            do not halt traversal.  This parameter was added to allow
+            folders to be skipped when a `PermissionError` is raised.  For folders
+            which raise an acceptable error, an additional string is added to their
+            entry in the diagram (see `denied_string`).
+
+            Providing one Exception causes only that type of Exception to be ignored.
+            Multiple Exception types can be handled by passing mutple Exceptions
+            as a tuple.  Pass `None` to not allow any Exceptions (in this case,
+            an error is raised).
+
+            Exception types which are not provided will still be raised.
+
+            This parameter is mostly meaningless for FakeDir objects, except
+            for testing purposes.
+
+        denied_string : str
+
+            **New in v0.5.0**
+
+            String tag to signify that a folder was not able to be traversed
+            due to one of the `acceptable_listdir_errors` being raised.  This
+            is a string added after the folder name (and `folderend`) strings.
+            The default is `" [ACCESS DENIED]"`.
+
         **kwargs : str
             Specific tokens to use for creating the file tree diagram.  The tokens
             use by each builtin style can be seen with `seedir.printing.get_styleargs()`.
@@ -760,6 +791,8 @@ class FakeDir(FakeItem):
                     mask=mask,
                     formatter=formatter,
                     sticky_formatter=sticky_formatter,
+                    acceptable_listdir_errors=acceptable_listdir_errors,
+                    denied_string=denied_string,
                     **kwargs)
 
         FDS = FakeDirStructure()

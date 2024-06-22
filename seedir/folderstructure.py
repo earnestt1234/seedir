@@ -26,7 +26,9 @@ class FolderStructureArgs:
                  sort=True, sort_reverse=False, sort_key=None,
                  include_folders=None, exclude_folders=None,
                  include_files=None, exclude_files=None,
-                 regex=False, mask=None, formatter=None, sticky_formatter=False):
+                 regex=False, mask=None, formatter=None,
+                 sticky_formatter=False, acceptable_listdir_errors=None,
+                 denied_string=' [ACCESS DENIED]'):
         self.extend = extend
         self.space = space
         self.split = split
@@ -50,6 +52,8 @@ class FolderStructureArgs:
         self.mask = mask
         self.formatter = formatter
         self.sticky_formatter = sticky_formatter
+        self.acceptable_listdir_errors = acceptable_listdir_errors
+        self.denied_string = denied_string
 
     def copy(self):
         return copy.deepcopy(self)
@@ -170,7 +174,8 @@ class FolderStructure(ABC):
                  beyond=None, first=None, sort=False, sort_reverse=False,
                  sort_key=None, include_folders=None, exclude_folders=None,
                  include_files=None, exclude_files=None, regex=False, mask=None,
-                 formatter=None, sticky_formatter=False, **kwargs):
+                 formatter=None, sticky_formatter=False,
+                 acceptable_listdir_errors=None, denied_string='', **kwargs):
         '''Call this on a folder object to generate the seedir output
         for that object.'''
 
@@ -204,6 +209,9 @@ class FolderStructure(ABC):
         if sort_key is not None or sort_reverse == True:
             sort = True
 
+        if acceptable_listdir_errors is None:
+            acceptable_listdir_errors = tuple()
+
         args = FolderStructureArgs(depthlimit=depthlimit,
                                    itemlimit=itemlimit,
                                    beyond=beyond,
@@ -219,6 +227,8 @@ class FolderStructure(ABC):
                                    mask=mask,
                                    formatter=formatter,
                                    sticky_formatter=sticky_formatter,
+                                   acceptable_listdir_errors=acceptable_listdir_errors,
+                                   denied_string=denied_string,
                                    **styleargs)
 
 
@@ -486,11 +496,14 @@ class FolderStructure(ABC):
         # GET CHILDREN
         # # # # # # # # # # # # # #
 
-        # check permisson
-        ...
+        error_listing = False
 
         if not is_rawstring and self.isdir(ITEM):
-            listdir = self.listdir(ITEM)
+            try:
+                listdir = self.listdir(ITEM)
+            except args.acceptable_listdir_errors:
+                error_listing = True
+                listdir = None
         else:
             listdir = None
 
@@ -523,11 +536,13 @@ class FolderStructure(ABC):
 
         # add current item to string
         name = self.getname(ITEM) if not is_rawstring else ITEM
+        error_tag = args.denied_string if error_listing else ''
 
         OUTPUT += (header +
                    getattr(args, start) +
                    name +
                    getattr(args, end) +
+                   error_tag +
                    '\n')
 
         if is_lastitem and INCOMPLETE:
