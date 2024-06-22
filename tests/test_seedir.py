@@ -548,3 +548,84 @@ class TestFormatter:
         f = sd.fakedir_fromstring(large_example)
         s = f.seedir(formatter=fmt, printout=False)
         assert s == ans
+
+class TestTupleItemLimit:
+
+    def count_folder_children(self, f):
+        output = []
+        foo = lambda x: output.append(len([a for a in f.listdir() if a.isdir()]))
+        f.walk_apply(foo)
+        return output
+
+    def count_file_children(self, f):
+        output = []
+        foo = lambda x: output.append(len([a for a in f.listdir() if not a.isdir()]))
+        f.walk_apply(foo)
+        return output
+
+    def make_letter_example(self):
+        f = sd.FakeDir('example')
+        f.create_folder(['a', 'b', 'c', 'd'])
+        f.create_file(['e', 'f', 'g', 'h'])
+        return f
+
+    def test_None_None(self):
+        f = sd.fakedir_fromstring(large_example)
+        normal = f.seedir(printout=False)
+        test = f.seedir(itemlimit=(None, None), printout=False)
+        assert normal == test
+
+    def test_None_1(self):
+        start = sd.fakedir_fromstring(large_example)
+        s = start.seedir(itemlimit=(None, 1), first='files', printout=False)
+        end = sd.fakedir_fromstring(s)
+        ans = self.count_file_children(end)
+        assert all([x <= 1 for x in ans])
+
+    def test_1_None(self):
+        start = sd.fakedir_fromstring(large_example)
+        s = start.seedir(itemlimit=(1, None), first='folders', printout=False)
+        end = sd.fakedir_fromstring(s)
+        ans = self.count_folder_children(end)
+        assert all([x <= 1 for x in ans])
+
+    def test_1_1(self):
+        start = sd.fakedir_fromstring(large_example)
+        s = start.seedir(itemlimit=(1, None), first='folders', printout=False)
+        end = sd.fakedir_fromstring(s)
+        ans = self.count_folder_children(end)
+        assert all([x <= 1 for x in ans])
+
+    def test_filter_letter_example_2_2(self):
+        e = self.make_letter_example()
+        s = e.seedir(itemlimit=(2, 2), sort=True, printout=False)
+        f = sd.fakedir_fromstring(s)
+        assert set(f.get_child_names()) == set(['a', 'b', 'e', 'f'])
+
+    def test_filter_letter_example_2_None(self):
+        e = self.make_letter_example()
+        s = e.seedir(itemlimit=(2, None), sort=True, printout=False)
+        f = sd.fakedir_fromstring(s)
+        assert set(f.get_child_names()) == set(['a', 'b', 'e', 'f', 'g', 'h'])
+
+    def test_filter_letter_example_None_0(self):
+        e = self.make_letter_example()
+        s = e.seedir(itemlimit=(None, 0), sort=True, printout=False)
+        f = sd.fakedir_fromstring(s)
+        assert set(f.get_child_names()) == set(['a', 'b', 'c', 'd'])
+
+    def test_filter_letter_example_0_0(self):
+        e = self.make_letter_example()
+        s = e.seedir(itemlimit=(0, 0), sort=True, printout=False)
+        f = sd.fakedir_fromstring(s)
+        assert len(f.get_child_names()) == 0
+
+    def test_works_with_list(self):
+        f = sd.fakedir_fromstring(large_example)
+        s = f.seedir(itemlimit=[0, None], printout=False)
+        split = s.split('\n')
+        endswithtxt = [x.endswith('txt') for x in split[1:]]
+        assert all(endswithtxt)
+
+
+
