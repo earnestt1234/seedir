@@ -118,6 +118,23 @@ exampledir/
 
 ```
 
+**New in v0.5.0!** You can also pass a 2-tuple to `itemlimit` to have separate limits for folders and files, respectively:
+
+```python
+>>> sd.seedir(path, itemlimit=(None, 1))
+exampledir/
+├─scrooge/
+│ ├─light.pdf
+│ └─paycheck/
+│   └─electrophoresis.txt
+├─jowly.pdf
+└─pedantic/
+  └─cataclysmic.txt
+  
+```
+
+
+
 As `seedir.realdir.seedir()` uses recursion, these arguments can hedge the traversal of deep, complicated folders.
 
 When limiting the tree, using the `beyond` argument can be helpful to show what is being cut. The special value `'content'` shows the number of folders and files:
@@ -837,31 +854,39 @@ All files created will be empty.
 
 ## Extending seedir
 
-It is also possible to use seedir to generate folder tree diagrams for other types of Python objects that have directory-like structures. This can be done by initializing a new instance of the `seedir.folderstructure.FolderStructure` class, which implements the main algorithm:
+It is also possible to use seedir to generate folder tree diagrams for other types of Python objects that have directory-like structures. This can be done by **subclassing the `seedir.folderstructure.FolderStructure` class**, which implements the main algorithm:
 
 ```python
 >>> from seedir.folderstructure import FolderStructure
 
 ```
 
-Initialization requires three arguments.  All of these are callables, which accept (as a single argument) the folder/file type objects of interest:
+FolderStructure is an abstract class, which requires three arguments to be implemented:
 
-1. `getname_func`: returns a string name for the object
-2. `isdir_func`: returns a boolean indicating whether the object passed is a folder or not
-3. `listidr_func`: when called on the folder-like object, returns a list of child objects
+1. `seedir.folderstructure.FolderStructure.getname()`: returns a string name for the object
+2. ``seedir.folderstructure.FolderStructure.isdir()`: returns a boolean indicating whether the object passed is a folder or not.
+3. `seedir.folderstructure.FolderStructure.listdir()`: when called on the folder-like object, returns a list of child objects
 
-Once the `FolderStructure` is initialized, it can be called on inputs to create folder structures.  The following example demonstrates creating a "folder" structure for factorizing numbers:
+Once these methods are implemented, your custom FolderStructure can be called on inputs to create folder structures.  The following example demonstrates creating a "folder" structure for factorizing numbers:
 
 ```python
 >>> def factors(n):
 ...     return [i for i in range(2, n) if n % i == 0]
 
 # note that the isdir_func always returns true, treating all numbers as "folders"
->>> FactorStructure = FolderStructure(getname_func = lambda x : str(x),
-...                                   isdir_func = lambda x : True,
-...                                   listdir_func = lambda x : factors(x))
+>>> class FactorStructure(FolderStructure):
+... 
+... 	def getname(self, item):
+...     	return str(item)
+... 
+... 	def isdir(self, item):
+...     	return True
+... 
+... 	def listdir(self, item):
+...     	return factors(item)
 
->>> FactorStructure(36, folderend='')
+>>> factorizer = FactorStructure()
+>>> factorizer(36, folderend='')
 36
 ├─2
 ├─3

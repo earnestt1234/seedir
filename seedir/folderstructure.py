@@ -121,12 +121,12 @@ class FolderStructure(ABC):
         This function determines whether to treat objects as a folder or a
         file.  Some key differences of note are:
 
-            - Folders **will** be passed to `listdir()` to retrieve their
-            children.  Files are instead not passed to this function.
-            - Some arguments are unique to folders or files, e.g.
-            `exclude_folders` and `exclude_files`.
-            - Folders and files are (by default) represented differently
-            in diagrams, with folders usually ending with a slash.
+        - Folders **will** be passed to `listdir()` to retrieve their
+        children.  Files are instead not passed to this function.
+        - Some arguments are unique to folders or files, e.g.
+        `exclude_folders` and `exclude_files`.
+        - Folders and files are (by default) represented differently
+        in diagrams, with folders usually ending with a slash.
 
         Parameters
         ----------

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="generator" content="pdoc 0.11.0" />
 <title>seedir.folderstructure API documentation</title>
 <meta name="description" content="The primary algorithm for determining the folder structure returned by
 `seedir.realdir.seedir()` and `seedir.fakedir.FakeDir.seedir()`." />
@@ -36,8 +36,10 @@ The primary algorithm for determining the folder structure returned by
 
 &#34;&#34;&#34;
 
+from abc import ABC, abstractmethod
+import copy
+import math
 import os
-import warnings
 
 import natsort
 
@@ -47,70 +49,164 @@ def listdir_fullpath(path):
     &#39;&#39;&#39;Like `os.listdir()`, but returns absolute paths.&#39;&#39;&#39;
     return [os.path.join(path, f) for f in os.listdir(path)]
 
-def formatter_update_args(formatter, item, args):
-    &#39;&#39;&#39;
-    Update a dictionary of style tokens based on a formatter function and
-    an item.  Added in v 0.3.0 to support the addition of the formatter parameter
-    for the seedir algorithm.
+class FolderStructureArgs:
 
-    Parameters
-    ----------
-    formatter : function
-        Formatting function.
-    item : file or folder item
-        String or FakeItem produced in the seedir algorithm
-    styleargs : dict
-        Dictionary of seedir style tokens
+    def __init__(self, extend=&#39;│ &#39;, space=&#39;  &#39;, split=&#39;├─&#39;, final=&#39;└─&#39;,
+                 filestart=&#39;&#39;, folderstart=&#39;&#39;, fileend=&#39;&#39;, folderend=&#39;/&#39;,
+                 depthlimit=None, itemlimit=None, beyond=None, first=None,
+                 sort=True, sort_reverse=False, sort_key=None,
+                 include_folders=None, exclude_folders=None,
+                 include_files=None, exclude_files=None,
+                 regex=False, mask=None, formatter=None,
+                 sticky_formatter=False, acceptable_listdir_errors=None,
+                 denied_string=&#39; [ACCESS DENIED]&#39;):
+        self.extend = extend
+        self.space = space
+        self.split = split
+        self.final = final
+        self.filestart = filestart
+        self.folderstart = folderstart
+        self.fileend = fileend
+        self.folderend = folderend
+        self.depthlimit = depthlimit
+        self.itemlimit = itemlimit
+        self.beyond = beyond
+        self.first = first
+        self.sort = sort
+        self.sort_reverse = sort_reverse
+        self.sort_key = sort_key
+        self.include_folders = include_folders
+        self.exclude_folders = exclude_folders
+        self.include_files = include_files
+        self.exclude_files = exclude_files
+        self.regex = regex
+        self.mask = mask
+        self.formatter = formatter
+        self.sticky_formatter = sticky_formatter
+        self.acceptable_listdir_errors = acceptable_listdir_errors
+        self.denied_string = denied_string
 
-    Returns
-    -------
-    styleargs : dict
-        The input dictionary, after it may have been updated.
+    def copy(self):
+        return copy.deepcopy(self)
 
-    &#39;&#39;&#39;
-    newstyle = formatter(item)
-    if newstyle is None:
-        pass
-    else:
-        args.update(newstyle)
+    def update_with_formatter(self, formatter, item):
+        newstyle = formatter(item)
+        if newstyle is None:
+            return
+        for k, v in newstyle.items():
+            setattr(self, k, v)
 
-    return args
-
-class FolderStructure:
+class FolderStructure(ABC):
     &#39;&#39;&#39;General class for determining folder strctures.  Implements
-    the seedir folder-tree generating algorithm over arbitrary objects.&#39;&#39;&#39;
+    the seedir folder-tree generating algorithm over arbitrary objects.
 
-    def __init__(self, getname_func, isdir_func, listdir_func):
+    **This is an abstract class that cannot be instantiated directly.**  It must
+    be subclassed, and the user must imeplement three abstract methods:
+
+        - `getname(self, item)`: Return the string name of a folder or file object.
+        - `isdir(self, item)`: Return a boolean indicating whether an object is
+        a folder (i.e., can be further travesed) or not.
+        - `listdir(self, item)`: For a folder-like object, return its children,
+        such that these same three methods can be called on each child again
+        (recursively).
+
+    Details on each of these functions are provided below.  In each case,
+    `item` is a folder-like or file-like object that can be listed in the
+    diagram.
+
+    Seedir provides implementations for string paths (`RealDirStructure`),
+    pathlib objects (`PathibStucture`), and &#34;fakedir&#34; objects (`FakeDirStucture`).
+
+    *Note: Prior to v0.5.0, you could initialize a FolderStructure by passing
+    these three functions as arguments to the constructor.  This is now
+    deprecated and will throw an error.*
+    &#39;&#39;&#39;
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # ABSTRACT METHODS WHICH REQUIRE IMPLEMENTATION
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    @abstractmethod
+    def getname(self, item):
         &#39;&#39;&#39;
-        Defines the functions used by `self` for generating folder structures.
+        Generate a string name for an item to put in the tree diagram.
 
         Parameters
         ----------
-        getname_func : function
-            Returns the name of the object.
-        isdir_func : function
-            Returns boolean of whether child object is a folder.
-        listdir_func : function
-            Function for returning the children of an object, given it is a
-            &#34;folder&#34; as determined by `isdir_func`.  The child objects returned
-            should be of similar type to `self`, such that the functions can
-            be recursively applied.
+        item : user-specified
+            Folder-like or file-like object.
 
         Returns
         -------
-        None.
+        name : str
+            Name to show in the diagram.
 
         &#39;&#39;&#39;
-        self.listdir = listdir_func
-        self.isdir = isdir_func
-        self.getname = getname_func
+        ...
+
+    @abstractmethod
+    def isdir(self, item):
+        &#39;&#39;&#39;
+        Returns True if an object is folder-like.
+
+        This function determines whether to treat objects as a folder or a
+        file.  Some key differences of note are:
+
+        - Folders **will** be passed to `listdir()` to retrieve their
+        children.  Files are instead not passed to this function.
+        - Some arguments are unique to folders or files, e.g.
+        `exclude_folders` and `exclude_files`.
+        - Folders and files are (by default) represented differently
+        in diagrams, with folders usually ending with a slash.
+
+        Parameters
+        ----------
+        item : user-specified
+            Folder-like or file-like object.
+
+        Returns
+        -------
+        result : bool
+            True if item is folder; False if not.
+
+        &#39;&#39;&#39;
+        ...
+
+    @abstractmethod
+    def listdir(self, item):
+        &#39;&#39;&#39;
+        Return the children of a folder-type object.
+
+        Children should always be more objects which can be passed to
+        `getname()`, `isdir()`, or (in the case of folder-like objects)
+        `listdir()`.
+
+        This function is not called on objects which are not folders,
+        as determined by `isdir()`.
+
+        Parameters
+        ----------
+        item : user-specified
+            Folder-like or file-like object.
+
+        Returns
+        -------
+        children : list
+            List of child objects for further traversal.  Can be empty
+            for a folder with no children.
+
+        &#39;&#39;&#39;
+        ...
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def __call__(self, folder, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
                  anystart=None, anyend=None, depthlimit=None, itemlimit=None,
                  beyond=None, first=None, sort=False, sort_reverse=False,
                  sort_key=None, include_folders=None, exclude_folders=None,
                  include_files=None, exclude_files=None, regex=False, mask=None,
-                 formatter=None, sticky_formatter=False, slash=None, **kwargs):
+                 formatter=None, sticky_formatter=False,
+                 acceptable_listdir_errors=None, denied_string=&#39;&#39;, **kwargs):
         &#39;&#39;&#39;Call this on a folder object to generate the seedir output
         for that object.&#39;&#39;&#39;
 
@@ -137,14 +233,6 @@ class FolderStructure:
             styleargs[&#39;folderend&#39;] = anyend
             styleargs[&#39;fileend&#39;] = anyend
 
-        if slash is not None:
-            warnings.warn(&#34;`slash` will removed in a future version; &#34;
-                          &#34;pass `folderend` as a keyword argument instead.&#34;,
-                          DeprecationWarning)
-            if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-                slash = os.sep
-            styleargs[&#39;folderend&#39;] = slash
-
         for k in kwargs:
             if k in styleargs:
                 styleargs[k] = kwargs[k]
@@ -152,38 +240,105 @@ class FolderStructure:
         if sort_key is not None or sort_reverse == True:
             sort = True
 
-        default_args = dict(depthlimit=depthlimit,
-                            itemlimit=itemlimit,
-                            beyond=beyond,
-                            first=first,
-                            sort=sort,
-                            sort_reverse=sort_reverse,
-                            sort_key=sort_key,
-                            include_folders=include_folders,
-                            exclude_folders=exclude_folders,
-                            include_files=include_files,
-                            exclude_files=exclude_files,
-                            regex=regex,
-                            mask=mask,
-                            formatter=formatter,
-                            sticky_formatter=sticky_formatter,
-                            **styleargs)
+        if acceptable_listdir_errors is None:
+            acceptable_listdir_errors = tuple()
 
-        current_args = default_args.copy()
+        args = FolderStructureArgs(depthlimit=depthlimit,
+                                   itemlimit=itemlimit,
+                                   beyond=beyond,
+                                   first=first,
+                                   sort=sort,
+                                   sort_reverse=sort_reverse,
+                                   sort_key=sort_key,
+                                   include_folders=include_folders,
+                                   exclude_folders=exclude_folders,
+                                   include_files=include_files,
+                                   exclude_files=exclude_files,
+                                   regex=regex,
+                                   mask=mask,
+                                   formatter=formatter,
+                                   sticky_formatter=sticky_formatter,
+                                   acceptable_listdir_errors=acceptable_listdir_errors,
+                                   denied_string=denied_string,
+                                   **styleargs)
 
-        # apply formatter to top level
-        if formatter is not None:
-            formatter_update_args(formatter, folder, current_args)
 
-        if sticky_formatter:
-            default_args = current_args
-
-        s = self._folderstructure_recurse(folder, default_args, **current_args).strip()
+        s = self._folder_structure_recurse(ITEM=folder,
+                                           FSARGS=args).strip()
 
         if printout:
             print(s)
         else:
             return s
+
+    def apply_itemlimit(self, items, itemlimit):
+        &#39;&#39;&#39;
+        Limit the number of children in a folder.
+
+        Parameters
+        ----------
+        items : list
+            Child items.
+        itemlimit : int, tuple, or None
+            Limit.  If int, limits the number of items regardless of if they
+            are folders or file.  If a 2-tuple, the first number is treated
+            as a limit on the number of folders and the second number
+            is treated as a limit on the number of files.  If None,
+            no limit is applied.
+
+        Returns
+        -------
+        finalitems : list
+            Kept times.
+        rem : list
+            Omitted items.
+
+        &#39;&#39;&#39;
+
+        # all items included when None
+        if itemlimit is None:
+            itemlimit = len(items)
+
+        # if int, take the first itemlimit items
+        if isinstance(itemlimit, int):
+            itemlimit = min(itemlimit, len(items))
+            finalitems = items[:itemlimit]
+            rem = items[itemlimit:]
+
+        # if tuple, interpret as limits for folders and files
+        else:
+            finalitems, rem = self._apply_tuple_itemlimit(items, itemlimit)
+
+        return finalitems, rem
+
+    def _apply_tuple_itemlimit(self, items, itemlimit):
+        &#39;&#39;&#39;Apply the itemlimit when it is a 2-tuple of
+        (folderlimit, filelimit).&#39;&#39;&#39;
+        folderlimit, filelimit = itemlimit
+
+        folderlimit = math.inf if folderlimit is None else folderlimit
+        filelimit = math.inf if filelimit is None else filelimit
+
+        finalitems = []
+        rem = []
+        foldercount = 0
+        filecount = 0
+
+        for item in items:
+            isdir = self.isdir(item)
+
+            if isdir and (foldercount &lt; folderlimit):
+                finalitems.append(item)
+                foldercount += 1
+            elif isdir:
+                rem.append(item)
+            elif not isdir and (filecount &lt; filelimit):
+                finalitems.append(item)
+                filecount += 1
+            else:
+                rem.append(item)
+
+        return finalitems, rem
 
     def beyond_depth_str(self, items, beyond):
         &#39;&#39;&#39;
@@ -342,168 +497,158 @@ class FolderStructure:
 
         return filtered
 
+    def _folder_structure_recurse(self, ITEM, FSARGS, DEPTH=0,
+                                  INDEX=0, INCOMPLETE=None,
+                                  IS_LASTITEM=False,
+                                  IS_RAWSTRING=False):
 
-    def _folderstructure_recurse(self, folder, default_args, depth=0, incomplete=None,
-                                 extend=&#39;│ &#39;, space=&#39;  &#39;, split=&#39;├─&#39;, final=&#39;└─&#39;,
-                                 filestart=&#39;&#39;, folderstart=&#39;&#39;, fileend=&#39;&#39;, folderend=&#39;/&#39;,
-                                 depthlimit=None, itemlimit=None, beyond=None, first=None,
-                                 sort=True, sort_reverse=False, sort_key=None,
-                                 include_folders=None, exclude_folders=None,
-                                 include_files=None, exclude_files=None,
-                                 regex=False, mask=None, formatter=None, sticky_formatter=False):
-        &#39;&#39;&#39;
-        Main algorithm for creating folder structure string.  See
-        `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
-        for a description of the parameters.
+        # initialization
+        OUTPUT = &#39;&#39;
 
-        Note that since the expansion of the formatter parameter
-        (version 0.3.1), the call &amp; logic has been slightly updated.
-        Primarily, the `default_args` parameter has been added, to represent
-        arguments to default to when the formatter is not in use.  The actual
-        keyword arguments are treated as the options to be used for `folder`,
-        and can change between iterations.  The `default_args` stay the same,
-        unless `sticky_formatter` is used in combination with `formatter` to
-        permanently update the default arguments.
+        if INCOMPLETE is None:
+            INCOMPLETE = []
 
-        **In almost all cases, users should not need to call this function
-        to generate diagrams**.  Rather, they should use the `__call__`
-        method of a `FolderStructure` instance.
+        # set some variables
+        is_rootitem = DEPTH == 0
+        is_lastitem = IS_LASTITEM
+        is_rawstring = IS_RAWSTRING
 
-        &#39;&#39;&#39;
+        # APPLY FORMATTER
+        # # # # # # # # # # # # # #
+        args = FSARGS.copy()
+        next_args = FSARGS
 
-        # initialize
-        output = &#39;&#39;
+        if not is_rawstring and args.formatter is not None:
+            args.update_with_formatter(args.formatter, ITEM)
 
-        if incomplete is None:
-            incomplete = []
+        if args.sticky_formatter:
+            next_args = args
 
-        # root string
-        if depth == 0:
+        # GET CHILDREN
+        # # # # # # # # # # # # # #
 
-            d0args = {
-                &#39;extend&#39;: extend,
-                &#39;space&#39;: space,
-                &#39;split&#39;: split,
-                &#39;final&#39;: final,
-                &#39;filestart&#39;: filestart,
-                &#39;folderstart&#39;: folderstart,
-                &#39;fileend&#39; : fileend,
-                &#39;folderend&#39;: folderend
-                }
+        error_listing = False
 
-            if formatter is not None:
-                formatter_update_args(formatter, folder, d0args)
-            output += (d0args[&#39;folderstart&#39;] +
-                       self.getname(folder) +
-                       d0args[&#39;folderend&#39;] +
-                       &#39;\n&#39;)
+        if not is_rawstring and self.isdir(ITEM):
+            try:
+                listdir = self.listdir(ITEM)
+            except args.acceptable_listdir_errors:
+                error_listing = True
+                listdir = None
+        else:
+            listdir = None
 
+        # ADD CURRENT ITEM TO OUTPUT
+        # # # # # # # # # # # # # #
 
-        current_itemlimit = itemlimit
-        beyond_added = False
+        # create header
+        base_header = self.get_base_header(INCOMPLETE,
+                                           args.extend,
+                                           args.space)
+
+        # handle ultimate token in header
+        if is_rootitem:
+            branch = &#39;&#39;
+        elif is_lastitem:
+            branch = args.final
+        else:
+            branch = args.split
+
+        header = base_header + branch
+
+        # start / end tokens
+        if is_rawstring:
+            fkey = &#39;file&#39;
+        else:
+            fkey = &#39;folder&#39; if self.isdir(ITEM) else &#39;file&#39;
+
+        start = f&#39;{fkey}start&#39;
+        end = f&#39;{fkey}end&#39;
+
+        # add current item to string
+        name = self.getname(ITEM) if not is_rawstring else ITEM
+        error_tag = args.denied_string if error_listing else &#39;&#39;
+
+        OUTPUT += (header +
+                   getattr(args, start) +
+                   name +
+                   getattr(args, end) +
+                   error_tag +
+                   &#39;\n&#39;)
+
+        if is_lastitem and INCOMPLETE:
+            INCOMPLETE.remove(DEPTH-1)
+
+        # EXIT IF NOT FOLDER
+        # # # # # # # # # # # # # #
+
+        if listdir is None:
+            return OUTPUT
+
+        # FILTER/SORT CHILDREN
+        # # # # # # # # # # # # #
+
+        current_itemlimit = args.itemlimit
 
         # handle when depthlimit is reached
-        if isinstance(depthlimit, int) and depth &gt;= depthlimit:
-            if beyond is None:
-                return output
+        if isinstance(args.depthlimit, int) and DEPTH &gt;= args.depthlimit:
+            if args.beyond is None:
+                return OUTPUT
             else:
                 current_itemlimit = 0
 
-        # get all children, add depth to docket
-        listdir = self.listdir(folder)
-        incomplete.append(depth)
-
         # sort and filter the contents of listdir
         sortargs = {
-            &#39;first&#39;: first,
-            &#39;sort_reverse&#39;: sort_reverse,
-            &#39;sort_key&#39;: sort_key}
+            &#39;first&#39;: args.first,
+            &#39;sort_reverse&#39;: args.sort_reverse,
+            &#39;sort_key&#39;: args.sort_key}
 
         filterargs = {
-            &#39;include_folders&#39;: include_folders,
-            &#39;exclude_folders&#39;: exclude_folders,
-            &#39;include_files&#39; : include_files,
-            &#39;exclude_files&#39;: exclude_files,
-            &#39;mask&#39;: mask
+            &#39;include_folders&#39;: args.include_folders,
+            &#39;exclude_folders&#39;: args.exclude_folders,
+            &#39;include_files&#39; : args.include_files,
+            &#39;exclude_files&#39;: args.exclude_files,
+            &#39;mask&#39;: args.mask,
             }
 
-        if sort or first is not None:
+        if args.sort or args.first is not None:
             listdir = self.sort_dir(listdir, **sortargs)
 
         if any(arg is not None for arg in filterargs.values()):
-            listdir = self.filter_items(listdir, **filterargs, regex=regex)
+            listdir = self.filter_items(listdir, **filterargs, regex=args.regex)
 
-        # set current_itemlimit based on listdir size
-        if current_itemlimit is None:
-            current_itemlimit = len(listdir)
-        else:
-            current_itemlimit = min(current_itemlimit, len(listdir))
-
-        # segment output into what can be included
-        finalpaths = listdir[:current_itemlimit]
-        rem = listdir[current_itemlimit:]
+        # apply itemlimit
+        finalitems, rem = self.apply_itemlimit(listdir, current_itemlimit)
 
         # append beyond string if being used
-        if beyond is not None:
-            if rem or (depth == depthlimit):
-                finalpaths += [self.beyond_depth_str(rem, beyond)]
+        beyond_added = False
+        if args.beyond is not None:
+            if rem or (DEPTH == args.depthlimit):
+                finalitems += [self.beyond_depth_str(rem, args.beyond)]
                 beyond_added = True
 
-        # if empty, close the current depth
-        if not finalpaths:
-            incomplete.remove(depth)
+        # RECURSE
+        # # # # # # # # # # # # # #
 
-        # get output for each item in folder
-        for i, f in enumerate(finalpaths):
+        if finalitems:
+            INCOMPLETE.append(DEPTH)
 
-            current_args = default_args.copy() # used in this iteration
-            next_default_args = default_args   # passed to child
+        total = len(finalitems)
 
-            lastitem = (i == (len(finalpaths) - 1))
-            isbeyondstr = lastitem and beyond_added
-            name = f if isbeyondstr else self.getname(f)
+        for i, x in enumerate(finalitems):
+            last = i == (total - 1)
+            IS_RAWSTRING = (beyond_added and last)
+            OUTPUT += self._folder_structure_recurse(x, DEPTH=DEPTH+1,
+                                                     INCOMPLETE=INCOMPLETE,
+                                                     FSARGS=next_args,
+                                                     INDEX=i,
+                                                     IS_LASTITEM=last,
+                                                     IS_RAWSTRING=IS_RAWSTRING)
 
-            # update tokens with formatter if passed
-            if not isbeyondstr and formatter is not None:
-                formatter_update_args(formatter, f, current_args)
 
-            if sticky_formatter:
-                next_default_args = current_args
-
-            # create header for the item
-            base_header = self.get_base_header(incomplete,
-                                               current_args[&#39;extend&#39;],
-                                               current_args[&#39;space&#39;])
-
-            if lastitem:
-                branch = current_args[&#39;final&#39;]
-                incomplete.remove(depth)
-            else:
-                branch = current_args[&#39;split&#39;]
-
-            header = base_header + branch
-
-            # concat to output and recurse if item is folder
-            if not isbeyondstr and self.isdir(f):
-                output += (header +
-                           current_args[&#39;folderstart&#39;] +
-                           name +
-                           current_args[&#39;folderend&#39;] +
-                           &#39;\n&#39;)
-                output += self._folderstructure_recurse(f, depth=depth + 1,
-                                                        incomplete=incomplete,
-                                                        default_args=next_default_args,
-                                                        **current_args)
-
-            # only concat to output if file
-            else:
-                output += (header +
-                           current_args[&#39;filestart&#39;] +
-                           name +
-                           current_args[&#39;fileend&#39;] +
-                           &#39;\n&#39;)
-
-        return output
+        # RETURN
+        # # # # # # # # # # # # # #
+        return OUTPUT
 
     def get_base_header(self, incomplete, extend, space):
         &#39;&#39;&#39;
@@ -553,6 +698,9 @@ class FolderStructure:
             Base header string.
 
         &#39;&#39;&#39;
+        if not incomplete:
+            return &#39;&#39;
+
         base_header = []
         max_i = max(incomplete)
         for p in range(max_i):
@@ -603,184 +751,251 @@ class FolderStructure:
 
         return output
 
-slashes = os.sep + &#39;/&#39; + &#39;//&#39;
+class RealDirStructure(FolderStructure):
+    &#34;&#34;&#34;Make folder structures from string paths.&#34;&#34;&#34;
 
-RealDirStructure = FolderStructure(getname_func = lambda x: os.path.basename(x.rstrip(slashes)),
-                                   isdir_func = lambda x: os.path.isdir(x),
-                                   listdir_func = listdir_fullpath)
-&#34;&#34;&#34;Object for making real folder structures from string paths.&#34;&#34;&#34;
+    def __init__(self):
+        super().__init__()
+        self.slashes = os.sep + &#39;/&#39; + &#39;//&#39;
 
-PathlibStructure = FolderStructure(getname_func = lambda x: x.name,
-                                   isdir_func = lambda x: x.is_dir(),
-                                   listdir_func = lambda x: list(x.iterdir()))
-&#34;&#34;&#34;Object for making real folder structures from pathlib objects.&#34;&#34;&#34;
+    def getname(self, item):
+        return os.path.basename(item.rstrip(self.slashes))
 
-FakeDirStructure = FolderStructure(getname_func = lambda x: x.name,
-                                   isdir_func = lambda x: x.isdir(),
-                                   listdir_func = lambda x: x.listdir())
-&#34;&#34;&#34;Object for making fake folder structures.&#34;&#34;&#34;</code></pre>
+    def isdir(self, item):
+        return os.path.isdir(item)
+
+    def listdir(self, item):
+        return listdir_fullpath(item)
+
+class PathlibStructure(FolderStructure):
+    &#34;&#34;&#34;Make folder structures from pathlib objects.&#34;&#34;&#34;
+
+    def getname(self, item):
+        return item.name
+
+    def isdir(self, item):
+        return item.is_dir()
+
+    def listdir(self, item):
+        return list(item.iterdir())
+
+class FakeDirStructure(FolderStructure):
+    &#34;&#34;&#34;Make `seedir.fakedir.FakeDir` folder structures.&#34;&#34;&#34;
+
+    def getname(self, item):
+        return item.name
+
+    def isdir(self, item):
+        return item.isdir()
+
+    def listdir(self, item):
+        return item.listdir()</code></pre>
 </details>
 </section>
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-variables">Global variables</h2>
-<dl>
-<dt id="seedir.folderstructure.FakeDirStructure"><code class="name">var <span class="ident">FakeDirStructure</span></code></dt>
-<dd>
-<div class="desc"><p>Object for making fake folder structures.</p></div>
-</dd>
-<dt id="seedir.folderstructure.PathlibStructure"><code class="name">var <span class="ident">PathlibStructure</span></code></dt>
-<dd>
-<div class="desc"><p>Object for making real folder structures from pathlib objects.</p></div>
-</dd>
-<dt id="seedir.folderstructure.RealDirStructure"><code class="name">var <span class="ident">RealDirStructure</span></code></dt>
-<dd>
-<div class="desc"><p>Object for making real folder structures from string paths.</p></div>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="seedir.folderstructure.formatter_update_args"><code class="name flex">
-<span>def <span class="ident">formatter_update_args</span></span>(<span>formatter, item, args)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Update a dictionary of style tokens based on a formatter function and
-an item.
-Added in v 0.3.0 to support the addition of the formatter parameter
-for the seedir algorithm.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>formatter</code></strong> :&ensp;<code>function</code></dt>
-<dd>Formatting function.</dd>
-<dt><strong><code>item</code></strong> :&ensp;<code>file</code> or <code>folder item</code></dt>
-<dd>String or FakeItem produced in the seedir algorithm</dd>
-<dt><strong><code>styleargs</code></strong> :&ensp;<code>dict</code></dt>
-<dd>Dictionary of seedir style tokens</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>styleargs</code></strong> :&ensp;<code>dict</code></dt>
-<dd>The input dictionary, after it may have been updated.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def formatter_update_args(formatter, item, args):
-    &#39;&#39;&#39;
-    Update a dictionary of style tokens based on a formatter function and
-    an item.  Added in v 0.3.0 to support the addition of the formatter parameter
-    for the seedir algorithm.
-
-    Parameters
-    ----------
-    formatter : function
-        Formatting function.
-    item : file or folder item
-        String or FakeItem produced in the seedir algorithm
-    styleargs : dict
-        Dictionary of seedir style tokens
-
-    Returns
-    -------
-    styleargs : dict
-        The input dictionary, after it may have been updated.
-
-    &#39;&#39;&#39;
-    newstyle = formatter(item)
-    if newstyle is None:
-        pass
-    else:
-        args.update(newstyle)
-
-    return args</code></pre>
-</details>
-</dd>
 <dt id="seedir.folderstructure.listdir_fullpath"><code class="name flex">
 <span>def <span class="ident">listdir_fullpath</span></span>(<span>path)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Like <code>os.listdir()</code>, but returns absolute paths.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def listdir_fullpath(path):
-    &#39;&#39;&#39;Like `os.listdir()`, but returns absolute paths.&#39;&#39;&#39;
-    return [os.path.join(path, f) for f in os.listdir(path)]</code></pre>
-</details>
 </dd>
 </dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="seedir.folderstructure.FakeDirStructure"><code class="flex name class">
+<span>class <span class="ident">FakeDirStructure</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make <code><a title="seedir.fakedir.FakeDir" href="fakedir.html#seedir.fakedir.FakeDir">FakeDir</a></code> folder structures.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FakeDirStructure(FolderStructure):
+    &#34;&#34;&#34;Make `seedir.fakedir.FakeDir` folder structures.&#34;&#34;&#34;
+
+    def getname(self, item):
+        return item.name
+
+    def isdir(self, item):
+        return item.isdir()
+
+    def listdir(self, item):
+        return item.listdir()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="seedir.folderstructure.FolderStructure" href="#seedir.folderstructure.FolderStructure">FolderStructure</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="seedir.folderstructure.FolderStructure" href="#seedir.folderstructure.FolderStructure">FolderStructure</a></b></code>:
+<ul class="hlist">
+<li><code><a title="seedir.folderstructure.FolderStructure.apply_itemlimit" href="#seedir.folderstructure.FolderStructure.apply_itemlimit">apply_itemlimit</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.beyond_depth_str" href="#seedir.folderstructure.FolderStructure.beyond_depth_str">beyond_depth_str</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.count_files" href="#seedir.folderstructure.FolderStructure.count_files">count_files</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.count_folders" href="#seedir.folderstructure.FolderStructure.count_folders">count_folders</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.filter_items" href="#seedir.folderstructure.FolderStructure.filter_items">filter_items</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.get_base_header" href="#seedir.folderstructure.FolderStructure.get_base_header">get_base_header</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.getname" href="#seedir.folderstructure.FolderStructure.getname">getname</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.isdir" href="#seedir.folderstructure.FolderStructure.isdir">isdir</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.listdir" href="#seedir.folderstructure.FolderStructure.listdir">listdir</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.sort_dir" href="#seedir.folderstructure.FolderStructure.sort_dir">sort_dir</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
 <dt id="seedir.folderstructure.FolderStructure"><code class="flex name class">
 <span>class <span class="ident">FolderStructure</span></span>
-<span>(</span><span>getname_func, isdir_func, listdir_func)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>General class for determining folder strctures.
 Implements
 the seedir folder-tree generating algorithm over arbitrary objects.</p>
-<p>Defines the functions used by <code>self</code> for generating folder structures.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>getname_func</code></strong> :&ensp;<code>function</code></dt>
-<dd>Returns the name of the object.</dd>
-<dt><strong><code>isdir_func</code></strong> :&ensp;<code>function</code></dt>
-<dd>Returns boolean of whether child object is a folder.</dd>
-<dt><strong><code>listdir_func</code></strong> :&ensp;<code>function</code></dt>
-<dd>Function for returning the children of an object, given it is a
-"folder" as determined by <code>isdir_func</code>.
-The child objects returned
-should be of similar type to <code>self</code>, such that the functions can
-be recursively applied.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>None.</p></div>
+<p><strong>This is an abstract class that cannot be instantiated directly.</strong>
+It must
+be subclassed, and the user must imeplement three abstract methods:</p>
+<pre><code>- &lt;code&gt;getname(self, item)&lt;/code&gt;: Return the string name of a folder or file object.
+- &lt;code&gt;isdir(self, item)&lt;/code&gt;: Return a boolean indicating whether an object is
+a folder (i.e., can be further travesed) or not.
+- &lt;code&gt;listdir(self, item)&lt;/code&gt;: For a folder-like object, return its children,
+such that these same three methods can be called on each child again
+(recursively).
+</code></pre>
+<p>Details on each of these functions are provided below.
+In each case,
+<code>item</code> is a folder-like or file-like object that can be listed in the
+diagram.</p>
+<p>Seedir provides implementations for string paths (<code><a title="seedir.folderstructure.RealDirStructure" href="#seedir.folderstructure.RealDirStructure">RealDirStructure</a></code>),
+pathlib objects (<code>PathibStucture</code>), and "fakedir" objects (<code>FakeDirStucture</code>).</p>
+<p><em>Note: Prior to v0.5.0, you could initialize a FolderStructure by passing
+these three functions as arguments to the constructor.
+This is now
+deprecated and will throw an error.</em></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class FolderStructure:
+<pre><code class="python">class FolderStructure(ABC):
     &#39;&#39;&#39;General class for determining folder strctures.  Implements
-    the seedir folder-tree generating algorithm over arbitrary objects.&#39;&#39;&#39;
+    the seedir folder-tree generating algorithm over arbitrary objects.
 
-    def __init__(self, getname_func, isdir_func, listdir_func):
+    **This is an abstract class that cannot be instantiated directly.**  It must
+    be subclassed, and the user must imeplement three abstract methods:
+
+        - `getname(self, item)`: Return the string name of a folder or file object.
+        - `isdir(self, item)`: Return a boolean indicating whether an object is
+        a folder (i.e., can be further travesed) or not.
+        - `listdir(self, item)`: For a folder-like object, return its children,
+        such that these same three methods can be called on each child again
+        (recursively).
+
+    Details on each of these functions are provided below.  In each case,
+    `item` is a folder-like or file-like object that can be listed in the
+    diagram.
+
+    Seedir provides implementations for string paths (`RealDirStructure`),
+    pathlib objects (`PathibStucture`), and &#34;fakedir&#34; objects (`FakeDirStucture`).
+
+    *Note: Prior to v0.5.0, you could initialize a FolderStructure by passing
+    these three functions as arguments to the constructor.  This is now
+    deprecated and will throw an error.*
+    &#39;&#39;&#39;
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # ABSTRACT METHODS WHICH REQUIRE IMPLEMENTATION
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    @abstractmethod
+    def getname(self, item):
         &#39;&#39;&#39;
-        Defines the functions used by `self` for generating folder structures.
+        Generate a string name for an item to put in the tree diagram.
 
         Parameters
         ----------
-        getname_func : function
-            Returns the name of the object.
-        isdir_func : function
-            Returns boolean of whether child object is a folder.
-        listdir_func : function
-            Function for returning the children of an object, given it is a
-            &#34;folder&#34; as determined by `isdir_func`.  The child objects returned
-            should be of similar type to `self`, such that the functions can
-            be recursively applied.
+        item : user-specified
+            Folder-like or file-like object.
 
         Returns
         -------
-        None.
+        name : str
+            Name to show in the diagram.
 
         &#39;&#39;&#39;
-        self.listdir = listdir_func
-        self.isdir = isdir_func
-        self.getname = getname_func
+        ...
+
+    @abstractmethod
+    def isdir(self, item):
+        &#39;&#39;&#39;
+        Returns True if an object is folder-like.
+
+        This function determines whether to treat objects as a folder or a
+        file.  Some key differences of note are:
+
+        - Folders **will** be passed to `listdir()` to retrieve their
+        children.  Files are instead not passed to this function.
+        - Some arguments are unique to folders or files, e.g.
+        `exclude_folders` and `exclude_files`.
+        - Folders and files are (by default) represented differently
+        in diagrams, with folders usually ending with a slash.
+
+        Parameters
+        ----------
+        item : user-specified
+            Folder-like or file-like object.
+
+        Returns
+        -------
+        result : bool
+            True if item is folder; False if not.
+
+        &#39;&#39;&#39;
+        ...
+
+    @abstractmethod
+    def listdir(self, item):
+        &#39;&#39;&#39;
+        Return the children of a folder-type object.
+
+        Children should always be more objects which can be passed to
+        `getname()`, `isdir()`, or (in the case of folder-like objects)
+        `listdir()`.
+
+        This function is not called on objects which are not folders,
+        as determined by `isdir()`.
+
+        Parameters
+        ----------
+        item : user-specified
+            Folder-like or file-like object.
+
+        Returns
+        -------
+        children : list
+            List of child objects for further traversal.  Can be empty
+            for a folder with no children.
+
+        &#39;&#39;&#39;
+        ...
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def __call__(self, folder, style=&#39;lines&#39;, printout=True, indent=2, uniform=None,
                  anystart=None, anyend=None, depthlimit=None, itemlimit=None,
                  beyond=None, first=None, sort=False, sort_reverse=False,
                  sort_key=None, include_folders=None, exclude_folders=None,
                  include_files=None, exclude_files=None, regex=False, mask=None,
-                 formatter=None, sticky_formatter=False, slash=None, **kwargs):
+                 formatter=None, sticky_formatter=False,
+                 acceptable_listdir_errors=None, denied_string=&#39;&#39;, **kwargs):
         &#39;&#39;&#39;Call this on a folder object to generate the seedir output
         for that object.&#39;&#39;&#39;
 
@@ -807,14 +1022,6 @@ be recursively applied.</dd>
             styleargs[&#39;folderend&#39;] = anyend
             styleargs[&#39;fileend&#39;] = anyend
 
-        if slash is not None:
-            warnings.warn(&#34;`slash` will removed in a future version; &#34;
-                          &#34;pass `folderend` as a keyword argument instead.&#34;,
-                          DeprecationWarning)
-            if slash.lower() in [&#39;sep&#39;, &#39;os.sep&#39;]:
-                slash = os.sep
-            styleargs[&#39;folderend&#39;] = slash
-
         for k in kwargs:
             if k in styleargs:
                 styleargs[k] = kwargs[k]
@@ -822,38 +1029,105 @@ be recursively applied.</dd>
         if sort_key is not None or sort_reverse == True:
             sort = True
 
-        default_args = dict(depthlimit=depthlimit,
-                            itemlimit=itemlimit,
-                            beyond=beyond,
-                            first=first,
-                            sort=sort,
-                            sort_reverse=sort_reverse,
-                            sort_key=sort_key,
-                            include_folders=include_folders,
-                            exclude_folders=exclude_folders,
-                            include_files=include_files,
-                            exclude_files=exclude_files,
-                            regex=regex,
-                            mask=mask,
-                            formatter=formatter,
-                            sticky_formatter=sticky_formatter,
-                            **styleargs)
+        if acceptable_listdir_errors is None:
+            acceptable_listdir_errors = tuple()
 
-        current_args = default_args.copy()
+        args = FolderStructureArgs(depthlimit=depthlimit,
+                                   itemlimit=itemlimit,
+                                   beyond=beyond,
+                                   first=first,
+                                   sort=sort,
+                                   sort_reverse=sort_reverse,
+                                   sort_key=sort_key,
+                                   include_folders=include_folders,
+                                   exclude_folders=exclude_folders,
+                                   include_files=include_files,
+                                   exclude_files=exclude_files,
+                                   regex=regex,
+                                   mask=mask,
+                                   formatter=formatter,
+                                   sticky_formatter=sticky_formatter,
+                                   acceptable_listdir_errors=acceptable_listdir_errors,
+                                   denied_string=denied_string,
+                                   **styleargs)
 
-        # apply formatter to top level
-        if formatter is not None:
-            formatter_update_args(formatter, folder, current_args)
 
-        if sticky_formatter:
-            default_args = current_args
-
-        s = self._folderstructure_recurse(folder, default_args, **current_args).strip()
+        s = self._folder_structure_recurse(ITEM=folder,
+                                           FSARGS=args).strip()
 
         if printout:
             print(s)
         else:
             return s
+
+    def apply_itemlimit(self, items, itemlimit):
+        &#39;&#39;&#39;
+        Limit the number of children in a folder.
+
+        Parameters
+        ----------
+        items : list
+            Child items.
+        itemlimit : int, tuple, or None
+            Limit.  If int, limits the number of items regardless of if they
+            are folders or file.  If a 2-tuple, the first number is treated
+            as a limit on the number of folders and the second number
+            is treated as a limit on the number of files.  If None,
+            no limit is applied.
+
+        Returns
+        -------
+        finalitems : list
+            Kept times.
+        rem : list
+            Omitted items.
+
+        &#39;&#39;&#39;
+
+        # all items included when None
+        if itemlimit is None:
+            itemlimit = len(items)
+
+        # if int, take the first itemlimit items
+        if isinstance(itemlimit, int):
+            itemlimit = min(itemlimit, len(items))
+            finalitems = items[:itemlimit]
+            rem = items[itemlimit:]
+
+        # if tuple, interpret as limits for folders and files
+        else:
+            finalitems, rem = self._apply_tuple_itemlimit(items, itemlimit)
+
+        return finalitems, rem
+
+    def _apply_tuple_itemlimit(self, items, itemlimit):
+        &#39;&#39;&#39;Apply the itemlimit when it is a 2-tuple of
+        (folderlimit, filelimit).&#39;&#39;&#39;
+        folderlimit, filelimit = itemlimit
+
+        folderlimit = math.inf if folderlimit is None else folderlimit
+        filelimit = math.inf if filelimit is None else filelimit
+
+        finalitems = []
+        rem = []
+        foldercount = 0
+        filecount = 0
+
+        for item in items:
+            isdir = self.isdir(item)
+
+            if isdir and (foldercount &lt; folderlimit):
+                finalitems.append(item)
+                foldercount += 1
+            elif isdir:
+                rem.append(item)
+            elif not isdir and (filecount &lt; filelimit):
+                finalitems.append(item)
+                filecount += 1
+            else:
+                rem.append(item)
+
+        return finalitems, rem
 
     def beyond_depth_str(self, items, beyond):
         &#39;&#39;&#39;
@@ -1012,168 +1286,158 @@ be recursively applied.</dd>
 
         return filtered
 
+    def _folder_structure_recurse(self, ITEM, FSARGS, DEPTH=0,
+                                  INDEX=0, INCOMPLETE=None,
+                                  IS_LASTITEM=False,
+                                  IS_RAWSTRING=False):
 
-    def _folderstructure_recurse(self, folder, default_args, depth=0, incomplete=None,
-                                 extend=&#39;│ &#39;, space=&#39;  &#39;, split=&#39;├─&#39;, final=&#39;└─&#39;,
-                                 filestart=&#39;&#39;, folderstart=&#39;&#39;, fileend=&#39;&#39;, folderend=&#39;/&#39;,
-                                 depthlimit=None, itemlimit=None, beyond=None, first=None,
-                                 sort=True, sort_reverse=False, sort_key=None,
-                                 include_folders=None, exclude_folders=None,
-                                 include_files=None, exclude_files=None,
-                                 regex=False, mask=None, formatter=None, sticky_formatter=False):
-        &#39;&#39;&#39;
-        Main algorithm for creating folder structure string.  See
-        `seedir.realdir.seedir()` or `seedir.fakedir.FakeDir.seedir()`
-        for a description of the parameters.
+        # initialization
+        OUTPUT = &#39;&#39;
 
-        Note that since the expansion of the formatter parameter
-        (version 0.3.1), the call &amp; logic has been slightly updated.
-        Primarily, the `default_args` parameter has been added, to represent
-        arguments to default to when the formatter is not in use.  The actual
-        keyword arguments are treated as the options to be used for `folder`,
-        and can change between iterations.  The `default_args` stay the same,
-        unless `sticky_formatter` is used in combination with `formatter` to
-        permanently update the default arguments.
+        if INCOMPLETE is None:
+            INCOMPLETE = []
 
-        **In almost all cases, users should not need to call this function
-        to generate diagrams**.  Rather, they should use the `__call__`
-        method of a `FolderStructure` instance.
+        # set some variables
+        is_rootitem = DEPTH == 0
+        is_lastitem = IS_LASTITEM
+        is_rawstring = IS_RAWSTRING
 
-        &#39;&#39;&#39;
+        # APPLY FORMATTER
+        # # # # # # # # # # # # # #
+        args = FSARGS.copy()
+        next_args = FSARGS
 
-        # initialize
-        output = &#39;&#39;
+        if not is_rawstring and args.formatter is not None:
+            args.update_with_formatter(args.formatter, ITEM)
 
-        if incomplete is None:
-            incomplete = []
+        if args.sticky_formatter:
+            next_args = args
 
-        # root string
-        if depth == 0:
+        # GET CHILDREN
+        # # # # # # # # # # # # # #
 
-            d0args = {
-                &#39;extend&#39;: extend,
-                &#39;space&#39;: space,
-                &#39;split&#39;: split,
-                &#39;final&#39;: final,
-                &#39;filestart&#39;: filestart,
-                &#39;folderstart&#39;: folderstart,
-                &#39;fileend&#39; : fileend,
-                &#39;folderend&#39;: folderend
-                }
+        error_listing = False
 
-            if formatter is not None:
-                formatter_update_args(formatter, folder, d0args)
-            output += (d0args[&#39;folderstart&#39;] +
-                       self.getname(folder) +
-                       d0args[&#39;folderend&#39;] +
-                       &#39;\n&#39;)
+        if not is_rawstring and self.isdir(ITEM):
+            try:
+                listdir = self.listdir(ITEM)
+            except args.acceptable_listdir_errors:
+                error_listing = True
+                listdir = None
+        else:
+            listdir = None
 
+        # ADD CURRENT ITEM TO OUTPUT
+        # # # # # # # # # # # # # #
 
-        current_itemlimit = itemlimit
-        beyond_added = False
+        # create header
+        base_header = self.get_base_header(INCOMPLETE,
+                                           args.extend,
+                                           args.space)
+
+        # handle ultimate token in header
+        if is_rootitem:
+            branch = &#39;&#39;
+        elif is_lastitem:
+            branch = args.final
+        else:
+            branch = args.split
+
+        header = base_header + branch
+
+        # start / end tokens
+        if is_rawstring:
+            fkey = &#39;file&#39;
+        else:
+            fkey = &#39;folder&#39; if self.isdir(ITEM) else &#39;file&#39;
+
+        start = f&#39;{fkey}start&#39;
+        end = f&#39;{fkey}end&#39;
+
+        # add current item to string
+        name = self.getname(ITEM) if not is_rawstring else ITEM
+        error_tag = args.denied_string if error_listing else &#39;&#39;
+
+        OUTPUT += (header +
+                   getattr(args, start) +
+                   name +
+                   getattr(args, end) +
+                   error_tag +
+                   &#39;\n&#39;)
+
+        if is_lastitem and INCOMPLETE:
+            INCOMPLETE.remove(DEPTH-1)
+
+        # EXIT IF NOT FOLDER
+        # # # # # # # # # # # # # #
+
+        if listdir is None:
+            return OUTPUT
+
+        # FILTER/SORT CHILDREN
+        # # # # # # # # # # # # #
+
+        current_itemlimit = args.itemlimit
 
         # handle when depthlimit is reached
-        if isinstance(depthlimit, int) and depth &gt;= depthlimit:
-            if beyond is None:
-                return output
+        if isinstance(args.depthlimit, int) and DEPTH &gt;= args.depthlimit:
+            if args.beyond is None:
+                return OUTPUT
             else:
                 current_itemlimit = 0
 
-        # get all children, add depth to docket
-        listdir = self.listdir(folder)
-        incomplete.append(depth)
-
         # sort and filter the contents of listdir
         sortargs = {
-            &#39;first&#39;: first,
-            &#39;sort_reverse&#39;: sort_reverse,
-            &#39;sort_key&#39;: sort_key}
+            &#39;first&#39;: args.first,
+            &#39;sort_reverse&#39;: args.sort_reverse,
+            &#39;sort_key&#39;: args.sort_key}
 
         filterargs = {
-            &#39;include_folders&#39;: include_folders,
-            &#39;exclude_folders&#39;: exclude_folders,
-            &#39;include_files&#39; : include_files,
-            &#39;exclude_files&#39;: exclude_files,
-            &#39;mask&#39;: mask
+            &#39;include_folders&#39;: args.include_folders,
+            &#39;exclude_folders&#39;: args.exclude_folders,
+            &#39;include_files&#39; : args.include_files,
+            &#39;exclude_files&#39;: args.exclude_files,
+            &#39;mask&#39;: args.mask,
             }
 
-        if sort or first is not None:
+        if args.sort or args.first is not None:
             listdir = self.sort_dir(listdir, **sortargs)
 
         if any(arg is not None for arg in filterargs.values()):
-            listdir = self.filter_items(listdir, **filterargs, regex=regex)
+            listdir = self.filter_items(listdir, **filterargs, regex=args.regex)
 
-        # set current_itemlimit based on listdir size
-        if current_itemlimit is None:
-            current_itemlimit = len(listdir)
-        else:
-            current_itemlimit = min(current_itemlimit, len(listdir))
-
-        # segment output into what can be included
-        finalpaths = listdir[:current_itemlimit]
-        rem = listdir[current_itemlimit:]
+        # apply itemlimit
+        finalitems, rem = self.apply_itemlimit(listdir, current_itemlimit)
 
         # append beyond string if being used
-        if beyond is not None:
-            if rem or (depth == depthlimit):
-                finalpaths += [self.beyond_depth_str(rem, beyond)]
+        beyond_added = False
+        if args.beyond is not None:
+            if rem or (DEPTH == args.depthlimit):
+                finalitems += [self.beyond_depth_str(rem, args.beyond)]
                 beyond_added = True
 
-        # if empty, close the current depth
-        if not finalpaths:
-            incomplete.remove(depth)
+        # RECURSE
+        # # # # # # # # # # # # # #
 
-        # get output for each item in folder
-        for i, f in enumerate(finalpaths):
+        if finalitems:
+            INCOMPLETE.append(DEPTH)
 
-            current_args = default_args.copy() # used in this iteration
-            next_default_args = default_args   # passed to child
+        total = len(finalitems)
 
-            lastitem = (i == (len(finalpaths) - 1))
-            isbeyondstr = lastitem and beyond_added
-            name = f if isbeyondstr else self.getname(f)
+        for i, x in enumerate(finalitems):
+            last = i == (total - 1)
+            IS_RAWSTRING = (beyond_added and last)
+            OUTPUT += self._folder_structure_recurse(x, DEPTH=DEPTH+1,
+                                                     INCOMPLETE=INCOMPLETE,
+                                                     FSARGS=next_args,
+                                                     INDEX=i,
+                                                     IS_LASTITEM=last,
+                                                     IS_RAWSTRING=IS_RAWSTRING)
 
-            # update tokens with formatter if passed
-            if not isbeyondstr and formatter is not None:
-                formatter_update_args(formatter, f, current_args)
 
-            if sticky_formatter:
-                next_default_args = current_args
-
-            # create header for the item
-            base_header = self.get_base_header(incomplete,
-                                               current_args[&#39;extend&#39;],
-                                               current_args[&#39;space&#39;])
-
-            if lastitem:
-                branch = current_args[&#39;final&#39;]
-                incomplete.remove(depth)
-            else:
-                branch = current_args[&#39;split&#39;]
-
-            header = base_header + branch
-
-            # concat to output and recurse if item is folder
-            if not isbeyondstr and self.isdir(f):
-                output += (header +
-                           current_args[&#39;folderstart&#39;] +
-                           name +
-                           current_args[&#39;folderend&#39;] +
-                           &#39;\n&#39;)
-                output += self._folderstructure_recurse(f, depth=depth + 1,
-                                                        incomplete=incomplete,
-                                                        default_args=next_default_args,
-                                                        **current_args)
-
-            # only concat to output if file
-            else:
-                output += (header +
-                           current_args[&#39;filestart&#39;] +
-                           name +
-                           current_args[&#39;fileend&#39;] +
-                           &#39;\n&#39;)
-
-        return output
+        # RETURN
+        # # # # # # # # # # # # # #
+        return OUTPUT
 
     def get_base_header(self, incomplete, extend, space):
         &#39;&#39;&#39;
@@ -1223,6 +1487,9 @@ be recursively applied.</dd>
             Base header string.
 
         &#39;&#39;&#39;
+        if not incomplete:
+            return &#39;&#39;
+
         base_header = []
         max_i = max(incomplete)
         for p in range(max_i):
@@ -1273,8 +1540,45 @@ be recursively applied.</dd>
 
         return output</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="seedir.folderstructure.FakeDirStructure" href="#seedir.folderstructure.FakeDirStructure">FakeDirStructure</a></li>
+<li><a title="seedir.folderstructure.PathlibStructure" href="#seedir.folderstructure.PathlibStructure">PathlibStructure</a></li>
+<li><a title="seedir.folderstructure.RealDirStructure" href="#seedir.folderstructure.RealDirStructure">RealDirStructure</a></li>
+</ul>
 <h3>Methods</h3>
 <dl>
+<dt id="seedir.folderstructure.FolderStructure.apply_itemlimit"><code class="name flex">
+<span>def <span class="ident">apply_itemlimit</span></span>(<span>self, items, itemlimit)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Limit the number of children in a folder.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>items</code></strong> :&ensp;<code>list</code></dt>
+<dd>Child items.</dd>
+<dt><strong><code>itemlimit</code></strong> :&ensp;<code>int, tuple,</code> or <code>None</code></dt>
+<dd>Limit.
+If int, limits the number of items regardless of if they
+are folders or file.
+If a 2-tuple, the first number is treated
+as a limit on the number of folders and the second number
+is treated as a limit on the number of files.
+If None,
+no limit is applied.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>finalitems</code></strong> :&ensp;<code>list</code></dt>
+<dd>Kept times.</dd>
+<dt><strong><code>rem</code></strong> :&ensp;<code>list</code></dt>
+<dd>Omitted items.</dd>
+</dl></div>
+</dd>
 <dt id="seedir.folderstructure.FolderStructure.beyond_depth_str"><code class="name flex">
 <span>def <span class="ident">beyond_depth_str</span></span>(<span>self, items, beyond)</span>
 </code></dt>
@@ -1300,48 +1604,6 @@ argeument is 'content' or 'contents'. The default is None.</dd>
 <dt><code>str</code></dt>
 <dd>String indicating what lies beyond</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def beyond_depth_str(self, items, beyond):
-    &#39;&#39;&#39;
-    Generates the text when using the &#39;beyond&#39;
-    parameter and ther are more items than the itemlimit or contents
-    beyond the depthlimit.
-
-    Parameters
-    ----------
-    beyond : str
-        Style of beyond string to generate.  Options are:
-            - &#39;ellipsis&#39; (&#39;...&#39;)
-            - &#39;content&#39; or &#39;contents&#39; (the number of files and folders beyond)
-            - a string starting with &#39;_&#39; (everything after the leading
-              underscore will be returned)
-    items : collection of file paths, optional
-        Path items of the items beyond the limit, used when the &#39;beyond&#39;
-        argeument is &#39;content&#39; or &#39;contents&#39;. The default is None.
-
-
-    Returns
-    -------
-    str
-        String indicating what lies beyond
-
-    &#39;&#39;&#39;
-    if beyond.lower() == &#39;ellipsis&#39;:
-        return &#39;...&#39;
-    elif beyond.lower() in [&#39;contents&#39;,&#39;content&#39;]:
-        folders = self.count_folders(items)
-        files = self.count_files(items)
-        return &#39;{} folder(s), {} file(s)&#39;.format(folders, files)
-    elif beyond and beyond[0] == &#39;_&#39;:
-        return beyond[1:]
-    else:
-        s1 = &#39;&#34;beyond&#34; must be &#34;ellipsis&#34;, &#34;content&#34;, or &#39;
-        s2 = &#39;a string starting with &#34;_&#34;&#39;
-        raise ValueError(s1 + s2)</code></pre>
-</details>
 </dd>
 <dt id="seedir.folderstructure.FolderStructure.count_files"><code class="name flex">
 <span>def <span class="ident">count_files</span></span>(<span>self, items)</span>
@@ -1358,28 +1620,6 @@ argeument is 'content' or 'contents'. The default is None.</dd>
 <dt><strong><code>files</code></strong> :&ensp;<code>int</code></dt>
 <dd>Count of files.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def count_files(self, items):
-    &#39;&#39;&#39;
-    Count the number of files in a collection of paths.
-
-    Parameters
-    ----------
-    paths : list-like
-        Collection of paths.
-
-    Returns
-    -------
-    files : int
-        Count of files.
-
-    &#39;&#39;&#39;
-    files = sum([not self.isdir(i) for i in items])
-    return files</code></pre>
-</details>
 </dd>
 <dt id="seedir.folderstructure.FolderStructure.count_folders"><code class="name flex">
 <span>def <span class="ident">count_folders</span></span>(<span>self, items)</span>
@@ -1396,28 +1636,6 @@ argeument is 'content' or 'contents'. The default is None.</dd>
 <dt><strong><code>files</code></strong> :&ensp;<code>int</code></dt>
 <dd>Count of folders.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def count_folders(self, items):
-    &#39;&#39;&#39;
-    Count the number of folders in a collection of paths.
-
-    Parameters
-    ----------
-    paths : list-like
-        Collection of paths.
-
-    Returns
-    -------
-    files : int
-        Count of folders.
-
-    &#39;&#39;&#39;
-    folders = sum([self.isdir(i) for i in items])
-    return folders</code></pre>
-</details>
 </dd>
 <dt id="seedir.folderstructure.FolderStructure.filter_items"><code class="name flex">
 <span>def <span class="ident">filter_items</span></span>(<span>self, listdir, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None)</span>
@@ -1457,93 +1675,6 @@ The default is None.</dd>
 <dt><strong><code>keep</code></strong> :&ensp;<code>list</code></dt>
 <dd>Filtered input.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def filter_items(self, listdir, include_folders=None,
-                  exclude_folders=None, include_files=None,
-                  exclude_files=None, regex=False, mask=None):
-
-    &#39;&#39;&#39;
-    Filter for folder and file names in folder structures.  Removes or includes
-    items matching filtering strings.
-
-    Note the following priority of arguments:
-        1. Mask (totally overwrites include/exclude)
-        2. Include (saves items from being excluded)
-        3. Exclude
-
-    Parameters
-    ----------
-    listdir : list-like
-        Collection of file/folder items.
-    include_folders : str or list-like, optional
-        Folder names to include. The default is None.
-    exclude_folders : str or list-like, optional
-        Folder names to exclude. The default is None.
-    include_files : str or list-like, optional
-        File names to include. The default is None.
-    exclude_files : str or list-like, optional
-        File names to exclude. The default is None.
-    regex : bool, optional
-        Interpret strings as regular expressions. The default is False.
-    mask : function, optional
-        Function for filtering items.  Absolute paths of each individual item
-        are passed to the mask function.  If True is returned, the
-        item is kept.  The default is None.
-
-    Returns
-    -------
-    keep : list
-        Filtered input.
-
-    &#39;&#39;&#39;
-
-    def _should_convert(x):
-        return isinstance(x, str) or x is None
-
-    filtered = []
-    for item in listdir:
-
-        name = self.getname(item)
-
-        if self.isdir(item):
-            inc = [include_folders] if _should_convert(include_folders) else include_folders
-            exc = [exclude_folders] if _should_convert(exclude_folders) else exclude_folders
-        else:
-            inc = [include_files] if _should_convert(include_files) else include_files
-            exc = [exclude_files] if _should_convert(exclude_files) else exclude_files
-
-        # 1. check mask - which trumps include/exclude arguments
-        if mask is not None:
-            if mask(item):
-                filtered.append(item)
-            continue
-
-        # set default keep behavior
-        # items are exluded if inclusion is passed
-        keep = all([i is None for i in inc])
-
-        # 2. apply exclusion
-        for pat in exc:
-            if pat is not None:
-                match = printing.is_match(pattern=pat, string=name, regex=regex)
-                if match:
-                    keep = False
-
-        # 3. apply inclusion (trumps exclusion)
-        for pat in inc:
-            if pat is not None:
-                match = printing.is_match(pattern=pat, string=name, regex=regex)
-                if match:
-                    keep = True
-
-        if keep:
-            filtered.append(item)
-
-    return filtered</code></pre>
-</details>
 </dd>
 <dt id="seedir.folderstructure.FolderStructure.get_base_header"><code class="name flex">
 <span>def <span class="ident">get_base_header</span></span>(<span>self, incomplete, extend, space)</span>
@@ -1591,67 +1722,73 @@ depth.</dd>
 <dt><code>str</code></dt>
 <dd>Base header string.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_base_header(self, incomplete, extend, space):
-    &#39;&#39;&#39;
-    For folder structures, generate the combination of extend and space
-    tokens to prepend to file names when generating folder diagrams.
-
-
-    The string generated here will still be missing the branch token
-    (split or final) as well as any folderstart or filestart tokens.
-    They are added within seedir.seedir().
-
-    For any item included in a folder diagram, the combination of
-    extend and space tokens is based on the depth of the item as well as the
-    parent folders to that item which are not completed.  This information
-    is symbolized with the `incomplete` argument.  The following illustrates
-    the incomplete arguments passed to this function for an example folder
-    tree:
-
-    ```
-    doc/
-    ├─_static/                  [0]
-    │ ├─embedded/               [0, 1]
-    │ │ ├─deep_file             [0, 1, 2]
-    │ │ └─very/                 [0, 1, 2]
-    │ │   └─deep/               [0, 1, 3]
-    │ │     └─folder/           [0, 1, 4]
-    │ │       └─very_deep_file  [0, 1, 5]
-    │ └─less_deep_file          [0, 1]
-    └─index.rst                 [0]
-    ```
-
-    Parameters
-    ----------
-    incomplete : list-like
-        List of integers denoting the depth of incomplete folders at the time
-        of constructing the line for a given item.  Zero represents being
-        inside the main folder, with increasing integers meaing increasing
-        depth.
-    extend : str
-        Characters symbolizing the extension of a folder.
-    space : str
-        Characters providing the gap between items and earlier parents.
-
-    Returns
-    -------
-    str
-        Base header string.
-
-    &#39;&#39;&#39;
-    base_header = []
-    max_i = max(incomplete)
-    for p in range(max_i):
-        if p in incomplete:
-            base_header.append(extend)
-        else:
-            base_header.append(space)
-    return &#34;&#34;.join(base_header)</code></pre>
-</details>
+</dd>
+<dt id="seedir.folderstructure.FolderStructure.getname"><code class="name flex">
+<span>def <span class="ident">getname</span></span>(<span>self, item)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate a string name for an item to put in the tree diagram.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>item</code></strong> :&ensp;<code>user-specified</code></dt>
+<dd>Folder-like or file-like object.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name to show in the diagram.</dd>
+</dl></div>
+</dd>
+<dt id="seedir.folderstructure.FolderStructure.isdir"><code class="name flex">
+<span>def <span class="ident">isdir</span></span>(<span>self, item)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns True if an object is folder-like.</p>
+<p>This function determines whether to treat objects as a folder or a
+file.
+Some key differences of note are:</p>
+<ul>
+<li>Folders <strong>will</strong> be passed to <code>listdir()</code> to retrieve their
+children.
+Files are instead not passed to this function.</li>
+<li>Some arguments are unique to folders or files, e.g.
+<code>exclude_folders</code> and <code>exclude_files</code>.</li>
+<li>Folders and files are (by default) represented differently
+in diagrams, with folders usually ending with a slash.</li>
+</ul>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>item</code></strong> :&ensp;<code>user-specified</code></dt>
+<dd>Folder-like or file-like object.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>result</code></strong> :&ensp;<code>bool</code></dt>
+<dd>True if item is folder; False if not.</dd>
+</dl></div>
+</dd>
+<dt id="seedir.folderstructure.FolderStructure.listdir"><code class="name flex">
+<span>def <span class="ident">listdir</span></span>(<span>self, item)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the children of a folder-type object.</p>
+<p>Children should always be more objects which can be passed to
+<code>getname()</code>, <code>isdir()</code>, or (in the case of folder-like objects)
+<code>listdir()</code>.</p>
+<p>This function is not called on objects which are not folders,
+as determined by <code>isdir()</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>item</code></strong> :&ensp;<code>user-specified</code></dt>
+<dd>Folder-like or file-like object.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>children</code></strong> :&ensp;<code>list</code></dt>
+<dd>List of child objects for further traversal.
+Can be empty
+for a folder with no children.</dd>
+</dl></div>
 </dd>
 <dt id="seedir.folderstructure.FolderStructure.sort_dir"><code class="name flex">
 <span>def <span class="ident">sort_dir</span></span>(<span>self, items, first=None, sort_reverse=False, sort_key=None)</span>
@@ -1677,53 +1814,174 @@ this FolderStucture.</dd>
 <dt><code>list</code></dt>
 <dd>Sorted input as a list.</dd>
 </dl></div>
+</dd>
+</dl>
+</dd>
+<dt id="seedir.folderstructure.FolderStructureArgs"><code class="flex name class">
+<span>class <span class="ident">FolderStructureArgs</span></span>
+<span>(</span><span>extend='│ ', space='
+', split='├─', final='└─', filestart='', folderstart='', fileend='', folderend='/', depthlimit=None, itemlimit=None, beyond=None, first=None, sort=True, sort_reverse=False, sort_key=None, include_folders=None, exclude_folders=None, include_files=None, exclude_files=None, regex=False, mask=None, formatter=None, sticky_formatter=False, acceptable_listdir_errors=None, denied_string=' [ACCESS DENIED]')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def sort_dir(self, items, first=None, sort_reverse=False, sort_key=None):
-    &#39;&#39;&#39;
-    Sorting function used to sort contents when producing folder diagrams.
+<pre><code class="python">class FolderStructureArgs:
 
-    Parameters
-    ----------
-    items : list-like
-        Collection of folder contents.
-    first : &#39;files&#39; or &#39;folders&#39;, optional
-        Sort either files or folders first. The default is None.
-    sort_reverse : bool, optional
-        Reverse the sort applied. The default is False.
-    sort_key : function, optional
-        Function to apply to sort the objs by their basename.  The function
-        should take a single argument, of the type expected by
-        this FolderStucture.
+    def __init__(self, extend=&#39;│ &#39;, space=&#39;  &#39;, split=&#39;├─&#39;, final=&#39;└─&#39;,
+                 filestart=&#39;&#39;, folderstart=&#39;&#39;, fileend=&#39;&#39;, folderend=&#39;/&#39;,
+                 depthlimit=None, itemlimit=None, beyond=None, first=None,
+                 sort=True, sort_reverse=False, sort_key=None,
+                 include_folders=None, exclude_folders=None,
+                 include_files=None, exclude_files=None,
+                 regex=False, mask=None, formatter=None,
+                 sticky_formatter=False, acceptable_listdir_errors=None,
+                 denied_string=&#39; [ACCESS DENIED]&#39;):
+        self.extend = extend
+        self.space = space
+        self.split = split
+        self.final = final
+        self.filestart = filestart
+        self.folderstart = folderstart
+        self.fileend = fileend
+        self.folderend = folderend
+        self.depthlimit = depthlimit
+        self.itemlimit = itemlimit
+        self.beyond = beyond
+        self.first = first
+        self.sort = sort
+        self.sort_reverse = sort_reverse
+        self.sort_key = sort_key
+        self.include_folders = include_folders
+        self.exclude_folders = exclude_folders
+        self.include_files = include_files
+        self.exclude_files = exclude_files
+        self.regex = regex
+        self.mask = mask
+        self.formatter = formatter
+        self.sticky_formatter = sticky_formatter
+        self.acceptable_listdir_errors = acceptable_listdir_errors
+        self.denied_string = denied_string
 
-    Returns
-    -------
-    list
-        Sorted input as a list.
+    def copy(self):
+        return copy.deepcopy(self)
 
-    &#39;&#39;&#39;
-    if sort_key is None:
-        key = lambda x : self.getname(x)
-    else:
-        key = lambda x: sort_key(self.getname(x))
-
-    if first in [&#39;folders&#39;, &#39;files&#39;]:
-        folders = [p for p in items if self.isdir(p)]
-        files = [p for p in items if not self.isdir(p)]
-        folders = natsort.natsorted(folders, reverse=sort_reverse, key=key)
-        files = natsort.natsorted(files, reverse=sort_reverse, key=key)
-        output = folders + files if first == &#39;folders&#39; else files + folders
-    elif first is None:
-        output = list(natsort.natsorted(items, reverse=sort_reverse, key=key))
-    else:
-        raise ValueError(&#34;`first` must be &#39;folders&#39;, &#39;files&#39;, or None.&#34;)
-
-    return output</code></pre>
+    def update_with_formatter(self, formatter, item):
+        newstyle = formatter(item)
+        if newstyle is None:
+            return
+        for k, v in newstyle.items():
+            setattr(self, k, v)</code></pre>
 </details>
+<h3>Methods</h3>
+<dl>
+<dt id="seedir.folderstructure.FolderStructureArgs.copy"><code class="name flex">
+<span>def <span class="ident">copy</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="seedir.folderstructure.FolderStructureArgs.update_with_formatter"><code class="name flex">
+<span>def <span class="ident">update_with_formatter</span></span>(<span>self, formatter, item)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 </dl>
+</dd>
+<dt id="seedir.folderstructure.PathlibStructure"><code class="flex name class">
+<span>class <span class="ident">PathlibStructure</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make folder structures from pathlib objects.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PathlibStructure(FolderStructure):
+    &#34;&#34;&#34;Make folder structures from pathlib objects.&#34;&#34;&#34;
+
+    def getname(self, item):
+        return item.name
+
+    def isdir(self, item):
+        return item.is_dir()
+
+    def listdir(self, item):
+        return list(item.iterdir())</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="seedir.folderstructure.FolderStructure" href="#seedir.folderstructure.FolderStructure">FolderStructure</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="seedir.folderstructure.FolderStructure" href="#seedir.folderstructure.FolderStructure">FolderStructure</a></b></code>:
+<ul class="hlist">
+<li><code><a title="seedir.folderstructure.FolderStructure.apply_itemlimit" href="#seedir.folderstructure.FolderStructure.apply_itemlimit">apply_itemlimit</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.beyond_depth_str" href="#seedir.folderstructure.FolderStructure.beyond_depth_str">beyond_depth_str</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.count_files" href="#seedir.folderstructure.FolderStructure.count_files">count_files</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.count_folders" href="#seedir.folderstructure.FolderStructure.count_folders">count_folders</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.filter_items" href="#seedir.folderstructure.FolderStructure.filter_items">filter_items</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.get_base_header" href="#seedir.folderstructure.FolderStructure.get_base_header">get_base_header</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.getname" href="#seedir.folderstructure.FolderStructure.getname">getname</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.isdir" href="#seedir.folderstructure.FolderStructure.isdir">isdir</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.listdir" href="#seedir.folderstructure.FolderStructure.listdir">listdir</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.sort_dir" href="#seedir.folderstructure.FolderStructure.sort_dir">sort_dir</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="seedir.folderstructure.RealDirStructure"><code class="flex name class">
+<span>class <span class="ident">RealDirStructure</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make folder structures from string paths.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RealDirStructure(FolderStructure):
+    &#34;&#34;&#34;Make folder structures from string paths.&#34;&#34;&#34;
+
+    def __init__(self):
+        super().__init__()
+        self.slashes = os.sep + &#39;/&#39; + &#39;//&#39;
+
+    def getname(self, item):
+        return os.path.basename(item.rstrip(self.slashes))
+
+    def isdir(self, item):
+        return os.path.isdir(item)
+
+    def listdir(self, item):
+        return listdir_fullpath(item)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="seedir.folderstructure.FolderStructure" href="#seedir.folderstructure.FolderStructure">FolderStructure</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="seedir.folderstructure.FolderStructure" href="#seedir.folderstructure.FolderStructure">FolderStructure</a></b></code>:
+<ul class="hlist">
+<li><code><a title="seedir.folderstructure.FolderStructure.apply_itemlimit" href="#seedir.folderstructure.FolderStructure.apply_itemlimit">apply_itemlimit</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.beyond_depth_str" href="#seedir.folderstructure.FolderStructure.beyond_depth_str">beyond_depth_str</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.count_files" href="#seedir.folderstructure.FolderStructure.count_files">count_files</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.count_folders" href="#seedir.folderstructure.FolderStructure.count_folders">count_folders</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.filter_items" href="#seedir.folderstructure.FolderStructure.filter_items">filter_items</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.get_base_header" href="#seedir.folderstructure.FolderStructure.get_base_header">get_base_header</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.getname" href="#seedir.folderstructure.FolderStructure.getname">getname</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.isdir" href="#seedir.folderstructure.FolderStructure.isdir">isdir</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.listdir" href="#seedir.folderstructure.FolderStructure.listdir">listdir</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.sort_dir" href="#seedir.folderstructure.FolderStructure.sort_dir">sort_dir</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 </dl>
 </section>
@@ -1739,31 +1997,43 @@ this FolderStucture.</dd>
 <li><code><a title="seedir" href="index.html">seedir</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-variables">Global variables</a></h3>
-<ul class="">
-<li><code><a title="seedir.folderstructure.FakeDirStructure" href="#seedir.folderstructure.FakeDirStructure">FakeDirStructure</a></code></li>
-<li><code><a title="seedir.folderstructure.PathlibStructure" href="#seedir.folderstructure.PathlibStructure">PathlibStructure</a></code></li>
-<li><code><a title="seedir.folderstructure.RealDirStructure" href="#seedir.folderstructure.RealDirStructure">RealDirStructure</a></code></li>
-</ul>
-</li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="seedir.folderstructure.formatter_update_args" href="#seedir.folderstructure.formatter_update_args">formatter_update_args</a></code></li>
 <li><code><a title="seedir.folderstructure.listdir_fullpath" href="#seedir.folderstructure.listdir_fullpath">listdir_fullpath</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
+<h4><code><a title="seedir.folderstructure.FakeDirStructure" href="#seedir.folderstructure.FakeDirStructure">FakeDirStructure</a></code></h4>
+</li>
+<li>
 <h4><code><a title="seedir.folderstructure.FolderStructure" href="#seedir.folderstructure.FolderStructure">FolderStructure</a></code></h4>
 <ul class="two-column">
+<li><code><a title="seedir.folderstructure.FolderStructure.apply_itemlimit" href="#seedir.folderstructure.FolderStructure.apply_itemlimit">apply_itemlimit</a></code></li>
 <li><code><a title="seedir.folderstructure.FolderStructure.beyond_depth_str" href="#seedir.folderstructure.FolderStructure.beyond_depth_str">beyond_depth_str</a></code></li>
 <li><code><a title="seedir.folderstructure.FolderStructure.count_files" href="#seedir.folderstructure.FolderStructure.count_files">count_files</a></code></li>
 <li><code><a title="seedir.folderstructure.FolderStructure.count_folders" href="#seedir.folderstructure.FolderStructure.count_folders">count_folders</a></code></li>
 <li><code><a title="seedir.folderstructure.FolderStructure.filter_items" href="#seedir.folderstructure.FolderStructure.filter_items">filter_items</a></code></li>
 <li><code><a title="seedir.folderstructure.FolderStructure.get_base_header" href="#seedir.folderstructure.FolderStructure.get_base_header">get_base_header</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.getname" href="#seedir.folderstructure.FolderStructure.getname">getname</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.isdir" href="#seedir.folderstructure.FolderStructure.isdir">isdir</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructure.listdir" href="#seedir.folderstructure.FolderStructure.listdir">listdir</a></code></li>
 <li><code><a title="seedir.folderstructure.FolderStructure.sort_dir" href="#seedir.folderstructure.FolderStructure.sort_dir">sort_dir</a></code></li>
 </ul>
+</li>
+<li>
+<h4><code><a title="seedir.folderstructure.FolderStructureArgs" href="#seedir.folderstructure.FolderStructureArgs">FolderStructureArgs</a></code></h4>
+<ul class="">
+<li><code><a title="seedir.folderstructure.FolderStructureArgs.copy" href="#seedir.folderstructure.FolderStructureArgs.copy">copy</a></code></li>
+<li><code><a title="seedir.folderstructure.FolderStructureArgs.update_with_formatter" href="#seedir.folderstructure.FolderStructureArgs.update_with_formatter">update_with_formatter</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="seedir.folderstructure.PathlibStructure" href="#seedir.folderstructure.PathlibStructure">PathlibStructure</a></code></h4>
+</li>
+<li>
+<h4><code><a title="seedir.folderstructure.RealDirStructure" href="#seedir.folderstructure.RealDirStructure">RealDirStructure</a></code></h4>
 </li>
 </ul>
 </li>
@@ -1771,7 +2041,7 @@ this FolderStucture.</dd>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
 </footer>
 </body>
 </html>

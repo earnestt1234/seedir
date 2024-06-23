@@ -16,8 +16,6 @@ tools for going in between these formats.
 
 """
 
-__pdoc__ = {'command_line' : False}
-
 #imports for package namespace
 from .realdir import seedir
 
