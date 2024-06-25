@@ -4,7 +4,27 @@ This document will serve as a record for past and future changes to seedir.  It 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.4.2
+## [0.5.0](https://github.com/earnestt1234/seedir/releases/tag/v0.5.0)
+
+### Added
+
+- The `itemlimit` now accepts a 2-tuple as an argument, indicating a separate limit for folders and files (respectively).
+- Added two parameters for handling errors when trying to list the children of a directory:
+  - `acceptable_listdir_errors`: One or more error types (`Exceptions`) which are ignored when occurring during a directory listing call.  E.g., a permissions error.
+  - `denied_string`: String to add to follow directory entries for which the error was triggered.
+- More test cases added
+
+### Changed
+
+- The main algorithm for folder tree traversal has been refactored.
+- The unit tests are now structured for pytest.
+- `seedir.folderstructure.FolderStructure` is now an abstract class that cannot be directly instantiated.  The functions that previously needed to be provided as arguments for the constructor must now be implemented as part of a subclass (see [getting started for an example](https://earnestt1234.github.io/seedir/seedir/index.html#getting-started))
+
+### Deprecated
+
+- `slash` is now totally deprecated; use `folderend` instead.
+
+## [0.4.2](https://github.com/earnestt1234/seedir/releases/tag/v0.4.2)
 
 ### Changed
 
