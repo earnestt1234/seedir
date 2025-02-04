@@ -1361,10 +1361,12 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
         Fake directory corresponding to the input string.
 
     '''
+
+    # for detecting folders
     slashes = ['/', '\\', os.sep]
     joinedslashes = ''.join(slashes)
 
-    byline = s.split('\n')
+    # character sets used for detection of items
     keyboard_chars = (string.ascii_letters + string.digits
                       + string.punctuation)
     filtered = "".join([c for c in keyboard_chars if c not in '/:?"*<>|'])
@@ -1373,77 +1375,121 @@ def fakedir_fromstring(s, start_chars=None, name_chars=None,
     if name_chars is None:
         name_chars = filtered + ' ' + '-'
 
-    names = []
-    headers = []
-    depths = []
+    if header_regex is None:
+        header_regex = '.*?(?=[{}])'.format(start_chars)
 
+    custom_name_regex = True
+    if name_regex is None:
+        name_regex = '[{}]*[/\\\\]*'.format(name_chars)
+        custom_name_regex = False
+
+    # split text into separate lines
+    byline = s.split('\n')
+
+    # holders to indicate attributes of each line
+    names = []       # the folder/file name
+    depths = []      # the depth of the item (the size of the header)
+
+    # MAIN LOOP 1: Pull out the folders/files from the diagram
     for line in byline:
+
+        # skip empty lines
         if not line:
             continue
-        if header_regex is None:
-            header = re.match('.*?(?=[{}])'.format(start_chars), line)
-        else:
-            header = re.match(header_regex, line)
+        
+        # --- DEPTH --- 
+        header = re.match(header_regex, line)
         if header is None:
             continue
         else:
             header = header.group()
         depth = len(header)
-        if name_regex is None:
-            name = re.match('[{}]*[/\\\\]*'.format(name_chars), line[depth:])
-        else:
-            name = re.match(name_regex, line)
+
+        # --- NAME --- 
+        search_str = line if custom_name_regex else line[depth:]
+        name = re.match(name_regex, search_str)
         if name is None:
             continue
         else:
             name = name.group()
+
+        # parse comments in name if requested
         if '#' in name and parse_comments:
             name = re.match('.*?(?=#)', name).group().strip()
         if not name:
             continue
 
-        headers.append(header)
+        # store the attributes
         names.append(name)
         depths.append(depth)
 
-    fakeitems = []
-    superparent = None
-    min_depth = min(depths)
+    # SETUP for constructing fakeitems from extracted data
+    fakeitems = []           # holder for all fakeitems - one for each name/depth
+    superparent = None       # root item
+    min_depth = min(depths)  # smallest depth found (based on header size)
+
+    # Cases where the root isn't clear, so a new parent is created
+    #  1. multiple items existing at min depth
+    #  2. min depth is not the earliest item in the tree
+    # Case 1
     if len([d for d in depths if d == min_depth]) > 1:
         superparent = FakeDir(supername)
+
+    # Case 2
     min_depth_index1 = depths.index(min_depth)
     if any(i > min_depth for i in depths[:min_depth_index1]):
         superparent = FakeDir(supername)
 
-    for i, name in enumerate(names):
+    # MAIN LOOP 2: Assemble the data into a FakeDir
+    for i, (name, depth) in enumerate(zip(names, depths)):
+
+        # detect folder
+        # either ends with slash (assume folder)
+        # or if next item is deeper than current item
         is_folder = False
         if name.strip()[-1] in slashes:
             is_folder = True
         if i < len(names) - 1:
-            if depths[i + 1] > depths[i]:
+            if depths[i + 1] > depth:
                 is_folder = True
+        FakeConstructor = FakeDir if is_folder else FakeFile
 
+        # When making fakeitems, don't include slash
         fmt_name = name.rstrip(joinedslashes)
 
-        if depths[i] == min_depth:
-            if is_folder:
-                fakeitems.append(FakeDir(fmt_name, parent=superparent))
-            else:
-                fakeitems.append(FakeFile(fmt_name, parent=superparent))
+        # If the item is at the min depth, no other parents to consider
+        # so just needs to be added to the tree with the superparent as parent
+        if depth == min_depth:
+            item = FakeConstructor(name=fmt_name, parent=superparent)
+            fakeitems.append(item)
+
+        # Otherwise...
         else:
-            shallower = [d for d in depths[:i] if d < depths[i]]
+
+            # Find any preceding items with lower depth (potential parents of current item)
+            preceding_depths = depths[:i]
+            shallower = [d for d in preceding_depths if d < depth]
+        
+            # of the shallower preceding items, assume the parent is
+            #    - occuring at the maximum depth
+            #    - the last one (later in the string) occuring
             if shallower:
-                max_shallower = max([d for d in depths[:i] if d < depths[i]])
-                parent_index = max(idx for idx, val in enumerate(depths[:i])
-                                   if val == max_shallower)
+                max_shallower = max([d for d in preceding_depths if d < depth])
+                parent_index = max(idx for idx, val in enumerate(preceding_depths) if val == max_shallower)
                 parent = fakeitems[parent_index]
+
+            # item is not the minimum depth, but has no shallower items before it
+            # Weird case, could maybe be a partially copied diagram
+            # Should be captured by Case 2 for superparent logic above
             else:
                 parent = superparent
-            if is_folder:
-                fakeitems.append(FakeDir(fmt_name, parent=parent))
-            else:
-                fakeitems.append(FakeFile(fmt_name, parent=parent))
+            
+            # add item to tree
+            item = FakeConstructor(name=fmt_name, parent=parent)
+            fakeitems.append(item)
 
+    # FINISH UP
+    # Return either the created root, or the detected root
     if superparent is not None:
         return superparent
     else:
