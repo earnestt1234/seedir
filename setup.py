@@ -15,8 +15,12 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+# read version
+with open(path.join(this_directory, 'seedir', '__version__.py'), encoding='utf-8') as f:
+    version = f.read().split('=')[1].strip('\'"\n')
+
 setup(name='seedir',
-      version='0.5.0',
+      version=version,
       description='Package for creating, editing, and reading folder tree diagrams.',
       url='https://github.com/earnestt1234/seedir',
       author='Tom Earnest',
