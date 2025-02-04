@@ -1,0 +1,47 @@
+name: Run unit tests
+
+# defines when testing job is run
+on:
+  push:              
+    branches:
+      - main
+      - dev
+  pull_request:      
+    branches:
+      - main
+      - dev
+  workflow_call:     
+  workflow_dispatch: 
+
+# Defines the tasks to be completed
+jobs:
+
+  testing: 
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy: 
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4 # checkout the github branch
+
+      # Sets up Python, accesising the matrix defined above
+      # to get a specific Python version
+      # adding name here allows Python version to be documented
+      - name: Set up Python ${{ matrix.python-version }} 
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+      
+      # Installs the code to be tested, and pytest
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+          python -m pip install pytest
+      
+      # Runs pytest
+      - name: Run Pytest
+        run: pytest
