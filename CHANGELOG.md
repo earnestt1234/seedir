@@ -4,6 +4,18 @@ This document will serve as a record for past and future changes to seedir.  It 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.5.1](https://github.com/earnestt1234/seedir/releases/tag/v0.5.1)
+
+### Added
+
+- GitHub workflows for testing the code (on pushes and pulls to `main` and `dev`) and for uploading to PyPI (on new release).
+- Created a pyproject.toml
+- Add CONTRIBUTING.md for instructions on how to contribute to the project
+
+### Changed
+
+- `seedir.fakedir.fakedir_fromstring` has been refactored.  The logic is essentially the same, but there have been some simplifications and more comments have been added.
+
 ## [0.5.0](https://github.com/earnestt1234/seedir/releases/tag/v0.5.0)
 
 ### Added
