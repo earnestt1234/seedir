@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seedir"
+description = "Package for creating, editing, and reading folder tree diagrams."
+dependencies = [
+    "natsort"
+]
+dynamic = ["version"]
+authors =[
+    {name = "Tom Earnest", email = "earnestt1234@gmail.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+emoji = ["emoji"]
+
+[project.urls]
+Homepage = "https://github.com/earnestt1234/seedir"
+
+[project.scripts]
+seedir = "seedir.__main__:main"
